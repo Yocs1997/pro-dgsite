@@ -1,26 +1,172 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-navy: #02112A;
+  --color-navy-light: #041c3f;
+  --color-navy-mid: #061e45;
+  --color-electric: #0096FF;
+  --color-electric-light: #33aaff;
+  --color-electric-dim: #0096ff33;
+  --color-electric-glow: #0096ff1a;
+  --color-white: #ffffff;
+  --color-sky-text: #E0F2FE;
+  --color-muted: #93c5fd;
+  --color-muted-dim: #60a5fa80;
+  --color-glass: rgba(4, 28, 63, 0.6);
+  --color-glass-border: rgba(0, 150, 255, 0.15);
+
+  --font-display: "Syne", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-card: 1rem;
+  --radius-pill: 9999px;
+
+  --shadow-electric: 0 0 30px rgba(0, 150, 255, 0.35), 0 0 60px rgba(0, 150, 255, 0.15);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    background-color: #02112A;
+    color: #ffffff;
+    scroll-behavior: smooth;
+  }
+
+  html {
+    background-color: #02112A;
+  }
+
+  body {
+    background-color: #02112A;
+    color: #ffffff;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background-color: rgba(0, 150, 255, 0.35);
+    color: #ffffff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #02112A;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #0096ff55;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0096ff99;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .glass {
+    background: rgba(4, 28, 63, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 150, 255, 0.15);
+  }
+
+  .glow-electric {
+    box-shadow: 0 0 30px rgba(0, 150, 255, 0.35), 0 0 60px rgba(0, 150, 255, 0.15);
+  }
+
+  .glow-electric-sm {
+    box-shadow: 0 0 15px rgba(0, 150, 255, 0.3), 0 0 30px rgba(0, 150, 255, 0.1);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 40px rgba(0, 150, 255, 0.6);
+  }
+
+  .border-electric {
+    border: 1px solid rgba(0, 150, 255, 0.3);
+  }
+
+  .border-electric-hover:hover {
+    border-color: rgba(0, 150, 255, 0.7);
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.2);
+  }
+
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(rgba(0, 150, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 150, 255, 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .clip-diagonal {
+    clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .animate-scan {
+    animation: scan 3s linear infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+  }
+
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-marquee {
+    animation: marquee 25s linear infinite;
+  }
 }
