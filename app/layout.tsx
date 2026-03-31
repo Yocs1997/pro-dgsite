@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: "Pro-DG | Digital Marketing Agency",
@@ -38,6 +39,26 @@ export default function RootLayout({
       </head>
       <body style={{ backgroundColor: "#02112A", margin: 0 }}>
         {children}
+        
+        {/* El Script de Metricool se movió aquí, dentro del body */}
+        <Script id="metricool-tracker" strategy="afterInteractive">
+          {`
+            function loadScript(a){
+              var b=document.getElementsByTagName("head")[0],
+              c=document.createElement("script");
+              c.type="text/javascript",
+              c.src="https://tracker.metricool.com/resources/be.js",
+              c.onreadystatechange=a,
+              c.onload=a,
+              b.appendChild(c)
+            }
+            loadScript(function(){
+              if (window.beTracker) {
+                window.beTracker.t({hash:"9f4baf15e5e4f8c8732121f384899b08"})
+              }
+            });
+          `}
+        </Script>
       </body>
     </html>
   );
