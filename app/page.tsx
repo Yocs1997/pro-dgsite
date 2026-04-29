@@ -860,6 +860,7 @@ function Footer({ t }: { t: typeof translations["en"]["footer"] }) {
   );
 }
 
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Page() {
@@ -886,6 +887,7 @@ export default function Page() {
         <CTABanner t={t.hero} />
         <Footer t={t.footer} />
       </div>
+      
     </>
   );
 }
