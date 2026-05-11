@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danca Remit — Senior Strategy Audit & Optimized Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0B1F3A;
+  --navy-mid: #162F52;
+  --navy-light: #1E3F6B;
+  --teal: #00BFA6;
+  --teal-dark: #009E88;
+  --teal-muted: #00BFA620;
+  --gold: #F4B942;
+  --gold-dark: #D4993A;
+  --gold-muted: #F4B94215;
+  --white: #FFFFFF;
+  --off-white: #F7F9FC;
+  --text-muted: #8BA3BE;
+  --text-mid: #C8D8E8;
+  --border: rgba(0,191,166,0.18);
+  --border-gold: rgba(244,185,66,0.25);
+  --red-flag: #FF4D6D;
+  --green-ok: #2ECC71;
+  --slide-h: 100vh;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 2rem;
+  background: rgba(11,31,58,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; color: var(--teal); letter-spacing: 0.04em; }
+.nav-links { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.nav-links a {
+  font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
+  text-decoration: none; padding: 0.3rem 0.65rem;
+  border-radius: 4px; transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.nav-links a:hover { color: var(--teal); border-color: var(--border); }
+
+/* ── SLIDE SHELL ── */
+.slide {
+  min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: center; padding: 6rem 4rem 4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: relative; overflow: hidden;
+}
+.slide-number {
+  position: absolute; top: 5rem; right: 4rem;
+  font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 700;
+  color: var(--text-muted); letter-spacing: 0.15em;
+}
+.slide-tag {
+  display: inline-block; font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 0.3rem 0.8rem; border-radius: 3px; margin-bottom: 1.5rem;
+}
+.tag-audit { background: rgba(255,77,109,0.15); color: #FF4D6D; border: 1px solid rgba(255,77,109,0.3); }
+.tag-strategy { background: var(--teal-muted); color: var(--teal); border: 1px solid var(--border); }
+.tag-content { background: var(--gold-muted); color: var(--gold); border: 1px solid var(--border-gold); }
+.tag-pricing { background: rgba(100,220,140,0.1); color: #4ADE80; border: 1px solid rgba(100,220,140,0.25); }
+
+h1 { font-family: 'Syne', sans-serif; font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.08; }
+h2 { font-family: 'Syne', sans-serif; font-size: clamp(1.6rem, 3.5vw, 2.6rem); font-weight: 700; line-height: 1.1; }
+h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 600; }
+
+.accent-teal { color: var(--teal); }
+.accent-gold { color: var(--gold); }
+.accent-red { color: var(--red-flag); }
+
+p { font-size: 1rem; line-height: 1.7; color: var(--text-mid); }
+p strong { color: var(--white); font-weight: 500; }
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 2rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem; }
+@media (max-width: 900px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .slide { padding: 5rem 1.5rem 3rem; }
+  .slide-number { right: 1.5rem; }
+}
+
+/* ── CARDS ── */
+.card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 1.5rem;
+  transition: border-color 0.25s;
+}
+.card:hover { border-color: var(--border); }
+.card.teal { border-color: var(--border); background: var(--teal-muted); }
+.card.gold { border-color: var(--border-gold); background: var(--gold-muted); }
+.card.red { border-color: rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
+.card.green { border-color: rgba(74,222,128,0.25); background: rgba(74,222,128,0.05); }
+
+.card-icon { font-size: 1.6rem; margin-bottom: 0.75rem; display: block; }
+.card h3 { margin-bottom: 0.5rem; font-size: 0.95rem; }
+.card p { font-size: 0.85rem; color: var(--text-muted); }
+
+/* ── FLAG / ALERT BOX ── */
+.flag {
+  display: flex; gap: 1rem; align-items: flex-start;
+  padding: 1rem 1.25rem; border-radius: 8px;
+  border-left: 3px solid var(--red-flag);
+  background: rgba(255,77,109,0.06);
+  margin-bottom: 1rem;
+}
+.flag-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+.flag-body { flex: 1; }
+.flag-body strong { display: block; font-size: 0.88rem; font-weight: 600; color: #FF4D6D; margin-bottom: 0.2rem; }
+.flag-body p { font-size: 0.82rem; margin: 0; color: var(--text-muted); }
+.fix {
+  display: flex; gap: 1rem; align-items: flex-start;
+  padding: 0.75rem 1rem; border-radius: 8px;
+  border-left: 3px solid var(--teal);
+  background: var(--teal-muted);
+  margin-bottom: 0.75rem;
+}
+.fix p { font-size: 0.82rem; margin: 0; color: var(--text-mid); }
+.fix-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--teal); font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+/* ── COPY EXAMPLES ── */
+.copy-block {
+  border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-bottom: 1rem;
+}
+.copy-header { padding: 0.5rem 1rem; background: var(--teal-muted); display: flex; align-items: center; justify-content: space-between; }
+.copy-header span { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--teal); }
+.copy-body { padding: 1rem; }
+.copy-old { color: #FF4D6D; font-size: 0.88rem; text-decoration: line-through; opacity: 0.7; margin-bottom: 0.5rem; display: block; }
+.copy-new { color: var(--white); font-size: 0.95rem; font-weight: 500; display: block; }
+.copy-why { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.4rem; display: block; font-style: italic; }
+
+/* ── FUNNEL VISUAL ── */
+.funnel { display: flex; flex-direction: column; gap: 0; margin-top: 2rem; max-width: 560px; margin-left: auto; margin-right: auto; }
+.funnel-step {
+  text-align: center; padding: 0.9rem 1.5rem;
+  position: relative; transition: all 0.25s;
+}
+.funnel-step::after {
+  content: ''; position: absolute; bottom: -12px; left: 50%;
+  transform: translateX(-50%);
+  border-left: 14px solid transparent; border-right: 14px solid transparent;
+  z-index: 1;
+}
+.funnel-step:last-child::after { display: none; }
+.fs1 { background: #1E3F6B; clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%); }
+.fs2 { background: #1D5C7A; width: 92%; margin: 0 auto; clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%); }
+.fs3 { background: #1A6B5C; width: 82%; margin: 0 auto; clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%); }
+.fs4 { background: #1E6F3A; width: 70%; margin: 0 auto; border-radius: 0 0 6px 6px; }
+.funnel-step strong { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; display: block; }
+.funnel-step span { font-size: 0.75rem; color: var(--text-muted); }
+.funnel-gap { background: rgba(255,77,109,0.12); border: 1px dashed rgba(255,77,109,0.4); border-radius: 6px; padding: 0.6rem 1rem; width: 80%; margin: 0.35rem auto; }
+.funnel-gap p { font-size: 0.75rem; color: #FF4D6D; text-align: center; margin: 0; }
+
+/* ── PRICING TABLE ── */
+.pricing-card {
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.pricing-header { padding: 1.5rem; background: var(--navy-mid); }
+.pricing-header h3 { font-size: 1rem; margin-bottom: 0.25rem; }
+.pricing-header .price { font-family: 'Syne', sans-serif; font-size: 2.4rem; font-weight: 800; color: var(--teal); }
+.pricing-header .price sup { font-size: 1.1rem; vertical-align: super; }
+.pricing-header .price sub { font-size: 0.9rem; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-weight: 400; }
+.pricing-body { padding: 1.5rem; }
+.pricing-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 0.7rem 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.85rem; gap: 1rem;
+}
+.pricing-row:last-child { border-bottom: none; }
+.pricing-row .label { color: var(--text-muted); flex: 1; }
+.pricing-row .val { color: var(--white); font-weight: 500; text-align: right; }
+.pricing-row .val.gold { color: var(--gold); }
+.pricing-row .val.teal { color: var(--teal); }
+.pricing-note { font-size: 0.78rem; color: var(--text-muted); margin-top: 1rem; line-height: 1.6; }
+.scalability-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.8rem 1rem; border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 0.75rem;
+}
+.scale-num { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--teal); min-width: 52px; }
+.scale-desc { flex: 1; font-size: 0.83rem; color: var(--text-mid); }
+.scale-price { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--gold); font-size: 0.95rem; }
+
+/* ── KPIS ── */
+.kpi { text-align: center; }
+.kpi .big { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; color: var(--teal); display: block; }
+.kpi .label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+/* ── TIMELINE ── */
+.timeline { margin-top: 2rem; }
+.t-phase {
+  display: flex; gap: 1.5rem; margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.t-phase:last-child { border-bottom: none; }
+.t-left { min-width: 90px; }
+.t-badge { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; padding: 0.3rem 0.6rem; border-radius: 4px; display: block; text-align: center; }
+.t-badge.p1 { background: var(--teal-muted); color: var(--teal); border: 1px solid var(--border); }
+.t-badge.p2 { background: var(--gold-muted); color: var(--gold); border: 1px solid var(--border-gold); }
+.t-badge.p3 { background: rgba(74,222,128,0.08); color: #4ADE80; border: 1px solid rgba(74,222,128,0.2); }
+.t-right h3 { font-size: 0.95rem; margin-bottom: 0.4rem; color: var(--white); }
+.t-right ul { list-style: none; }
+.t-right ul li { font-size: 0.82rem; color: var(--text-muted); padding: 0.25rem 0; padding-left: 1rem; position: relative; }
+.t-right ul li::before { content: '→'; position: absolute; left: 0; color: var(--teal); font-size: 0.75rem; }
+
+/* ── HERO BG ── */
+.hero-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(0,191,166,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 20% 80%, rgba(244,185,66,0.05) 0%, transparent 60%);
+}
+.grid-lines {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,191,166,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,191,166,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── COMPETITOR TABLE ── */
+.comp-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.83rem; }
+.comp-table th { text-align: left; padding: 0.6rem 1rem; background: rgba(0,191,166,0.08); color: var(--teal); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.comp-table td { padding: 0.7rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-mid); vertical-align: top; }
+.comp-table tr:last-child td { border-bottom: none; }
+.comp-table .name { font-weight: 600; color: var(--white); }
+.comp-table .danca { background: rgba(0,191,166,0.05); }
+.comp-table .danca .name { color: var(--teal); }
+.pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
+.pill-green { background: rgba(74,222,128,0.12); color: #4ADE80; }
+.pill-red { background: rgba(255,77,109,0.12); color: #FF4D6D; }
+.pill-gold { background: rgba(244,185,66,0.12); color: var(--gold); }
+
+/* ── POST CARD ── */
+.post-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.post-card-head { background: var(--teal-muted); padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+.post-card-head span { font-size: 0.7rem; color: var(--teal); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.post-card-body { padding: 1.2rem; }
+.post-field { margin-bottom: 0.8rem; }
+.post-field label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.25rem; }
+.post-field p { font-size: 0.85rem; color: var(--white); }
+.post-hashtags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+.hashtag { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(0,191,166,0.1); color: var(--teal); border: 1px solid var(--border); }
+
+/* ── DIVIDER ── */
+.section-divider { width: 48px; height: 3px; background: var(--teal); border-radius: 2px; margin: 1rem 0 1.5rem; }
+.section-divider.gold { background: var(--gold); }
+
+.lead { font-size: 1.1rem; color: var(--text-mid); max-width: 680px; line-height: 1.75; }
+.sub { font-size: 0.82rem; color: var(--text-muted); }
+
+/* ── INVESTMENT TOTAL BAR ── */
+.total-bar { background: var(--navy-mid); border: 1px solid var(--border-gold); border-radius: 10px; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.total-bar .label { font-size: 0.85rem; color: var(--text-muted); }
+.total-bar .amount { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+.total-bar .note { font-size: 0.75rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">DANCA REMIT — STRATEGY AUDIT</div>
+  <div class="nav-links">
+    <a href="#s1">Cover</a>
+    <a href="#s2">Audit</a>
+    <a href="#s3">Funnel</a>
+    <a href="#s4">Positioning</a>
+    <a href="#s5">Competitors</a>
+    <a href="#s6">Content</a>
+    <a href="#s7">Copy</a>
+    <a href="#s8">Calendar</a>
+    <a href="#s9">Metrics</a>
+    <a href="#s10">Pricing</a>
+  </div>
+</nav>
+
+<!-- ═══ SLIDE 1: COVER ═══ -->
+<section class="slide" id="s1">
+  <div class="hero-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="slide-number">01 / 10</div>
+  <div class="slide-tag tag-strategy">Senior Audit · May 2026</div>
+  <h1>Danca Remit<br><span class="accent-teal">Strategy Audit</span><br>& Optimized Plan</h1>
+  <div class="section-divider"></div>
+  <p class="lead" style="max-width:560px">A brutally honest audit of the current proposal — with every critical gap fixed, copy sharpened, and a full pricing structure added. Built for a U.S.→LatAm / Africa remittance launch in 2026.</p>
+  <div class="grid-4" style="max-width:700px; margin-top: 2.5rem;">
+    <div class="kpi"><span class="big">10</span><span class="label">Optimized slides</span></div>
+    <div class="kpi"><span class="big" style="color:var(--gold)">6</span><span class="label">Critical gaps fixed</span></div>
+    <div class="kpi"><span class="big">26+</span><span class="label">Copy rewrites</span></div>
+    <div class="kpi"><span class="big" style="color:var(--gold)">$750</span><span class="label">Base retainer/mo</span></div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 2: BRUTAL AUDIT ═══ -->
+<section class="slide" id="s2">
+  <div class="slide-number">02 / 10</div>
+  <div class="slide-tag tag-audit">Brutal Honesty Audit</div>
+  <h2>What the original deck<br><span class="accent-red">gets wrong</span></h2>
+  <div class="section-divider" style="background:var(--red-flag)"></div>
+  <p class="lead" style="margin-bottom:2rem">Six critical gaps a senior marketer catches on first read.</p>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>No clear conversion funnel architecture</strong>
+      <p>The deck lists post themes but never maps the user journey: Awareness → Consideration → First Transfer. Without a funnel, the content calendar is decoration. There is no retargeting layer, no email capture nurture sequence, and no first-transfer incentive hook.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Add a 3-stage funnel blueprint (Weeks 1–2 = TOFU, Weeks 3–4 = MOFU, Week 5+ = BOFU). Map each post to a funnel stage. Gate a "first transfer free" offer behind app download.</p></div>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>The 1% cash tax advantage is buried — it's the #1 weapon</strong>
+      <p>Slide 7 mentions it once. In the current political moment (post-Big Beautiful Bill), this is the most powerful reason for any Latino remitter to switch apps immediately. It should be the headline of every single paid ad and the first thing in the bio.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Run a dedicated "Tax-Free Transfers" campaign as its own Ad Set from day 1. Lead every ad creative with: "Still paying the 1% cash tax? App users are exempt."</p></div>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>Website has a critical trust gap (UX finding)</strong>
+      <p>Dancaremit.com uses generic stock language ("industry-leading security," "regulated by financial authorities") with no real proof: no license number shown, no trust badges, no customer count, no named support channel. In a sector where accounts get frozen arbitrarily (see WorldRemit reviews), this kills conversion.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Add to website hero: NMLS/MSB license number, Trustpilot widget, a real phone number, and a live chat widget. These 4 elements alone will increase app download conversions significantly.</p></div>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>No referral / viral loop mechanism</strong>
+      <p>The competitor Remitly grew largely via referral. The deck has no mention of a refer-a-friend mechanic. This is the cheapest CAC in the remittance space — the diaspora community talks to itself.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Launch a "Refer & both save" program: sender gets a fee waiver on next transfer; recipient gets $5 off first pickup. Make this the CTA on Week 3–4 posts once initial trust is established.</p></div>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>Copy relies on vague emotional language — no specifics</strong>
+      <p>"Simple. Fast. Made for real people" is indistinguishable from 40 other remittance services. The current copy never states a concrete number: transfer time, fee amount, exchange rate advantage, or countries served. Vague copy does not convert cold traffic.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Every conversion post must include one specific fact: "Transfers arrive in minutes," "No 1% cash tax," "24 countries," "Zero hidden fees — what you see is what arrives."</p></div>
+
+  <div class="flag">
+    <div class="flag-icon">⚠️</div>
+    <div class="flag-body">
+      <strong>No audience segmentation per corridor — one-size-fits-all content</strong>
+      <p>The audience sending to Nicaragua (Spanish-speaking, WhatsApp-native, cash pickup critical) behaves completely differently from someone sending to West Africa (mobile money priority, different platforms). A single calendar cannot serve both.</p>
+    </div>
+  </div>
+  <div class="fix"><span class="fix-label">Fix</span><p>Create corridor-specific content pillars: Nicaragua/Central America (Spanish + English), West Africa (English + French), Caribbean. Each corridor gets its own Ad Set and landing page variant.</p></div>
+</section>
+
+<!-- ═══ SLIDE 3: FUNNEL ARCHITECTURE ═══ -->
+<section class="slide" id="s3">
+  <div class="slide-number">03 / 10</div>
+  <div class="slide-tag tag-strategy">Funnel Architecture</div>
+  <h2>The funnel the deck<br><span class="accent-teal">was missing</span></h2>
+  <div class="section-divider"></div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1.5rem; align-items: start;">
+    <div>
+      <div class="funnel">
+        <div class="funnel-step fs1">
+          <strong>TOFU — AWARENESS</strong>
+          <span>Weeks 1–2 · Organic + Boosted Posts</span>
+        </div>
+        <div class="funnel-gap"><p>⛔ Original deck: 12 posts with no conversion intent</p></div>
+        <div class="funnel-step fs2">
+          <strong>MOFU — CONSIDERATION</strong>
+          <span>Weeks 3–4 · Pain-point + Tax angle ads</span>
+        </div>
+        <div class="funnel-gap"><p>⛔ No retargeting audience built, no email capture</p></div>
+        <div class="funnel-step fs3">
+          <strong>BOFU — CONVERSION</strong>
+          <span>Week 5+ · App download + First transfer CTA</span>
+        </div>
+        <div class="funnel-step fs4" style="margin-top:0.35rem">
+          <strong style="color:var(--teal)">RETENTION</strong>
+          <span>Referral loop + Weekly send reminders</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:1.5rem">
+        <h3 style="margin-bottom:0.75rem; color: var(--teal)">Added layer: Retargeting stack</h3>
+        <div class="card" style="margin-bottom:0.75rem">
+          <h3>Custom Audiences (Meta)</h3>
+          <p>Website visitors (7-day) → Retarget with "Still paying 1% tax?" creative. App store page visitors (14-day) → Retarget with social proof + first-transfer incentive.</p>
+        </div>
+        <div class="card teal">
+          <h3>Email Capture Gate</h3>
+          <p>Add a landing page linked from bio: "Get your <strong>first transfer fee waived</strong> — drop your email." Feed into a 3-email nurture sequence before the app download CTA.</p>
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:0.75rem; color: var(--gold)">KPIs per funnel stage</h3>
+        <div class="card gold">
+          <p style="font-size:0.82rem; color:var(--text-mid)"><strong style="color:var(--gold)">TOFU:</strong> Reach, Impressions, Video Views (>3s) &nbsp;|&nbsp; <strong style="color:var(--gold)">MOFU:</strong> Link Clicks, Profile Visits, Story Replies &nbsp;|&nbsp; <strong style="color:var(--gold)">BOFU:</strong> App Downloads, First Transfer Completed, CAC &nbsp;|&nbsp; <strong style="color:var(--gold)">RETENTION:</strong> Monthly Active Users, Referral Rate, LTV</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 4: POSITIONING ═══ -->
+<section class="slide" id="s4">
+  <div class="hero-bg"></div>
+  <div class="slide-number">04 / 10</div>
+  <div class="slide-tag tag-strategy">Strategic Positioning</div>
+  <h2>Own the gap nobody<br><span class="accent-teal">else is filling</span></h2>
+  <div class="section-divider"></div>
+
+  <div class="grid-3" style="margin-top:1.5rem">
+    <div class="card red">
+      <span class="card-icon">💸</span>
+      <h3>The Cash Tax Problem</h3>
+      <p>The new 1% federal remittance tax on cash transfers hits Western Union / Ria users directly. Danca Remit app users <strong style="color:#FF4D6D">are fully exempt</strong> — this is a regulatory moat competitors cannot copy.</p>
+    </div>
+    <div class="card teal">
+      <span class="card-icon">📍</span>
+      <h3>The Physical Bridge</h3>
+      <p>Wise is digital-only (no cash pickup). Danca Remit is <strong style="color:var(--teal)">digital at origin, physical at destination</strong> — app send + cash pickup. This is the exact profile the Nicaraguan and West African corridors demand.</p>
+    </div>
+    <div class="card gold">
+      <span class="card-icon">🤝</span>
+      <h3>The Human Trust Edge</h3>
+      <p>WorldRemit and Remitly freeze accounts with zero explanation (see App Store reviews). Danca's differentiator: <strong style="color:var(--gold)">human support + clear verification</strong>. This must be shown, not claimed.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(0,191,166,0.06); border: 1px solid var(--border); border-radius: 10px;">
+    <h3 style="color:var(--teal); margin-bottom:0.75rem">Recommended brand positioning line (replaces current vague tagline)</h3>
+    <p style="font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--white); line-height:1.3">"Send digital. Pick up in person. <span style="color:var(--teal)">Zero extra tax.</span>"</p>
+    <p style="margin-top:0.75rem; font-size:0.85rem; color:var(--text-muted)">This line encodes three differentiators in seven words and directly attacks competitors' weaknesses. Use it in bio, landing page hero, and every ad creative.</p>
+  </div>
+
+  <div class="grid-2" style="margin-top:1.5rem">
+    <div class="card">
+      <h3 style="color:var(--gold); margin-bottom:0.75rem">New audience priority order</h3>
+      <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.8">
+        <strong style="color:var(--white)">1. Nicaraguan diaspora in FL, TX, CA</strong> — Highest urgency; most affected by cash tax; strong cash-pickup demand.<br>
+        <strong style="color:var(--white)">2. Mexican corridor</strong> — Largest volume corridor; compete on tax exemption vs. Remitly.<br>
+        <strong style="color:var(--white)">3. West African (Nigeria, Ghana)</strong> — Mobile money dominance; position on reliability vs. WorldRemit.<br>
+        <strong style="color:var(--white)">4. Caribbean / India / France</strong> — Secondary expansion once brand trust is established.
+      </p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--teal); margin-bottom:0.75rem">Website CRO fixes (immediate)</h3>
+      <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.8">
+        <strong style="color:var(--white)">Hero headline:</strong> Currently too generic. Rewrite to tax-savings angle.<br>
+        <strong style="color:var(--white)">Add social proof:</strong> Show license number, user count, Trustpilot stars.<br>
+        <strong style="color:var(--white)">Single CTA:</strong> "Download Free — No Cash Tax" button above the fold.<br>
+        <strong style="color:var(--white)">Live chat:</strong> Install Intercom / Tidio — directly increases conversion and signals the human support differentiator.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 5: COMPETITOR MATRIX ═══ -->
+<section class="slide" id="s5">
+  <div class="slide-number">05 / 10</div>
+  <div class="slide-tag tag-strategy">Competitive Matrix — Expanded</div>
+  <h2>Where every competitor<br><span class="accent-teal">leaves the door open</span></h2>
+  <div class="section-divider"></div>
+
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Platform</th>
+        <th>Speed</th>
+        <th>Fees</th>
+        <th>Cash Pickup</th>
+        <th>Tax Impact</th>
+        <th>Trust Score</th>
+        <th>Danca Advantage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">WorldRemit</td>
+        <td><span class="pill pill-green">Fast</span></td>
+        <td><span class="pill pill-red">Variable surge</span></td>
+        <td><span class="pill pill-green">Yes</span></td>
+        <td><span class="pill pill-red">Cash affected</span></td>
+        <td><span class="pill pill-red">Account freezes</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">Human support + zero freeze policy</td>
+      </tr>
+      <tr>
+        <td class="name">Wise</td>
+        <td><span class="pill pill-green">Fast</span></td>
+        <td><span class="pill pill-green">Transparent</span></td>
+        <td><span class="pill pill-red">No cash pickup</span></td>
+        <td><span class="pill pill-green">Digital only</span></td>
+        <td><span class="pill pill-green">High</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">Cash pickup network at destination</td>
+      </tr>
+      <tr>
+        <td class="name">Western Union / Ria</td>
+        <td><span class="pill pill-gold">Moderate</span></td>
+        <td><span class="pill pill-red">High + 1% tax</span></td>
+        <td><span class="pill pill-green">Everywhere</span></td>
+        <td><span class="pill pill-red">Fully taxed</span></td>
+        <td><span class="pill pill-gold">Moderate</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">App exemption + lower fees = clear saving</td>
+      </tr>
+      <tr>
+        <td class="name">Remitly</td>
+        <td><span class="pill pill-green">Fast</span></td>
+        <td><span class="pill pill-gold">Surge pricing</span></td>
+        <td><span class="pill pill-green">Yes</span></td>
+        <td><span class="pill pill-gold">Partial</span></td>
+        <td><span class="pill pill-gold">Mixed</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">Fixed transparent rates + human support</td>
+      </tr>
+      <tr>
+        <td class="name">Félix (WhatsApp)</td>
+        <td><span class="pill pill-green">Instant feel</span></td>
+        <td><span class="pill pill-green">Low</span></td>
+        <td><span class="pill pill-red">Limited</span></td>
+        <td><span class="pill pill-gold">Corridor limited</span></td>
+        <td><span class="pill pill-gold">Growing</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">Full app + 24 countries + cash pickup</td>
+      </tr>
+      <tr class="danca">
+        <td class="name">✦ Danca Remit</td>
+        <td><span class="pill pill-green">Fast</span></td>
+        <td><span class="pill pill-green">Transparent</span></td>
+        <td><span class="pill pill-green">Yes</span></td>
+        <td><span class="pill pill-green">EXEMPT (app)</span></td>
+        <td><span class="pill pill-gold">Building</span></td>
+        <td style="color:var(--teal); font-size:0.8rem">⬅ Only player combining all four strengths</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:1.5rem; padding:1rem 1.25rem; border-radius:8px; background:rgba(0,191,166,0.06); border:1px solid var(--border);">
+    <p style="font-size:0.85rem; color:var(--text-mid)"><strong style="color:var(--white)">Strategic insight not in the original deck:</strong> Remitly charges a surge "Express" fee for fast transfers. Danca Remit should explicitly advertise that speed is included at the standard rate — no premium tier, no surprise fees. This directly converts Remitly's unhappy users.</p>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 6: CONTENT PILLARS ═══ -->
+<section class="slide" id="s6">
+  <div class="slide-number">06 / 10</div>
+  <div class="slide-tag tag-content">Content Architecture</div>
+  <h2>Content pillars — <span class="accent-gold">rebuilt with intent</span></h2>
+  <div class="section-divider gold"></div>
+  <p class="lead" style="margin-bottom:2rem">Five pillars, each mapped to a funnel stage and audience segment. Not just themes — each one has a measurable purpose.</p>
+
+  <div class="grid-3">
+    <div class="card teal">
+      <span class="card-icon">🚨</span>
+      <h3>Pillar 1 — Tax Alert</h3>
+      <p><strong>Funnel stage:</strong> TOFU/MOFU<br><strong>Hook:</strong> "Are you paying the 1% cash tax?" This pillar drives urgency and stops the scroll. Format: short Reels, story polls, carousel explainer.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">💛</span>
+      <h3>Pillar 2 — Family Emotion</h3>
+      <p><strong>Funnel stage:</strong> TOFU<br><strong>Hook:</strong> Human moments — dinner money arriving, school fees, emergency support. Builds brand warmth before the ask. No CTAs here.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔍</span>
+      <h3>Pillar 3 — Transparency</h3>
+      <p><strong>Funnel stage:</strong> MOFU<br><strong>Hook:</strong> "What you see is what arrives." Side-by-side comparisons showing real rates. Attacks the hidden-fee pain point. Format: carousels.</p>
+    </div>
+    <div class="card gold">
+      <span class="card-icon">⭐</span>
+      <h3>Pillar 4 — Social Proof</h3>
+      <p><strong>Funnel stage:</strong> MOFU/BOFU<br><strong>Hook:</strong> Real testimonials, review screenshots, user story Reels. Critical for building trust in a sector where users have been burned. One per week minimum.</p>
+    </div>
+    <div class="card green">
+      <span class="card-icon">📲</span>
+      <h3>Pillar 5 — Conversion</h3>
+      <p><strong>Funnel stage:</strong> BOFU<br><strong>Hook:</strong> "Download free. First transfer, zero surprise fees." Direct app download CTA, limited-time incentives, referral program announcement.</p>
+    </div>
+    <div class="card" style="border-color:var(--border-gold)">
+      <span class="card-icon">🌍</span>
+      <h3>Pillar 6 — Corridor Pride</h3>
+      <p><strong>Funnel stage:</strong> All stages<br><strong>Hook:</strong> Corridor-specific content (Nicaraguan holidays, Nigerian events, Haitian culture). Signals "we know your community." Increases organic reach via shares.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem; padding:1rem 1.5rem; border-radius:8px; border:1px solid rgba(255,77,109,0.3); background:rgba(255,77,109,0.05);">
+    <p style="font-size:0.83rem; color:var(--text-mid)"><strong style="color:#FF4D6D">Removed from original plan:</strong> Generic motivational content ("Less time sending, more time living") that could apply to any brand. Each post must be ownable by Danca Remit specifically. If a competitor could post it word-for-word, cut it.</p>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 7: COPY REWRITES ═══ -->
+<section class="slide" id="s7">
+  <div class="slide-number">07 / 10</div>
+  <div class="slide-tag tag-content">Copy Optimization</div>
+  <h2>Before / After — copy that<br><span class="accent-teal">actually converts</span></h2>
+  <div class="section-divider"></div>
+  <p class="lead" style="margin-bottom:2rem">Every change has one rule: add a specific, ownable fact. Vague emotion → concrete proof.</p>
+
+  <div class="grid-2">
+    <div>
+      <div class="copy-block">
+        <div class="copy-header"><span>Post 1 — Intro</span></div>
+        <div class="copy-body">
+          <span class="copy-old">Hook: "A new way to send money is here." / Body: "Meet Danca Remit. Simple. Fast. Made for real people."</span>
+          <span class="copy-new">Hook: "New law. New tax. New reason to switch." / Body: "The 1% federal cash remittance tax is now active. Danca Remit app users are fully exempt — send via bank or debit card and keep every cent."</span>
+          <span class="copy-why">Why: Opens with a news hook (the tax) that creates immediate relevance. Makes the benefit concrete and specific.</span>
+        </div>
+      </div>
+      <div class="copy-block">
+        <div class="copy-header"><span>Post 5 — Global</span></div>
+        <div class="copy-body">
+          <span class="copy-old">"24 countries. One simple solution. No matter where your family is, you can reach them."</span>
+          <span class="copy-new">"Nicaragua. Mexico. Nigeria. Ghana. India. France. 24 countries — one app, one rate, zero hidden fees. Transfers arrive in minutes, not days."</span>
+          <span class="copy-why">Why: Name the countries. The target audience recognizes their homeland and self-selects. "One rate, zero hidden fees" attacks Wise/Remitly directly.</span>
+        </div>
+      </div>
+      <div class="copy-block">
+        <div class="copy-header"><span>Post 8 — Trust Soft</span></div>
+        <div class="copy-body">
+          <span class="copy-old">"Your money deserves better. A smoother, simpler experience starts here."</span>
+          <span class="copy-new">"Tired of apps freezing your account with no explanation? We don't do that. Real humans answer your support calls. Real answers within hours — not days."</span>
+          <span class="copy-why">Why: Speaks directly to the #1 competitor pain point (WorldRemit/Remitly account freezes). Positions support as a product feature.</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="copy-block">
+        <div class="copy-header"><span>Post 17 — Meaningful Impact</span></div>
+        <div class="copy-body">
+          <span class="copy-old">"One transfer can change someone's day. Every send means groceries, bills, support, and peace back home."</span>
+          <span class="copy-new">"$200 sent = groceries for a month in Managua. $150 sent = school fees covered in Accra. That's not a transaction. That's you showing up — without being there. Download Danca Remit. No 1% tax, no surprise fees."</span>
+          <span class="copy-why">Why: Real dollar amounts make it tangible. Corridor-specific city names build community trust. Closes with the tax advantage CTA.</span>
+        </div>
+      </div>
+      <div class="copy-block">
+        <div class="copy-header"><span>New post — Referral (Week 4)</span></div>
+        <div class="copy-body">
+          <span class="copy-old">[Not in original deck — missing entirely]</span>
+          <span class="copy-new">Hook: "Know someone still paying the cash tax?" / Body: "Refer a friend to Danca Remit. You both save. You get your next transfer fee waived. They get $5 toward their first pickup." / CTA: "Share the link in bio."</span>
+          <span class="copy-why">Why: Activates the diaspora word-of-mouth network. Referral is the lowest-CAC acquisition channel in remittances — it was absent from the original plan.</span>
+        </div>
+      </div>
+      <div class="copy-block">
+        <div class="copy-header"><span>New post — Pain Point Direct (MOFU)</span></div>
+        <div class="copy-body">
+          <span class="copy-old">[Missing — original deck skips direct competitor comparison]</span>
+          <span class="copy-new">Hook: "Western Union is now charging you 1% extra on every cash transfer. That's $2 on every $200 you send — $24 a year on monthly sends." / CTA: "App users on Danca Remit pay $0. Download free."</span>
+          <span class="copy-why">Why: Concrete dollar math triggers urgency. This should run as a paid ad targeting people who follow WU/Ria pages.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 8: OPTIMIZED CALENDAR ═══ -->
+<section class="slide" id="s8">
+  <div class="slide-number">08 / 10</div>
+  <div class="slide-tag tag-content">June 2026 — Optimized Content Calendar</div>
+  <h2>Calendar rebuilt around<br><span class="accent-teal">the funnel stages</span></h2>
+  <div class="section-divider"></div>
+  <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.5rem">Color key: <span style="color:var(--teal)">■ TOFU</span> &nbsp;|&nbsp; <span style="color:var(--gold)">■ MOFU</span> &nbsp;|&nbsp; <span style="color:#4ADE80">■ BOFU/Conversion</span> &nbsp;|&nbsp; <span style="color:#FF4D6D">■ Tax Alert (always-on)</span></p>
+
+  <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; font-size:0.72rem;">
+    <!-- Header -->
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">LUN</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">MAR</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">MIE</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">JUE</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">VIE</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">SAB</div>
+    <div style="text-align:center;padding:0.4rem;color:var(--text-muted);font-weight:600;font-size:0.68rem">DOM</div>
+
+    <!-- W1 -->
+    <script>
+    const days = [
+      { n:1, label:"Tax Alert Reel", stage:"tax", icon:"🚨" },
+      { n:2, label:"Brand Intro", stage:"tofu", icon:"👋" },
+      { n:3, label:"Family Story", stage:"tofu", icon:"💛" },
+      { n:4, label:"Curiosity Hook", stage:"tofu", icon:"❓" },
+      { n:5, label:"24 Countries", stage:"tofu", icon:"🌍" },
+      { n:6, label:"Relatable Pain", stage:"tofu", icon:"😤" },
+      { n:7, label:"—", stage:"rest", icon:"" },
+      { n:8, label:"Account Freeze?", stage:"mofu", icon:"❄️" },
+      { n:9, label:"Trust Signal", stage:"mofu", icon:"🔒" },
+      { n:10, label:"Rate Compare", stage:"mofu", icon:"📊" },
+      { n:11, label:"Micro Story", stage:"tofu", icon:"💬" },
+      { n:12, label:"Accessible CTA", stage:"mofu", icon:"📲" },
+      { n:13, label:"Tax Math Carousel", stage:"tax", icon:"🚨" },
+      { n:14, label:"—", stage:"rest", icon:"" },
+      { n:15, label:"Family Reel", stage:"tofu", icon:"💛" },
+      { n:16, label:"Instant = Now", stage:"mofu", icon:"⚡" },
+      { n:17, label:"Easy UX", stage:"mofu", icon:"🎯" },
+      { n:18, label:"$200 Impact", stage:"mofu", icon:"💰" },
+      { n:19, label:"Real User Post", stage:"mofu", icon:"⭐" },
+      { n:20, label:"Simpler Choice", stage:"bofu", icon:"✅" },
+      { n:21, label:"—", stage:"rest", icon:"" },
+      { n:22, label:"Beyond Distance", stage:"tofu", icon:"🌐" },
+      { n:23, label:"WU vs Danca Ad", stage:"tax", icon:"🚨" },
+      { n:24, label:"Referral Launch", stage:"bofu", icon:"🎁" },
+      { n:25, label:"Better Balance", stage:"bofu", icon:"⚖️" },
+      { n:26, label:"Stress-Free Send", stage:"bofu", icon:"😌" },
+      { n:27, label:"Support Proof", stage:"mofu", icon:"🤝" },
+      { n:28, label:"—", stage:"rest", icon:"" },
+      { n:29, label:"New Gen Reel", stage:"bofu", icon:"📱" },
+      { n:30, label:"Trusted Always", stage:"bofu", icon:"🏆" },
+      { n:"", label:"", stage:"rest", icon:"" },
+      { n:"", label:"", stage:"rest", icon:"" },
+      { n:"", label:"", stage:"rest", icon:"" },
+      { n:"", label:"", stage:"rest", icon:"" },
+      { n:"", label:"", stage:"rest", icon:"" },
+    ];
+    const colors = {
+      tofu: { bg:'rgba(0,191,166,0.08)', border:'var(--border)', label:'var(--teal)' },
+      mofu: { bg:'rgba(244,185,66,0.08)', border:'var(--border-gold)', label:'var(--gold)' },
+      bofu: { bg:'rgba(74,222,128,0.08)', border:'rgba(74,222,128,0.25)', label:'#4ADE80' },
+      tax:  { bg:'rgba(255,77,109,0.1)', border:'rgba(255,77,109,0.3)', label:'#FF4D6D' },
+      rest: { bg:'transparent', border:'transparent', label:'var(--text-muted)' },
+    };
+    days.forEach(d => {
+      const c = colors[d.stage];
+      document.write(`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:6px;padding:0.4rem;min-height:56px;">
+        <div style="font-weight:600;color:${c.label};font-size:0.72rem">${d.n || ''}</div>
+        ${d.icon ? `<div style="font-size:0.8rem">${d.icon}</div>` : ''}
+        <div style="color:${c.label};font-size:0.63rem;line-height:1.3;margin-top:1px">${d.label}</div>
+      </div>`);
+    });
+    </script>
+  </div>
+
+  <div style="margin-top:1.5rem; display:flex; gap:1rem; flex-wrap:wrap; font-size:0.78rem;">
+    <div style="padding:0.4rem 0.8rem; border-radius:4px; background:rgba(0,191,166,0.1); border:1px solid var(--border); color:var(--teal)">TOFU posts: 9</div>
+    <div style="padding:0.4rem 0.8rem; border-radius:4px; background:rgba(244,185,66,0.1); border:1px solid var(--border-gold); color:var(--gold)">MOFU posts: 9</div>
+    <div style="padding:0.4rem 0.8rem; border-radius:4px; background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.25); color:#4ADE80">BOFU posts: 6</div>
+    <div style="padding:0.4rem 0.8rem; border-radius:4px; background:rgba(255,77,109,0.1); border:1px solid rgba(255,77,109,0.3); color:#FF4D6D">Always-on Tax Alerts: 3 (paid + organic)</div>
+    <div style="padding:0.4rem 0.8rem; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:var(--text-muted)">Rest days: 4</div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 9: METRICS ═══ -->
+<section class="slide" id="s9">
+  <div class="slide-number">09 / 10</div>
+  <div class="slide-tag tag-strategy">Analytics & KPI Framework</div>
+  <h2>Measure what drives<br><span class="accent-teal">actual revenue</span></h2>
+  <div class="section-divider"></div>
+
+  <div class="grid-4" style="margin-top:1rem">
+    <div style="text-align:center; padding:1.5rem; border:1px solid var(--border); border-radius:10px; background:rgba(0,191,166,0.04)">
+      <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--teal)">Month 1</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin:0.5rem 0 1rem">Benchmarks</div>
+      <div style="font-size:0.82rem; color:var(--text-mid); line-height:2">500+ followers<br>4%+ engagement rate<br>200+ app downloads<br>50 first transfers</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; border:1px solid var(--border-gold); border-radius:10px; background:var(--gold-muted)">
+      <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--gold)">Month 2</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin:0.5rem 0 1rem">Growth Targets</div>
+      <div style="font-size:0.82rem; color:var(--text-mid); line-height:2">1,500+ followers<br>Referral loop active<br>500+ downloads<br>CAC &lt;$15</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; border:1px solid rgba(74,222,128,0.25); border-radius:10px; background:rgba(74,222,128,0.04)">
+      <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:#4ADE80">Month 3</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin:0.5rem 0 1rem">Scale Trigger</div>
+      <div style="font-size:0.82rem; color:var(--text-mid); line-height:2">3,000+ followers<br>2nd corridor live<br>1,000+ downloads<br>ROAS &gt;3.0×</div>
+    </div>
+    <div style="text-align:center; padding:1.5rem; border:1px solid rgba(255,255,255,0.1); border-radius:10px; background:rgba(255,255,255,0.03)">
+      <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--white)">EOY 2026</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin:0.5rem 0 1rem">Strategic Goal</div>
+      <div style="font-size:0.82rem; color:var(--text-mid); line-height:2">10K+ community<br>4 corridors active<br>Bilingual brand<br>Top-3 in corridor</div>
+    </div>
+  </div>
+
+  <div class="timeline" style="margin-top:2rem">
+    <h3 style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem">Weekly review cadence (added — not in original deck)</h3>
+    <div class="t-phase">
+      <div class="t-left"><span class="t-badge p1">WEEKLY</span></div>
+      <div class="t-right">
+        <h3>Engagement & Reach Review</h3>
+        <ul>
+          <li>Identify top 2 performing posts — replicate format next week</li>
+          <li>Check story completion rate — if &lt;70%, shorten story length</li>
+          <li>Monitor comment sentiment for product feedback signals</li>
+          <li>Adjust posting time if morning or evening window underperforms</li>
+        </ul>
+      </div>
+    </div>
+    <div class="t-phase">
+      <div class="t-left"><span class="t-badge p2">MONTHLY</span></div>
+      <div class="t-right">
+        <h3>Growth & Conversion Report</h3>
+        <ul>
+          <li>CAC by corridor — kill underperforming Ad Sets, scale winners</li>
+          <li>App download → first transfer conversion rate (target: &gt;40%)</li>
+          <li>Referral program performance — track K-factor (aim &gt;1.2)</li>
+          <li>Benchmark engagement rate vs remittance category average (~2.8%)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 10: INVESTMENT & SCALABILITY ═══ -->
+<section class="slide" id="s10">
+  <div class="hero-bg"></div>
+  <div class="slide-number">10 / 10</div>
+  <div class="slide-tag tag-pricing">Investment & Scalability</div>
+  <h2>Transparent pricing for<br><span class="accent-gold">a transparent brand</span></h2>
+  <div class="section-divider gold"></div>
+
+  <div class="grid-2" style="margin-top:1.5rem; align-items:start">
+    <!-- Left: Core package -->
+    <div class="pricing-card">
+      <div class="pricing-header">
+        <h3 style="color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem">Core Package</h3>
+        <div class="price"><sup>$</sup>750<sub> USD / month</sub></div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem">Social Media Management — Flat rate</p>
+      </div>
+      <div class="pricing-body">
+        <div class="pricing-row"><span class="label">Daily posting (FB + IG)</span><span class="val teal">30 posts/month</span></div>
+        <div class="pricing-row"><span class="label">Monthly Reels produced</span><span class="val">2 Reels</span></div>
+        <div class="pricing-row"><span class="label">Monthly Carousel</span><span class="val">1 Carousel</span></div>
+        <div class="pricing-row"><span class="label">Stories (1 per post)</span><span class="val">~26 Stories</span></div>
+        <div class="pricing-row"><span class="label">Copy writing (Hook/Body/CTA)</span><span class="val teal">All posts</span></div>
+        <div class="pricing-row"><span class="label">Hashtag strategy (3–5 IG / 1–3 FB)</span><span class="val">Included</span></div>
+        <div class="pricing-row"><span class="label">Weekly performance review</span><span class="val">Included</span></div>
+        <div class="pricing-row"><span class="label">Monthly analytics report</span><span class="val teal">Included</span></div>
+        <div class="pricing-row"><span class="label">Platform</span><span class="val">Facebook + Instagram</span></div>
+      </div>
+    </div>
+
+    <!-- Right: Media Buying + Scalability -->
+    <div>
+      <div class="pricing-card" style="margin-bottom:1.25rem">
+        <div class="pricing-header">
+          <h3 style="color:var(--text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.5rem">Media Buying & Campaign Management</h3>
+          <div class="price"><sup>$</sup>300<sub> USD / month base</sub></div>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem">Includes management of 2 initial Ad Sets</p>
+        </div>
+        <div class="pricing-body">
+          <div class="pricing-row"><span class="label">Ad Sets included (base)</span><span class="val gold">2 Ad Sets</span></div>
+          <div class="pricing-row"><span class="label">Ad creative design</span><span class="val teal">Included</span></div>
+          <div class="pricing-row"><span class="label">Audience targeting setup</span><span class="val">Included</span></div>
+          <div class="pricing-row"><span class="label">A/B test management</span><span class="val">Included</span></div>
+          <div class="pricing-row"><span class="label">Weekly bid optimization</span><span class="val teal">Included</span></div>
+          <div class="pricing-row"><span class="label">Ad spend (client-direct to Meta)</span><span class="val" style="color:var(--text-muted)">Not included</span></div>
+          <p class="pricing-note">Recommended ad spend for launch: <strong style="color:var(--white)">$500–$1,000/month</strong> (client pays Meta directly). Minimum $300/mo to generate statistically meaningful data per corridor.</p>
+        </div>
+      </div>
+
+      <!-- Scalability -->
+      <div>
+        <h3 style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem">Scalability — Additional Ad Sets</h3>
+        <div class="scalability-row">
+          <span class="scale-num">+1</span>
+          <div class="scale-desc">
+            <strong style="color:var(--white); display:block; margin-bottom:2px">3rd Ad Set</strong>
+            e.g. West Africa corridor (Nigeria/Ghana) — English + French creative, mobile money CTA, Meta Advantage+ audience
+          </div>
+          <span class="scale-price">+$150/mo</span>
+        </div>
+        <div class="scalability-row">
+          <span class="scale-num">+2</span>
+          <div class="scale-desc">
+            <strong style="color:var(--white); display:block; margin-bottom:2px">4th Ad Set</strong>
+            e.g. Caribbean corridor (Haiti/Dominican Republic) — bilingual creative, separate landing page, distinct creative assets
+          </div>
+          <span class="scale-price">+$300/mo</span>
+        </div>
+        <div class="scalability-row">
+          <span class="scale-num">+3</span>
+          <div class="scale-desc">
+            <strong style="color:var(--white); display:block; margin-bottom:2px">5th Ad Set</strong>
+            e.g. Indian / French corridor — separate language assets, compliance check per region, dedicated optimization
+          </div>
+          <span class="scale-price">+$450/mo</span>
+        </div>
+        <p class="pricing-note" style="margin-top:0.75rem"><strong style="color:var(--white)">Technical justification:</strong> Each destination corridor requires independent ad sets because targeting parameters, creative language, payout method emphasis (cash pickup vs. mobile money vs. bank transfer), and compliance considerations differ per geography. Combining corridors into one Ad Set produces diluted ROAS and prevents accurate CPA measurement per market. One Ad Set per corridor = clean data, better optimization, lower long-term CAC.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total bars -->
+  <div style="margin-top:2rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+    <div class="total-bar">
+      <div>
+        <div class="label">Launch package (Month 1–2)</div>
+        <div class="note">Social Management + 2 Ad Sets base</div>
+      </div>
+      <div>
+        <div class="amount">$1,050<span style="font-size:1rem; font-weight:400; color:var(--text-muted)">/mo</span></div>
+        <div class="note">+ client ad spend ($500–1K)</div>
+      </div>
+    </div>
+    <div class="total-bar" style="border-color:var(--border);">
+      <div>
+        <div class="label">Scale package (Month 3+)</div>
+        <div class="note">Social + 4 Ad Sets (4 corridors)</div>
+      </div>
+      <div>
+        <div class="amount" style="color:var(--teal)">$1,350<span style="font-size:1rem; font-weight:400; color:var(--text-muted)">/mo</span></div>
+        <div class="note">+ client ad spend ($2K+)</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem; padding:1.25rem 1.5rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,191,166,0.04); text-align:center;">
+    <p style="font-size:0.85rem; color:var(--text-muted)">Questions? <strong style="color:var(--white)">yadercalderon@prodg.com</strong> &nbsp;|&nbsp; <strong style="color:var(--white)">+505 744 9428</strong> &nbsp;|&nbsp; <a href="https://www.pro-dg.com" style="color:var(--teal); text-decoration:none">www.pro-dg.com</a></p>
+    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem">PRO-DG — From positioning to success</p>
+  </div>
+</section>
+
+</html>
