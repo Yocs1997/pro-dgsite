@@ -6,11 +6,17 @@ export default function EstrategiaDanca() {
   const [isAuth, setIsAuth] = useState(false)
 
   const checkPass = () => {
-    if (pass === 'Danca2026') { // Tu contraseña
+    // Tu contraseña actual
+    if (pass === 'Danca2026') { 
       setIsAuth(true)
     } else {
       alert('Contraseña incorrecta')
     }
+  }
+
+  // Te permite entrar presionando "Enter" en el teclado
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') checkPass()
   }
 
   if (isAuth) {
@@ -18,17 +24,40 @@ export default function EstrategiaDanca() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-[#0A1628]">
-      <h2 className="text-white mb-4 font-bold">Acceso Privado - Danca Remit</h2>
-      <input 
-        type="password" 
-        onChange={(e) => setPass(e.target.value)}
-        className="p-2 rounded mb-2 text-black"
-        placeholder="Ingresa la clave"
-      />
-      <button onClick={checkPass} className="bg-[#00C9B1] px-4 py-2 rounded font-bold">
-        Entrar
-      </button>
+    <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
+      {/* Decoración de fondo opcional */}
+      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#00C9B1 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
+      </div>
+
+      <div className="z-10 bg-white p-10 rounded-2xl shadow-xl border border-slate-200 w-full max-w-md text-center">
+        <div className="mb-6">
+           <h2 className="text-2xl font-extrabold text-slate-800">Acceso Privado</h2>
+           <p className="text-slate-500 mt-2 text-sm">Propuesta Estratégica — Danca Remit</p>
+        </div>
+        
+        <div className="flex flex-col gap-4">
+          <input 
+            type="password" 
+            autoFocus
+            onChange={(e) => setPass(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full p-4 rounded-xl border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00C9B1] focus:border-transparent transition-all"
+            placeholder="Introduce la contraseña"
+          />
+          
+          <button 
+            onClick={checkPass} 
+            className="w-full bg-[#0B1F3A] hover:bg-[#162F52] text-white py-4 rounded-xl font-bold transition-colors shadow-lg active:scale-[0.98]"
+          >
+            Entrar a la Presentación
+          </button>
+        </div>
+
+        <p className="mt-8 text-xs text-slate-400 uppercase tracking-widest font-semibold">
+          Pro-DG Digital Agency
+        </p>
+      </div>
     </div>
   )
 }
