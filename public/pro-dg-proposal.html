@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRO-DG | Brand Strategy Proposal 2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --black: #080808;
+    --surface: #0f0f0f;
+    --surface2: #161616;
+    --surface3: #1e1e1e;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.14);
+    --gold: #c9a84c;
+    --gold-light: #e4c46e;
+    --gold-dim: rgba(201,168,76,0.15);
+    --white: #f5f2eb;
+    --white-dim: rgba(245,242,235,0.55);
+    --white-faint: rgba(245,242,235,0.2);
+    --accent-dental: #5ec4a8;
+    --accent-dental-dim: rgba(94,196,168,0.15);
+    --accent-mortgage: #6a9fd8;
+    --accent-mortgage-dim: rgba(106,159,216,0.15);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  h1,h2,h3,h4,h5 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(8,8,8,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: padding var(--transition);
+  }
+  nav.scrolled { padding: 12px 40px; }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--white-dim);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-cta {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--black) !important;
+    background: var(--gold);
+    padding: 8px 22px;
+    border-radius: 100px;
+    text-decoration: none;
+    transition: background 0.25s, transform 0.25s !important;
+  }
+  .nav-cta:hover { background: var(--gold-light); transform: translateY(-1px) !important; }
+  .nav-burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+  .nav-burger span { width: 24px; height: 1.5px; background: var(--white); display: block; transition: var(--transition); }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+  }
+  .glow-gold { width: 600px; height: 600px; background: radial-gradient(circle, var(--gold) 0%, transparent 70%); top: -100px; right: -80px; animation: float1 8s ease-in-out infinite; }
+  .glow-teal { width: 400px; height: 400px; background: radial-gradient(circle, #1a4a42 0%, transparent 70%); bottom: -60px; left: 10%; animation: float2 10s ease-in-out infinite; }
+  @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,30px)} }
+  @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+
+  .grid-lines {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-inner {
+    position: relative; z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-badge i { font-size: 0.6rem; }
+  .hero-h1 {
+    font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+    margin-bottom: 24px;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    color: var(--white-dim);
+    font-size: 1.05rem;
+    margin-bottom: 36px;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+  .hero-sub strong { color: var(--white); font-weight: 400; }
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .hero-pill {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--white-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+  }
+  .hero-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--black);
+    background: var(--gold);
+    border: none; border-radius: 100px;
+    padding: 13px 28px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+  }
+  .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,0.3); }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--white);
+    background: transparent;
+    border: 1px solid var(--border-bright); border-radius: 100px;
+    padding: 13px 28px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.25s, color 0.25s, transform 0.25s;
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+
+  .hero-cards {
+    display: flex; flex-direction: column; gap: 16px;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .hero-stat-card {
+    background: rgba(22,22,22,0.8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; gap: 20px;
+    transition: border-color var(--transition), transform var(--transition);
+  }
+  .hero-stat-card:hover { border-color: rgba(201,168,76,0.3); transform: translateX(6px); }
+  .hero-stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: var(--gold-dim);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .hero-stat-icon.teal { background: var(--accent-dental-dim); color: var(--accent-dental); }
+  .hero-stat-icon.blue { background: var(--accent-mortgage-dim); color: var(--accent-mortgage); }
+  .hero-stat-num { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--white); line-height: 1; margin-bottom: 4px; }
+  .hero-stat-label { font-size: 0.82rem; color: var(--white-dim); }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── SECTION COMMON ── */
+  section { padding: 100px 40px; }
+  .section-inner { max-width: 1200px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .section-h2 {
+    font-size: clamp(1.8rem, 3.5vw, 3rem);
+    margin-bottom: 16px;
+  }
+  .section-sub {
+    color: var(--white-dim);
+    font-size: 1rem;
+    max-width: 560px;
+    margin-bottom: 60px;
+  }
+  .divider {
+    width: 48px; height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+    margin: 20px 0 60px;
+  }
+
+  /* ── TOGGLE ── */
+  .strategy-toggle-wrap {
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 60px;
+  }
+  .strategy-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px;
+    gap: 0;
+    position: relative;
+  }
+  .toggle-btn {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--white-dim);
+    background: none; border: none;
+    border-radius: 100px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: color 0.3s;
+    white-space: nowrap;
+  }
+  .toggle-btn i { font-size: 0.85rem; }
+  .toggle-btn.active { color: var(--black); }
+  .toggle-btn.active.dental-active { color: var(--black); }
+  .toggle-btn.active.mortgage-active { color: var(--black); }
+  .toggle-pill {
+    position: absolute;
+    top: 5px; left: 5px;
+    height: calc(100% - 10px);
+    border-radius: 100px;
+    background: var(--gold);
+    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), width 0.45s cubic-bezier(0.16,1,0.3,1);
+    z-index: 1;
+  }
+
+  /* ── STRATEGY PANELS ── */
+  .strategy-panel { display: none; }
+  .strategy-panel.active { display: block; animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── PHILOSOPHY GRID ── */
+  .philosophy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .phil-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .phil-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .phil-card:hover { border-color: rgba(201,168,76,0.25); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+  .phil-card:hover::before { opacity: 1; }
+  .phil-icon { font-size: 1.5rem; color: var(--gold); margin-bottom: 16px; }
+  .phil-card h4 { font-size: 1rem; margin-bottom: 8px; }
+  .phil-card p { font-size: 0.85rem; color: var(--white-dim); line-height: 1.6; }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; }
+  .timeline::before {
+    content: '';
+    position: absolute; top: 0; bottom: 0; left: 28px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+  }
+  .timeline-month {
+    position: relative;
+    padding-left: 76px;
+    margin-bottom: 56px;
+    opacity: 0; transform: translateX(-20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .timeline-month.visible { opacity: 1; transform: translateX(0); }
+  .timeline-dot {
+    position: absolute; left: 14px; top: 2px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem; font-weight: 800;
+    color: var(--gold);
+    z-index: 1;
+  }
+  .timeline-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .timeline-month-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold);
+    background: var(--gold-dim);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 100px;
+    padding: 4px 14px;
+  }
+  .timeline-title { font-size: 1.3rem; }
+  .timeline-body {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .tl-col h5 {
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .tl-col ul { list-style: none; }
+  .tl-col ul li {
+    font-size: 0.88rem; color: var(--white-dim);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .tl-col ul li:last-child { border-bottom: none; }
+  .tl-col ul li::before { content: '—'; color: var(--gold); flex-shrink: 0; font-size: 0.7rem; margin-top: 3px; }
+  .tl-goal {
+    grid-column: 1 / -1;
+    background: var(--gold-dim);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    color: var(--gold-light);
+  }
+  .tl-goal strong { font-weight: 600; margin-right: 8px; }
+
+  /* ── CONTENT PILLARS ── */
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .pillar-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    transition: var(--transition);
+    cursor: default;
+  }
+  .pillar-card:hover { border-color: rgba(201,168,76,0.3); transform: translateY(-4px); }
+  .pillar-icon { font-size: 1.8rem; margin-bottom: 14px; display: block; }
+  .pillar-card h4 { font-size: 0.95rem; margin-bottom: 6px; }
+  .pillar-card p { font-size: 0.8rem; color: var(--white-dim); line-height: 1.5; }
+
+  /* ── FUNNEL ── */
+  #funnel { background: var(--surface); }
+  .funnel-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .funnel-step {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 18px 28px;
+    display: flex; align-items: center; gap: 18px;
+    position: relative;
+    opacity: 0; transform: scaleX(0.92);
+    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+  .funnel-step:hover { border-color: rgba(201,168,76,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .funnel-step.visible { opacity: 1; transform: scaleX(1); }
+  .funnel-step:nth-child(1) { max-width: 100%; }
+  .funnel-step:nth-child(2) { max-width: 92%; }
+  .funnel-step:nth-child(3) { max-width: 84%; }
+  .funnel-step:nth-child(4) { max-width: 76%; }
+  .funnel-step:nth-child(5) { max-width: 68%; }
+  .funnel-step:nth-child(6) { max-width: 60%; }
+  .funnel-step:nth-child(7) { max-width: 52%; }
+  .funnel-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .funnel-arrow { position: absolute; right: -1px; bottom: -22px; color: var(--gold); font-size: 0.9rem; opacity: 0.5; }
+  .funnel-label { font-size: 0.95rem; font-weight: 500; }
+  .funnel-desc { font-size: 0.8rem; color: var(--white-dim); }
+
+  /* ── AD STRATEGY ── */
+  .ad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 48px; }
+  .ad-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: var(--transition);
+  }
+  .ad-card:hover { border-color: rgba(201,168,76,0.2); transform: translateY(-3px); }
+  .ad-card-icon { font-size: 1.4rem; color: var(--gold); }
+  .ad-card h4 { font-size: 1rem; }
+  .ad-card p { font-size: 0.84rem; color: var(--white-dim); line-height: 1.6; }
+  .ad-stage {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold); background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 100px; padding: 4px 12px; align-self: flex-start;
+  }
+
+  /* ── PRICING ── */
+  #pricing { background: var(--surface); }
+  .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .pricing-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 40px 36px;
+    position: relative; overflow: hidden;
+    transition: var(--transition);
+  }
+  .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+  .pricing-card.featured {
+    border-color: rgba(201,168,76,0.35);
+  }
+  .pricing-card.featured::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  }
+  .pricing-badge {
+    position: absolute; top: 16px; right: 16px;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--black); background: var(--gold); border-radius: 100px; padding: 4px 12px;
+  }
+  .pricing-icon { font-size: 1.8rem; margin-bottom: 20px; }
+  .pricing-title { font-size: 1.1rem; color: var(--white-dim); margin-bottom: 8px; font-family: 'DM Sans', sans-serif; font-weight: 400; }
+  .pricing-name { font-size: 1.45rem; margin-bottom: 24px; }
+  .pricing-price {
+    display: flex; align-items: flex-end; gap: 6px; margin-bottom: 32px;
+  }
+  .pricing-dollar { font-size: 1.2rem; color: var(--gold); font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 6px; }
+  .pricing-amount { font-family: 'Syne', sans-serif; font-size: 4rem; font-weight: 800; color: var(--white); line-height: 1; }
+  .pricing-period { font-size: 0.85rem; color: var(--white-dim); margin-bottom: 8px; }
+  .pricing-features { list-style: none; margin-bottom: 32px; }
+  .pricing-features li {
+    font-size: 0.88rem; color: var(--white-dim);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .pricing-features li:last-child { border-bottom: none; }
+  .pricing-features li i { color: var(--gold); font-size: 0.75rem; margin-top: 4px; flex-shrink: 0; }
+  .pricing-disclaimer {
+    font-size: 0.78rem; color: var(--white-faint); line-height: 1.6;
+    border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;
+  }
+
+  /* ── WHY GRID ── */
+  .why-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .why-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 24px;
+    transition: var(--transition);
+  }
+  .why-card:hover { border-color: rgba(201,168,76,0.2); transform: translateY(-3px); }
+  .why-num { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; color: rgba(201,168,76,0.15); line-height: 1; margin-bottom: 12px; }
+  .why-card h4 { font-size: 1rem; margin-bottom: 8px; }
+  .why-card p { font-size: 0.84rem; color: var(--white-dim); line-height: 1.6; }
+
+  /* ── CTA ── */
+  #cta {
+    padding: 120px 40px;
+    position: relative; overflow: hidden;
+    text-align: center;
+  }
+  .cta-glow {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .cta-inner { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+  .cta-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; }
+  .cta-h2 { font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 24px; }
+  .cta-sub { color: var(--white-dim); font-size: 1.05rem; max-width: 520px; margin: 0 auto 48px; }
+  .cta-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+  .cta-info {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; color: var(--white-dim);
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 100px;
+    padding: 10px 20px;
+  }
+  .cta-info i { color: var(--gold); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 40px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px;
+  }
+  .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.05em; }
+  .footer-logo span { color: var(--gold); }
+  footer p { font-size: 0.8rem; color: var(--white-faint); }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── MOBILE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 20px; }
+    nav.scrolled { padding: 12px 20px; }
+    .nav-links { display: none; }
+    .nav-burger { display: flex; }
+    .mobile-menu {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--black); z-index: 999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+    }
+    .mobile-menu.open { opacity: 1; pointer-events: all; }
+    .mobile-menu a { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; color: var(--white); text-decoration: none; }
+    .mobile-menu a:hover { color: var(--gold); }
+    section { padding: 72px 20px; }
+    #hero { padding: 100px 20px 60px; }
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-cards { display: none; }
+    .timeline-body { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .strategy-toggle { flex-direction: column; gap: 0; }
+    .toggle-btn { width: 100%; justify-content: center; }
+    .toggle-pill { display: none; }
+    .toggle-btn.active { background: var(--gold); color: var(--black); border-radius: 100px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 20px; }
+    .funnel-step:nth-child(n) { max-width: 100%; }
+  }
+  @media (max-width: 600px) {
+    .strategy-toggle { border-radius: var(--radius); }
+    .toggle-btn { border-radius: var(--radius-sm); }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a href="#" class="nav-logo">PRO<span>-DG</span></a>
+  <ul class="nav-links">
+    <li><a href="#strategy">Strategy</a></li>
+    <li><a href="#timeline">Timeline</a></li>
+    <li><a href="#funnel">Funnel</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#cta" class="nav-cta">Get Started</a></li>
+  </ul>
+  <button class="nav-burger" id="burger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#strategy" onclick="closeMobileMenu()">Strategy</a>
+  <a href="#timeline" onclick="closeMobileMenu()">Timeline</a>
+  <a href="#funnel" onclick="closeMobileMenu()">Funnel</a>
+  <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
+  <a href="#cta" onclick="closeMobileMenu()">Get Started</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg">
+    <div class="grid-lines"></div>
+    <div class="hero-glow glow-gold"></div>
+    <div class="hero-glow glow-teal"></div>
+  </div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge"><i class="fas fa-circle"></i> Strategic Proposal — 2025</div>
+      <h1 class="hero-h1">4-Month<br><em>Brand Positioning</em><br>& Growth Strategy</h1>
+      <p class="hero-sub">This strategy focuses on <strong>trust building</strong>, <strong>audience warming</strong>, <strong>organic authority</strong>, <strong>social proof</strong>, <strong>retargeting preparation</strong>, and long-term scalable customer acquisition.</p>
+      <div class="hero-pills">
+        <span class="hero-pill"><i class="fas fa-tooth" style="color:var(--accent-dental);margin-right:6px"></i> Dental Benefits</span>
+        <span class="hero-pill"><i class="fas fa-home" style="color:var(--accent-mortgage);margin-right:6px"></i> Heritage Home Finance</span>
+        <span class="hero-pill">4 Months</span>
+        <span class="hero-pill">Meta Ads Included</span>
+      </div>
+      <div class="hero-btns">
+        <a href="#strategy" class="btn-primary"><i class="fas fa-chart-line"></i> View Strategy</a>
+        <a href="#timeline" class="btn-outline"><i class="fas fa-calendar-alt"></i> Timeline</a>
+        <a href="#pricing" class="btn-outline"><i class="fas fa-tag"></i> Pricing</a>
+      </div>
+    </div>
+    <div class="hero-cards">
+      <div class="hero-stat-card">
+        <div class="hero-stat-icon"><i class="fas fa-shield-alt"></i></div>
+        <div>
+          <div class="hero-stat-num">4</div>
+          <div class="hero-stat-label">Month trust-first strategy</div>
+        </div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-icon teal"><i class="fas fa-tooth"></i></div>
+        <div>
+          <div class="hero-stat-num" style="font-size:1.2rem;line-height:1.3">Dental Benefits</div>
+          <div class="hero-stat-label">Private insurance brand positioning</div>
+        </div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-icon blue"><i class="fas fa-home"></i></div>
+        <div>
+          <div class="hero-stat-num" style="font-size:1.2rem;line-height:1.3">Heritage Home Finance</div>
+          <div class="hero-stat-label">Mortgage company growth strategy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STRATEGY PHILOSOPHY -->
+<section id="strategy" style="background:var(--surface)">
+  <div class="section-inner">
+    <p class="section-tag reveal">Strategy Philosophy</p>
+    <h2 class="section-h2 reveal">We Don't Hard-Sell.<br>We Build Brands People Trust.</h2>
+    <div class="divider reveal"></div>
+    <div class="philosophy-grid">
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-shield-heart"></i></div><h4>Trust Building First</h4><p>Authority and familiarity are built before any conversion push — lowering future acquisition costs significantly.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-fire-flame-curved"></i></div><h4>Audience Warming</h4><p>Organic content steadily warms cold audiences so retargeting campaigns perform far above industry benchmarks.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-crown"></i></div><h4>Organic Authority</h4><p>Consistent educational content positions your brand as the go-to expert — before a dollar is spent on lead gen.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-star"></i></div><h4>Social Proof</h4><p>Real stories, testimonials, and community engagement improve ad performance and conversion rates at scale.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-crosshairs"></i></div><h4>Precision Retargeting</h4><p>Retargeting warmed, engaged audiences reduces cost-per-lead and drives higher quality conversions over time.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-funnel-dollar"></i></div><h4>Funnel Development</h4><p>Every piece of content feeds a scalable funnel ecosystem designed to compound results month over month.</p></div>
+      <div class="phil-card reveal"><div class="phil-icon"><i class="fas fa-chart-line"></i></div><h4>Conversion Optimization</h4><p>Sales campaigns launch only after trust is established — so audiences already want to buy before they're asked.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="section-inner">
+    <p class="section-tag reveal">Campaign Timeline</p>
+    <h2 class="section-h2 reveal">4-Month Roadmap</h2>
+    <div class="divider reveal"></div>
+
+    <!-- TOGGLE -->
+    <div class="strategy-toggle-wrap reveal">
+      <div class="strategy-toggle" id="strategyToggle">
+        <div class="toggle-pill" id="togglePill"></div>
+        <button class="toggle-btn active dental-active" id="btnDental" onclick="switchStrategy('dental')">
+          <i class="fas fa-tooth"></i> Dental Benefits
+        </button>
+        <button class="toggle-btn mortgage-active" id="btnMortgage" onclick="switchStrategy('mortgage')">
+          <i class="fas fa-home"></i> Heritage Home Finance
+        </button>
+      </div>
+    </div>
+
+    <!-- DENTAL PANEL -->
+    <div class="strategy-panel active" id="panel-dental">
+      <div class="timeline">
+        <div class="timeline-month">
+          <div class="timeline-dot">M1</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label">Month 1</span>
+            <h3 class="timeline-title">Foundation & Trust</h3>
+          </div>
+          <div class="timeline-body">
+            <div class="tl-col">
+              <h5><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>Dental insurance vs. discount plans explained</li>
+                <li>Common dental myths debunked</li>
+                <li>Coverage mistakes to avoid</li>
+                <li>Smile health education reels</li>
+                <li>Team introductions & FAQs</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Engagement campaigns</li>
+                <li>Video views</li>
+                <li>Page awareness</li>
+                <li>Reach campaigns</li>
+              </ul>
+            </div>
+            <div class="tl-goal"><strong>Goal:</strong> Establish legitimacy and brand familiarity in the target market.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot">M2</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label">Month 2</span>
+            <h3 class="timeline-title">Authority Building</h3>
+          </div>
+          <div class="timeline-body">
+            <div class="tl-col">
+              <h5><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>Coverage tips & waiting period education</li>
+                <li>Preventive care education</li>
+                <li>"Questions we get every day"</li>
+                <li>Myth vs. fact video series</li>
+                <li>Value-driven short-form videos</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Traffic campaigns</li>
+                <li>Video view campaigns</li>
+                <li>Engagement retargeting</li>
+              </ul>
+            </div>
+            <div class="tl-goal"><strong>Goal:</strong> Increase brand recognition and deepen audience trust through authority content.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot">M3</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label">Month 3</span>
+            <h3 class="timeline-title">Soft Conversion</h3>
+          </div>
+          <div class="timeline-body">
+            <div class="tl-col">
+              <h5><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>"Explore options that may fit your situation"</li>
+                <li>FAQ content series</li>
+                <li>Educational testimonials</li>
+                <li>Case-style posts</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Messenger campaigns</li>
+                <li>Retargeting campaigns</li>
+                <li>Soft lead forms</li>
+              </ul>
+            </div>
+            <div class="tl-goal"><strong>Goal:</strong> Convert warm audiences into consultations and genuine inquiries.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot">M4</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label">Month 4</span>
+            <h3 class="timeline-title">Sales Activation</h3>
+          </div>
+          <div class="timeline-body">
+            <div class="tl-col">
+              <h5><i class="fas fa-film" style="margin-right:6px"></i>Focus</h5>
+              <ul>
+                <li>Full lead generation campaigns</li>
+                <li>Appointment campaigns</li>
+                <li>Stronger CTAs across all placements</li>
+                <li>Conversion optimization</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Lead generation campaigns</li>
+                <li>Call campaigns</li>
+                <li>Retargeting</li>
+                <li>Conversion campaigns</li>
+              </ul>
+            </div>
+            <div class="tl-goal"><strong>Goal:</strong> Scale conversions from fully warmed, pre-qualified audiences.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DENTAL PILLARS -->
+      <div style="margin-top:72px">
+        <p class="section-tag">Content Pillars</p>
+        <h3 style="font-size:1.6rem;margin-bottom:8px;font-family:'Syne',sans-serif">Dental Benefits Content Framework</h3>
+        <div class="divider"></div>
+        <div class="pillars-grid">
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-dental)"><i class="fas fa-book-open"></i></span><h4>Education</h4><p>Simplifying dental coverage concepts for everyday audiences</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-circle-question"></i></span><h4>FAQs</h4><p>Answering the questions prospects are already asking</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-dental)"><i class="fas fa-handshake"></i></span><h4>Trust</h4><p>Humanizing the brand and building genuine credibility</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-scale-balanced"></i></span><h4>Myth vs Fact</h4><p>Breaking down dental insurance misconceptions clearly</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-dental)"><i class="fas fa-users"></i></span><h4>Community</h4><p>Fostering local engagement and connection</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-star"></i></span><h4>Testimonials</h4><p>Real social proof that builds buyer confidence</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MORTGAGE PANEL -->
+    <div class="strategy-panel" id="panel-mortgage">
+      <div class="timeline">
+        <div class="timeline-month">
+          <div class="timeline-dot">M1</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label" style="color:var(--accent-mortgage);background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2)">Month 1</span>
+            <h3 class="timeline-title">Foundation & Local Trust</h3>
+          </div>
+          <div class="timeline-body" style="border-color:rgba(106,159,216,0.15)">
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>Mortgage myths debunked</li>
+                <li>Homebuyer education series</li>
+                <li>Credit score breakdowns</li>
+                <li>Interest rate explanations</li>
+                <li>Team introductions & local market insights</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Engagement campaigns</li>
+                <li>Awareness campaigns</li>
+                <li>Video views</li>
+              </ul>
+            </div>
+            <div class="tl-goal" style="background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2);color:var(--accent-mortgage)"><strong>Goal:</strong> Build local credibility and brand familiarity with prospective homebuyers.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot" style="border-color:var(--accent-mortgage);color:var(--accent-mortgage)">M2</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label" style="color:var(--accent-mortgage);background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2)">Month 2</span>
+            <h3 class="timeline-title">Authority & Education</h3>
+          </div>
+          <div class="timeline-body" style="border-color:rgba(106,159,216,0.15)">
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>FHA vs. conventional loan breakdown</li>
+                <li>Step-by-step mortgage process</li>
+                <li>Loan type explanations</li>
+                <li>Home affordability education</li>
+                <li>Educational reels</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Traffic campaigns</li>
+                <li>Engagement retargeting</li>
+                <li>Educational promotions</li>
+              </ul>
+            </div>
+            <div class="tl-goal" style="background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2);color:var(--accent-mortgage)"><strong>Goal:</strong> Become the trusted mortgage resource in your local market.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot" style="border-color:var(--accent-mortgage);color:var(--accent-mortgage)">M3</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label" style="color:var(--accent-mortgage);background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2)">Month 3</span>
+            <h3 class="timeline-title">Lead Nurturing</h3>
+          </div>
+          <div class="timeline-body" style="border-color:rgba(106,159,216,0.15)">
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-film" style="margin-right:6px"></i>Content Ideas</h5>
+              <ul>
+                <li>Mortgage preparation checklists</li>
+                <li>"Can I qualify?" series</li>
+                <li>Educational success stories</li>
+                <li>Testimonial content</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Messenger campaigns</li>
+                <li>Retargeting</li>
+                <li>Soft lead generation</li>
+              </ul>
+            </div>
+            <div class="tl-goal" style="background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2);color:var(--accent-mortgage)"><strong>Goal:</strong> Generate warm, trust-based mortgage consultation inquiries.</div>
+          </div>
+        </div>
+
+        <div class="timeline-month">
+          <div class="timeline-dot" style="border-color:var(--accent-mortgage);color:var(--accent-mortgage)">M4</div>
+          <div class="timeline-header">
+            <span class="timeline-month-label" style="color:var(--accent-mortgage);background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2)">Month 4</span>
+            <h3 class="timeline-title">Sales Activation</h3>
+          </div>
+          <div class="timeline-body" style="border-color:rgba(106,159,216,0.15)">
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-film" style="margin-right:6px"></i>Focus</h5>
+              <ul>
+                <li>Conversion campaigns</li>
+                <li>Full lead generation</li>
+                <li>Application consultation campaigns</li>
+              </ul>
+            </div>
+            <div class="tl-col">
+              <h5 style="color:var(--accent-mortgage)"><i class="fas fa-bullseye" style="margin-right:6px"></i>Campaigns</h5>
+              <ul>
+                <li>Lead campaigns</li>
+                <li>Conversion campaigns</li>
+                <li>Retargeting</li>
+              </ul>
+            </div>
+            <div class="tl-goal" style="background:var(--accent-mortgage-dim);border-color:rgba(106,159,216,0.2);color:var(--accent-mortgage)"><strong>Goal:</strong> Scale qualified mortgage leads from fully warmed audiences.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MORTGAGE PILLARS -->
+      <div style="margin-top:72px">
+        <p class="section-tag">Content Pillars</p>
+        <h3 style="font-size:1.6rem;margin-bottom:8px;font-family:'Syne',sans-serif">Heritage Home Finance Content Framework</h3>
+        <div class="divider" style="background:linear-gradient(90deg,var(--accent-mortgage),transparent)"></div>
+        <div class="pillars-grid">
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-mortgage)"><i class="fas fa-house-chimney"></i></span><h4>Homeownership Education</h4><p>Guiding buyers through every step of the home purchase journey</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-credit-card"></i></span><h4>Credit Tips</h4><p>Practical credit-building advice that qualifies more buyers</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-mortgage)"><i class="fas fa-file-contract"></i></span><h4>Loan Education</h4><p>Demystifying FHA, conventional, and VA loan types</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-chart-area"></i></span><h4>Market Insights</h4><p>Local real estate market trends and rate updates</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--accent-mortgage)"><i class="fas fa-people-group"></i></span><h4>Community Trust</h4><p>Hyper-local engagement that builds neighborhood authority</p></div>
+          <div class="pillar-card"><span class="pillar-icon" style="color:var(--gold)"><i class="fas fa-key"></i></span><h4>Success Stories</h4><p>Real homebuyer journeys that inspire and convert</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNNEL -->
+<section id="funnel">
+  <div class="section-inner">
+    <p class="section-tag reveal">Funnel Architecture</p>
+    <h2 class="section-h2 reveal">From Stranger to<br><em style="font-style:normal;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Loyal Customer</em></h2>
+    <div class="divider reveal"></div>
+    <div class="funnel-wrap">
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.15);color:var(--gold)">01</div>
+        <div><div class="funnel-label">Organic Content</div><div class="funnel-desc">Educational posts, reels, and stories build initial brand awareness</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.18);color:var(--gold)">02</div>
+        <div><div class="funnel-label">Engagement</div><div class="funnel-desc">Audience interacts, follows, comments — algorithms amplify reach</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.21);color:var(--gold)">03</div>
+        <div><div class="funnel-label">Trust</div><div class="funnel-desc">Consistent authority content builds credibility and brand familiarity</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.24);color:var(--gold)">04</div>
+        <div><div class="funnel-label">Retargeting</div><div class="funnel-desc">Warm audiences are retargeted with precision paid campaigns</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.27);color:var(--gold)">05</div>
+        <div><div class="funnel-label">Warm Audience</div><div class="funnel-desc">Pre-qualified, pre-warmed segments ready to engage with offers</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-num" style="background:rgba(201,168,76,0.3);color:var(--gold)">06</div>
+        <div><div class="funnel-label">Lead Generation</div><div class="funnel-desc">Soft CTAs and messenger campaigns capture high-quality inquiries</div></div>
+        <i class="fas fa-chevron-down funnel-arrow"></i>
+      </div>
+      <div class="funnel-step" style="background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));border-color:rgba(201,168,76,0.4)">
+        <div class="funnel-num" style="background:var(--gold);color:var(--black)">07</div>
+        <div><div class="funnel-label" style="color:var(--gold)">Conversion</div><div class="funnel-desc">Audiences that already trust you convert at dramatically higher rates</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAID AD STRATEGY -->
+<section id="ads">
+  <div class="section-inner">
+    <p class="section-tag reveal">Paid Ad Strategy</p>
+    <h2 class="section-h2 reveal">Intentional Ad Deployment</h2>
+    <div class="divider reveal"></div>
+    <p class="section-sub reveal">Initial campaigns focus on warming audiences. Conversion campaigns are intentionally delayed until audiences are pre-qualified through organic content and engagement.</p>
+    <div class="ad-grid">
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-users"></i></div><span class="ad-stage">Phase 1</span><h4>Engagement Campaigns</h4><p>Build interactions, follows, and shares that signal audience intent and feed the retargeting pool.</p></div>
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-play-circle"></i></div><span class="ad-stage">Phase 1</span><h4>Video Views</h4><p>Maximizes reach of educational content and creates custom audiences based on watch time behavior.</p></div>
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-broadcast-tower"></i></div><span class="ad-stage">Phase 1–2</span><h4>Reach & Awareness</h4><p>Broad brand exposure campaigns that establish recognition at the top of the funnel.</p></div>
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-mouse-pointer"></i></div><span class="ad-stage">Phase 2</span><h4>Traffic Campaigns</h4><p>Drive warmed audiences to landing pages, blog posts, and educational resources.</p></div>
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-crosshairs"></i></div><span class="ad-stage">Phase 2–3</span><h4>Retargeting</h4><p>Serve precision ads to audiences who've already engaged — dramatically lowering cost-per-lead.</p></div>
+      <div class="ad-card reveal"><div class="ad-card-icon"><i class="fas fa-funnel-dollar"></i></div><span class="ad-stage">Phase 4</span><h4>Lead Generation</h4><p>Full conversion campaigns launched after trust is established for maximum ROI and lead quality.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-inner">
+    <p class="section-tag reveal">Investment</p>
+    <h2 class="section-h2 reveal">Strategy Packages</h2>
+    <div class="divider reveal"></div>
+    <div class="pricing-grid reveal">
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Dental</div>
+        <div class="pricing-icon"><i class="fas fa-tooth" style="color:var(--accent-dental)"></i></div>
+        <p class="pricing-title">Strategy Package</p>
+        <h3 class="pricing-name">Dental Benefits Marketing Strategy</h3>
+        <div class="pricing-price">
+          <span class="pricing-dollar">$</span>
+          <span class="pricing-amount">180</span>
+          <span class="pricing-period">/package</span>
+        </div>
+        <ul class="pricing-features">
+          <li><i class="fas fa-check"></i> Social media strategy & direction</li>
+          <li><i class="fas fa-check"></i> Organic positioning strategy</li>
+          <li><i class="fas fa-check"></i> Content direction framework</li>
+          <li><i class="fas fa-check"></i> Full funnel planning</li>
+          <li><i class="fas fa-check"></i> Audience warming strategy</li>
+          <li><i class="fas fa-check"></i> 15 days of Meta Ads management</li>
+        </ul>
+        <a href="#cta" class="btn-primary" style="width:100%;justify-content:center"><i class="fas fa-arrow-right"></i> Get Started</a>
+        <div class="pricing-disclaimer">
+          <i class="fas fa-info-circle" style="color:var(--gold);margin-right:6px"></i>
+          Ad spend is paid directly by the client and is NOT included in the management fee. Content calendars delivered separately.
+        </div>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge" style="background:var(--accent-mortgage);color:var(--black)">Mortgage</div>
+        <div class="pricing-icon"><i class="fas fa-home" style="color:var(--accent-mortgage)"></i></div>
+        <p class="pricing-title">Strategy Package</p>
+        <h3 class="pricing-name">Heritage Home Finance Marketing Strategy</h3>
+        <div class="pricing-price">
+          <span class="pricing-dollar" style="color:var(--accent-mortgage)">$</span>
+          <span class="pricing-amount">180</span>
+          <span class="pricing-period">/package</span>
+        </div>
+        <ul class="pricing-features">
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> Social media strategy & direction</li>
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> Organic positioning strategy</li>
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> Content direction framework</li>
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> Full funnel planning</li>
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> Audience warming strategy</li>
+          <li><i class="fas fa-check" style="color:var(--accent-mortgage)"></i> 15 days of Meta Ads management</li>
+        </ul>
+        <a href="#cta" class="btn-primary" style="width:100%;justify-content:center;background:var(--accent-mortgage)"><i class="fas fa-arrow-right"></i> Get Started</a>
+        <div class="pricing-disclaimer">
+          <i class="fas fa-info-circle" style="color:var(--accent-mortgage);margin-right:6px"></i>
+          Ad spend is paid directly by the client and is NOT included in the management fee. Content calendars delivered separately.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY THIS WORKS -->
+<section id="why" style="background:var(--surface)">
+  <div class="section-inner">
+    <p class="section-tag reveal">Why It Works</p>
+    <h2 class="section-h2 reveal">Trust-Based Industries<br>Convert Differently</h2>
+    <div class="divider reveal"></div>
+    <div class="why-grid">
+      <div class="why-card reveal"><div class="why-num">01</div><h4>Brand Familiarity Increases Conversions</h4><p>People buy from brands they recognize and trust. Building familiarity before running conversion ads is the difference between a $10 lead and a $2 lead.</p></div>
+      <div class="why-card reveal"><div class="why-num">02</div><h4>Warm Audiences Reduce Acquisition Costs</h4><p>Cold traffic is expensive. Pre-warmed audiences that have engaged with your content convert at 3–5x the rate of cold audiences — at a fraction of the cost.</p></div>
+      <div class="why-card reveal"><div class="why-num">03</div><h4>Social Proof Supercharges Ad Performance</h4><p>Testimonials and real stories dramatically improve click-through and conversion rates across every Meta campaign type.</p></div>
+      <div class="why-card reveal"><div class="why-num">04</div><h4>Organic Authority Scales Over Time</h4><p>Unlike paid ads that stop working the moment you stop spending, organic authority compounds — delivering long-term value that keeps growing.</p></div>
+      <div class="why-card reveal"><div class="why-num">05</div><h4>Retargeting Warm Audiences Increases ROI</h4><p>Your best-performing ads aren't cold campaigns — they're retargeting campaigns served to people who already know and trust your brand.</p></div>
+      <div class="why-card reveal"><div class="why-num">06</div><h4>The Funnel Compounds Every Month</h4><p>Each month of this strategy feeds the next. By Month 4, you're running conversion campaigns against audiences that have been warming for 90 days.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-glow"></div>
+  <div class="cta-inner">
+    <p class="cta-tag reveal"><i class="fas fa-circle" style="font-size:0.5rem;margin-right:6px"></i> Ready to Dominate</p>
+    <h2 class="cta-h2 reveal">Let's Build a Brand People<br>Already Trust Before They<br>Ever Become a Lead.</h2>
+    <p class="cta-sub reveal">This isn't a quick-fix campaign. This is a strategic brand foundation built to scale, compound, and dominate your market over time.</p>
+    <div class="hero-btns" style="justify-content:center;margin-bottom:36px" class="reveal">
+      <a href="mailto:contact@pro-dg.com" class="btn-primary reveal"><i class="fas fa-paper-plane"></i> Start Your Strategy</a>
+    </div>
+    <div class="cta-contact reveal">
+      <div class="cta-info"><i class="fas fa-envelope"></i> contact@pro-dg.com</div>
+      <div class="cta-info"><i class="fab fa-whatsapp"></i> WhatsApp Available</div>
+      <div class="cta-info"><i class="fas fa-globe"></i> pro-dg.com</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">PRO<span>-DG</span></div>
+  <p>© 2025 PRO-DG Digital Agency. All rights reserved.</p>
+  <p style="font-size:0.75rem;color:var(--white-faint)">Proposal prepared exclusively for client review.</p>
+</footer>
+
+<script>
+  // Nav scroll
+  const nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Mobile menu
+  const burger = document.getElementById('burger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  burger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  function closeMobileMenu() { mobileMenu.classList.remove('open'); }
+
+  // Strategy toggle
+  let currentStrategy = 'dental';
+  const btnDental = document.getElementById('btnDental');
+  const btnMortgage = document.getElementById('btnMortgage');
+  const pill = document.getElementById('togglePill');
+
+  function initPill() {
+    const btn = currentStrategy === 'dental' ? btnDental : btnMortgage;
+    pill.style.width = btn.offsetWidth + 'px';
+    pill.style.transform = 'translateX(0)';
+  }
+
+  function switchStrategy(strategy) {
+    if (strategy === currentStrategy) return;
+    currentStrategy = strategy;
+
+    document.querySelectorAll('.strategy-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + strategy).classList.add('active');
+
+    btnDental.classList.toggle('active', strategy === 'dental');
+    btnMortgage.classList.toggle('active', strategy === 'mortgage');
+
+    if (strategy === 'mortgage') {
+      const offset = btnDental.offsetWidth;
+      pill.style.width = btnMortgage.offsetWidth + 'px';
+      pill.style.transform = `translateX(${offset}px)`;
+      pill.style.background = 'var(--accent-mortgage)';
+    } else {
+      pill.style.width = btnDental.offsetWidth + 'px';
+      pill.style.transform = 'translateX(0)';
+      pill.style.background = 'var(--gold)';
+    }
+
+    // Re-run scroll reveal for newly shown panel
+    observeAll();
+  }
+
+  window.addEventListener('load', initPill);
+  window.addEventListener('resize', initPill);
+
+  // Scroll reveal
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  function observeAll() {
+    document.querySelectorAll('.reveal, .timeline-month, .funnel-step').forEach(el => {
+      revealObserver.observe(el);
+    });
+  }
+  observeAll();
+
+  // Staggered timeline delays
+  document.querySelectorAll('.timeline-month').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.15) + 's';
+  });
+  document.querySelectorAll('.funnel-step').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.1) + 's';
+  });
+  document.querySelectorAll('.reveal').forEach((el, i) => {
+    if (!el.style.transitionDelay) el.style.transitionDelay = (i * 0.05) + 's';
+  });
+</script>
+</body>
+</html>
