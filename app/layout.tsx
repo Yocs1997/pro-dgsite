@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Script from 'next/script'
 
+
 export const metadata: Metadata = {
   title: "Pro-DG | Digital Marketing Agency",
   description:
@@ -36,6 +37,8 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9221745662362477"
+     crossOrigin="anonymous"></script>
       </head>
       <body style={{ backgroundColor: "#02112A", margin: 0 }}>
         {children}
