@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "./_lib/auth";
 import { CATALOG, loadPrices } from "./_lib/products";
 import Portal, { type PortalItem } from "./Portal";
+import { listQuotes, quotesReady } from "./_lib/quotes";
 
 export default async function AgentesPage() {
   const user = await getSession();
@@ -21,5 +22,22 @@ export default async function AgentesPage() {
     };
   });
 
-  return <Portal user={{ name: user.name, role: user.role }} items={items} />;
+  const quotesEnabled = quotesReady();
+  let newCount = 0;
+  if (isAdmin && quotesEnabled) {
+    try {
+      newCount = (await listQuotes()).filter((q) => q.status === "nueva").length;
+    } catch {
+      /* database unreachable: just hide the badge */
+    }
+  }
+
+  return (
+    <Portal
+      user={{ name: user.name, role: user.role }}
+      items={items}
+      quotesEnabled={quotesEnabled}
+      newCount={newCount}
+    />
+  );
 }

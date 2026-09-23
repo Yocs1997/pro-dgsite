@@ -16,8 +16,10 @@ import {
   Users,
   Store,
   Trash2,
+  Inbox,
 } from "lucide-react";
 import { logout } from "./actions";
+import SendQuote from "./SendQuote";
 
 export type PortalItem = {
   id: string;
@@ -185,7 +187,7 @@ function ItemCard({
                 min={0}
                 value={line?.price ?? ""}
                 onChange={(e) => onChange({ qty, price: e.target.value })}
-                className="w-24 bg-transparent text-right font-mono font-bold outline-none"
+                className="w-20 min-w-0 bg-transparent text-right font-mono font-bold outline-none"
                 aria-label="Precio de venta por unidad"
               />
               {edited && (
@@ -226,9 +228,13 @@ function ItemCard({
 export default function Portal({
   user,
   items,
+  quotesEnabled,
+  newCount,
 }: {
   user: { name: string; role: "admin" | "agent" };
   items: PortalItem[];
+  quotesEnabled: boolean;
+  newCount: number;
 }) {
   const isAdmin = user.role === "admin";
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -302,6 +308,18 @@ export default function Portal({
               {isAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
               {isAdmin ? "Administrador" : "Agente"}
             </span>
+            <a
+              href="/agentes/cotizaciones"
+              className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <Inbox className="w-4 h-4" />
+              <span className="hidden sm:inline">{isAdmin ? "Cotizaciones" : "Mis cotizaciones"}</span>
+              {isAdmin && newCount > 0 && (
+                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">
+                  {newCount}
+                </span>
+              )}
+            </a>
             <form action={logout}>
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors">
                 <LogOut className="w-4 h-4" />
@@ -425,11 +443,23 @@ export default function Portal({
               </motion.p>
             </div>
 
+            {!isAdmin && (
+              <SendQuote
+                lines={selected.map(({ item, qty, sale }) => ({ id: item.id, name: item.name, qty, sale }))}
+                total={totals.client}
+                money={money}
+                enabled={quotesEnabled}
+                onSent={() => setLines({})}
+              />
+            )}
             <button
               type="button"
               onClick={copyQuote}
               disabled={selected.length === 0}
-              className="mt-5 w-full flex items-center justify-center gap-2 rounded-full bg-electric hover:bg-electric-light disabled:bg-white/10 disabled:text-white/40 py-3.5 font-bold transition-all"
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-full disabled:bg-white/10 disabled:text-white/40 py-3.5 font-bold transition-all",
+                isAdmin ? "mt-5 bg-electric hover:bg-electric-light" : "mt-3 border border-[#7cc4ff55] hover:bg-white/10"
+              )}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? "¡Copiada!" : "Copiar cotización para el cliente"}
