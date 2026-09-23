@@ -108,6 +108,7 @@ function Nav({ lang, setLang, t }: { lang: Language; setLang: (l: Language) => v
     { href: "#portfolio", label: t.portfolio },
     { href: "#team", label: t.team },
     { href: "#clients", label: t.clients },
+    { href: "/cotizador", label: lang === "es" ? "Cotizador" : "Quote Builder" },
   ];
 
   return (
