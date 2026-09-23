@@ -107,7 +107,7 @@ const PRODUCTS: Product[] = [
 // Deterministic formatting (same on server and browser)
 function money(n: number) {
   const [int, dec] = n.toFixed(2).split(".");
-  return `C$${int.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${dec}`;
+  return `US$${int.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${dec}`;
 }
 
 function cn(...classes: (string | boolean | undefined | null)[]) {
@@ -528,7 +528,7 @@ export default function CotizadorPage() {
 
         <footer className="relative z-10 border-t border-[#7cc4ff1a] py-8 text-center">
           <p className="text-xs font-mono text-[#7cc4ff99]">
-            © {new Date().getFullYear()} Pro-DG · Precios en córdobas (C$)
+            © {new Date().getFullYear()} Pro-DG · Precios en dólares estadounidenses (US$)
           </p>
         </footer>
       </div>
