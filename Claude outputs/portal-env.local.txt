@@ -1,0 +1,5 @@
+# Pro-DG agents portal — KEEP PRIVATE. Never commit this file (it is in .gitignore).
+# Copy these three variables to your hosting provider's Environment Variables too.
+PORTAL_SECRET=5t4B4NwTl_mmkw4D7aeOWrSK1V8DyGKAtQfsozbsRN-onqtzX5wFV3L8TvsHFXyD
+PORTAL_USERS='[{"u":"yader","name":"Yader","role":"admin","hash":"scrypt:225de34cd718e90a7e6b285914c984bd:258f6b10df150d7cb08cf30c1432b39f9d3c1fa427be263f9257779fa2f331f55da68fbc09d88283192f2e09b198626cc879fdf203c3ce8eee57bea43891f476"},{"u":"joel","name":"Joel","role":"agent","hash":"scrypt:6f78a89f04511ef3cb3fb656a25a0203:61deed93e9db5cf82dfb7e0f8b16cadc666218ef2188c2b8948b9a1d4721ebb01a8bb36cb02f8168750daa098b79854f2b8e79d669180270781c71dd2c328f7d"}]'
+PORTAL_PRICES='{"cajon-5":[57.53,69.04,82.85],"cajon-8":[63.01,75.62,90.74],"ups-600":[46.58,55.89,67.07],"impresora-80mm":[68.49,82.19,98.63],"lector-codigo":[27.4,32.88,39.45],"licencia-xolopos":[200.0,240.0,288.0],"combo-i5":[253.42,304.11,364.93],"combo-i3":[182.19,218.63,262.36],"papel-80mm":[1.51,1.81,2.17]}'
