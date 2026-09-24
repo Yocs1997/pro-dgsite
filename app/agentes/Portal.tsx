@@ -30,6 +30,7 @@ export type PortalItem = {
   agent: number; // price the agent pays Pro-DG
   suggested: number; // suggested final price for the client
   cost?: number; // purchase cost (admin only)
+  monthly?: boolean; // subscription: prices are per month
 };
 
 type Line = { qty: number; price: string };
@@ -87,6 +88,7 @@ function ItemCard({
 }) {
   const qty = line?.qty ?? 0;
   const selected = qty > 0;
+  const per = item.monthly ? "/mes" : "";
   const priceNum = line ? parseFloat(line.price) : item.suggested;
   const sale = Number.isFinite(priceNum) ? priceNum : 0;
   const edited = line && round2(sale) !== item.suggested;
@@ -134,19 +136,21 @@ function ItemCard({
         </div>
 
         <div className="flex flex-col gap-1.5 pt-3 border-t border-[#7cc4ff1a]">
-          {isAdmin && item.cost !== undefined && <Row label="Costo de compra" value={money(item.cost)} tone="muted" />}
+          {isAdmin && item.cost !== undefined && <Row label="Costo de compra" value={money(item.cost) + per} tone="muted" />}
           {!(isAdmin && mode === "direct") && (
-            <Row label={isAdmin ? "Precio a agentes" : "Tu precio"} value={money(item.agent)} tone="muted" />
+            <Row label={isAdmin ? "Precio a agentes" : "Tu precio"} value={money(item.agent) + per} tone="muted" />
           )}
-          <Row label="Precio sugerido" value={money(item.suggested)} />
+          <Row label="Precio sugerido" value={money(item.suggested) + per} />
         </div>
 
         <div className="flex flex-col gap-1.5 rounded-xl bg-[#00000026] px-3 py-2.5">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-sky-text/50">Ganancia por unidad</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-sky-text/50">
+            {item.monthly ? "Ganancia mensual por cliente" : "Ganancia por unidad"}
+          </span>
           {!(isAdmin && mode === "direct") && (
-            <Row label={isAdmin ? "Agente" : "Tu ganancia"} value={money(agentUnit)} tone="good" />
+            <Row label={isAdmin ? "Agente" : "Tu ganancia"} value={money(agentUnit) + per} tone="good" />
           )}
-          {isAdmin && <Row label="Pro-DG" value={money(proUnit)} tone="pro" />}
+          {isAdmin && <Row label="Pro-DG" value={money(proUnit) + per} tone="pro" />}
         </div>
 
         {selected ? (
@@ -179,7 +183,7 @@ function ItemCard({
             </div>
 
             <label className="flex items-center gap-2 rounded-xl border border-[#7cc4ff33] bg-[#ffffff0d] px-3 py-2">
-              <span className="text-xs text-sky-text/60 whitespace-nowrap">Precio de venta</span>
+              <span className="text-xs text-sky-text/60 whitespace-nowrap">Precio de venta{per}</span>
               <span className="text-xs font-mono text-white/50 ml-auto">US$</span>
               <input
                 type="number"
@@ -257,28 +261,45 @@ export default function Portal({
       return { item: i, qty: l.qty, sale: Number.isFinite(p) ? p : 0 };
     });
 
-  const totals = useMemo(() => {
-    let client = 0, toPro = 0, agentEarn = 0, cost = 0, proEarn = 0, units = 0;
-    for (const { item, qty, sale } of selected) {
-      units += qty;
-      client += sale * qty;
-      if (mode === "agent" || !isAdmin) {
-        toPro += item.agent * qty;
-        agentEarn += (sale - item.agent) * qty;
+  const { totals, monthlyTotals, units, hasOnce, hasMonthly } = useMemo(() => {
+    const sum = (list: typeof selected) => {
+      let client = 0, toPro = 0, agentEarn = 0, cost = 0, proEarn = 0;
+      for (const { item, qty, sale } of list) {
+        client += sale * qty;
+        if (mode === "agent" || !isAdmin) {
+          toPro += item.agent * qty;
+          agentEarn += (sale - item.agent) * qty;
+        }
+        if (isAdmin && item.cost !== undefined) {
+          cost += item.cost * qty;
+          proEarn += ((mode === "direct" ? sale : item.agent) - item.cost) * qty;
+        }
       }
-      if (isAdmin && item.cost !== undefined) {
-        cost += item.cost * qty;
-        proEarn += ((mode === "direct" ? sale : item.agent) - item.cost) * qty;
-      }
-    }
-    return { client, toPro, agentEarn, cost, proEarn, units };
+      return { client, toPro, agentEarn, cost, proEarn };
+    };
+    const once = selected.filter((s) => !s.item.monthly);
+    const monthly = selected.filter((s) => s.item.monthly);
+    return {
+      totals: sum(once),
+      monthlyTotals: sum(monthly),
+      units: selected.reduce((n, s) => n + s.qty, 0),
+      hasOnce: once.length > 0,
+      hasMonthly: monthly.length > 0,
+    };
   }, [selected, mode, isAdmin]);
 
   const copyQuote = async () => {
     const body = selected
-      .map(({ item, qty, sale }) => `• ${qty} x ${item.name} — ${money(sale)} c/u = ${money(sale * qty)}`)
+      .map(({ item, qty, sale }) => {
+        const per = item.monthly ? "/mes" : "";
+        return `• ${qty} x ${item.name} — ${money(sale)}${per} c/u = ${money(sale * qty)}${per}`;
+      })
       .join("\n");
-    const text = `Cotización Pro-DG\n\n${body}\n\nTotal: ${money(totals.client)}`;
+    const totalLines = [
+      hasOnce ? `Total pago único: ${money(totals.client)}` : null,
+      hasMonthly ? `Total mensual: ${money(monthlyTotals.client)}/mes (incluye soporte)` : null,
+    ].filter(Boolean);
+    const text = `Cotización Pro-DG\n\n${body}\n\n${totalLines.join("\n")}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -289,6 +310,10 @@ export default function Portal({
   };
 
   const headline = isAdmin ? totals.proEarn : totals.agentEarn;
+  const headlineMonthly = isAdmin ? monthlyTotals.proEarn : monthlyTotals.agentEarn;
+  // Only subscriptions selected: show the monthly amount as the big number.
+  const onlyMonthly = hasMonthly && !hasOnce;
+  const bigNumber = onlyMonthly ? headlineMonthly : headline;
 
   return (
     <>
@@ -412,7 +437,10 @@ export default function Portal({
                       <span className="truncate text-white/90">
                         <span className="font-mono text-[#7cc4ff]">{qty}×</span> {item.name}
                       </span>
-                      <span className="font-mono">{money(sale * qty)}</span>
+                      <span className="font-mono whitespace-nowrap">
+                        {money(sale * qty)}
+                        {item.monthly && <span className="text-xs text-sky-text/60">/mes</span>}
+                      </span>
                     </motion.li>
                   ))}
                 </AnimatePresence>
@@ -420,13 +448,35 @@ export default function Portal({
             )}
 
             <div className="flex flex-col gap-2 pt-4 border-t border-[#7cc4ff26]">
-              <Row label="Artículos" value={String(totals.units)} tone="muted" />
-              <Row label="Cliente paga" value={money(totals.client)} />
-              {isAdmin && <Row label="Costo de compra" value={money(totals.cost)} tone="muted" />}
-              {(!isAdmin || mode === "agent") && (
-                <Row label={isAdmin ? "Agente paga a Pro-DG" : "Pagas a Pro-DG"} value={money(totals.toPro)} tone="muted" />
+              <Row label="Artículos" value={String(units)} tone="muted" />
+              {(hasOnce || !hasMonthly) && (
+                <>
+                  {hasMonthly && <p className="text-[10px] font-mono uppercase tracking-widest text-[#7cc4ff] mt-1">Pago único</p>}
+                  <Row label="Cliente paga" value={money(totals.client)} />
+                  {isAdmin && <Row label="Costo de compra" value={money(totals.cost)} tone="muted" />}
+                  {(!isAdmin || mode === "agent") && (
+                    <Row label={isAdmin ? "Agente paga a Pro-DG" : "Pagas a Pro-DG"} value={money(totals.toPro)} tone="muted" />
+                  )}
+                  {isAdmin && mode === "agent" && <Row label="Ganancia del agente" value={money(totals.agentEarn)} tone="good" />}
+                </>
               )}
-              {isAdmin && mode === "agent" && <Row label="Ganancia del agente" value={money(totals.agentEarn)} tone="good" />}
+              {hasMonthly && (
+                <>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#7cc4ff] mt-2">Mensual (suscripción)</p>
+                  <Row label="Cliente paga" value={money(monthlyTotals.client) + "/mes"} />
+                  {isAdmin && <Row label="Costo mensual" value={money(monthlyTotals.cost) + "/mes"} tone="muted" />}
+                  {(!isAdmin || mode === "agent") && (
+                    <Row
+                      label={isAdmin ? "Agente paga a Pro-DG" : "Pagas a Pro-DG"}
+                      value={money(monthlyTotals.toPro) + "/mes"}
+                      tone="muted"
+                    />
+                  )}
+                  {isAdmin && mode === "agent" && (
+                    <Row label="Ganancia del agente" value={money(monthlyTotals.agentEarn) + "/mes"} tone="good" />
+                  )}
+                </>
+              )}
             </div>
 
             <div className="mt-5 rounded-xl p-4 bg-[#0096ff1f] border border-[#33aaff55]">
@@ -434,19 +484,24 @@ export default function Portal({
                 {isAdmin ? "Ganancia Pro-DG" : "Tu ganancia"}
               </p>
               <motion.p
-                key={round2(headline)}
+                key={round2(bigNumber)}
                 initial={{ scale: 1.06 }}
                 animate={{ scale: 1 }}
-                className={cn("font-display font-black text-4xl mt-1", headline < 0 ? "text-red-300" : "text-white glow-text")}
+                className={cn("font-display font-black text-4xl mt-1", bigNumber < 0 ? "text-red-300" : "text-white glow-text")}
               >
-                {money(headline)}
+                {money(bigNumber)}
+                {onlyMonthly && <span className="text-lg font-bold text-sky-text/70"> /mes</span>}
               </motion.p>
+              {hasMonthly && !onlyMonthly && (
+                <p className={cn("font-mono font-bold mt-1", headlineMonthly < 0 ? "text-red-300" : "text-emerald-300")}>
+                  + {money(headlineMonthly)} cada mes
+                </p>
+              )}
             </div>
 
             {!isAdmin && (
               <SendQuote
-                lines={selected.map(({ item, qty, sale }) => ({ id: item.id, name: item.name, qty, sale }))}
-                total={totals.client}
+                lines={selected.map(({ item, qty, sale }) => ({ id: item.id, name: item.name, qty, sale, monthly: item.monthly }))}
                 money={money}
                 enabled={quotesEnabled}
                 onSent={() => setLines({})}
@@ -477,7 +532,10 @@ export default function Portal({
           className="lg:hidden fixed bottom-4 left-4 right-4 z-50 flex items-center justify-between px-5 py-4 rounded-2xl bg-electric glow-electric"
         >
           <span className="text-sm font-semibold">{isAdmin ? "Ganancia Pro-DG" : "Tu ganancia"}</span>
-          <span className="font-display font-black text-xl">{money(headline)}</span>
+          <span className="font-display font-black text-xl">
+            {money(bigNumber)}
+            {onlyMonthly ? "/mes" : hasMonthly ? ` + ${money(headlineMonthly)}/mes` : ""}
+          </span>
         </a>
       )}
     </>

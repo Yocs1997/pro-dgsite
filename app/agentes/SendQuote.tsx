@@ -6,20 +6,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, CheckCircle2, Loader2 } from "lucide-react";
 import { submitQuote } from "./quote-actions";
 
-type Line = { id: string; name: string; qty: number; sale: number };
+type Line = { id: string; name: string; qty: number; sale: number; monthly?: boolean };
 
 const inputCls =
   "w-full rounded-xl border border-[#7cc4ff40] bg-[#ffffff0f] px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-[#33aaff]";
 
 export default function SendQuote({
   lines,
-  total,
   money,
   enabled,
   onSent,
 }: {
   lines: Line[];
-  total: number;
   money: (n: number) => string;
   enabled: boolean;
   onSent: () => void;
@@ -32,6 +30,10 @@ export default function SendQuote({
   const [sentCode, setSentCode] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [mounted, setMounted] = useState(false);
+  const onceTotal = lines.filter((l) => !l.monthly).reduce((t, l) => t + l.sale * l.qty, 0);
+  const monthlyTotal = lines.filter((l) => l.monthly).reduce((t, l) => t + l.sale * l.qty, 0);
+  const hasMonthly = lines.some((l) => l.monthly);
+  const hasOnce = lines.some((l) => !l.monthly);
   useEffect(() => setMounted(true), []);
 
   const send = () => {
@@ -126,12 +128,25 @@ export default function SendQuote({
                         <span className="truncate">
                           <span className="font-mono text-[#7cc4ff]">{l.qty}×</span> {l.name}
                         </span>
-                        <span className="font-mono">{money(l.sale * l.qty)}</span>
+                        <span className="font-mono whitespace-nowrap">
+                          {money(l.sale * l.qty)}
+                          {l.monthly && "/mes"}
+                        </span>
                       </div>
                     ))}
-                    <div className="flex justify-between border-t border-white/10 mt-2 pt-2 font-bold">
-                      <span>Total cliente</span>
-                      <span className="font-mono">{money(total)}</span>
+                    <div className="border-t border-white/10 mt-2 pt-2 font-bold flex flex-col gap-0.5">
+                      {hasOnce && (
+                        <div className="flex justify-between">
+                          <span>{hasMonthly ? "Total pago único" : "Total cliente"}</span>
+                          <span className="font-mono">{money(onceTotal)}</span>
+                        </div>
+                      )}
+                      {hasMonthly && (
+                        <div className="flex justify-between">
+                          <span>Total mensual</span>
+                          <span className="font-mono">{money(monthlyTotal)}/mes</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

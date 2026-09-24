@@ -3,6 +3,7 @@ import "server-only";
 // Public product info (names/pictures). Prices are NOT here: they come from the
 // PORTAL_PRICES environment variable so they never appear in the public repo.
 // PORTAL_PRICES format (US$):  {"product-id": [cost, agentPrice, suggestedPrice], ...}
+// For monthly products (monthly: true) the three prices are per month.
 
 export type CatalogItem = {
   id: string;
@@ -10,10 +11,25 @@ export type CatalogItem = {
   detail?: string;
   image: string;
   tag: string;
+  monthly?: boolean; // subscription billed every month
 };
 
 export const CATALOG: CatalogItem[] = [
-  { id: "licencia-xolopos", name: "Licencia Sistema XoloPOS", image: "/cotizador/licencia-xolopos.svg", tag: "Software" },
+  {
+    id: "licencia-xolopos",
+    name: "Licencia Sistema XoloPOS",
+    detail: "Versión instalada en la computadora. Funciona sin internet. Pago único.",
+    image: "/cotizador/licencia-xolopos.svg",
+    tag: "Software",
+  },
+  {
+    id: "xolopos-web",
+    name: "XoloPOS Web",
+    detail: "Versión en la nube: úsalo desde cualquier navegador. Incluye soporte. Suscripción mensual.",
+    image: "/cotizador/xolopos-web.svg",
+    tag: "Suscripción",
+    monthly: true,
+  },
   {
     id: "combo-i5",
     name: "Computadora completa Core i5",

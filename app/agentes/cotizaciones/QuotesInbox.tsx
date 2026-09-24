@@ -26,9 +26,12 @@ export type InboxQuote = {
   status: Status;
   agent: string;
   client: { name: string; phone: string; notes: string };
-  items: { id: string; name: string; qty: number; sale: number; agent: number; cost?: number }[];
-  totals: { client: number; toPro: number; agentEarn: number; cost?: number; proEarn?: number };
+  items: { id: string; name: string; qty: number; sale: number; agent: number; cost?: number; monthly?: boolean }[];
+  totals: InboxTotals; // one-time
+  monthly?: InboxTotals; // per month (subscriptions)
 };
+
+type InboxTotals = { client: number; toPro: number; agentEarn: number; cost?: number; proEarn?: number };
 
 const STATUS: Record<Status, { label: string; cls: string }> = {
   nueva: { label: "Nueva", cls: "bg-emerald-500/20 text-emerald-200 border-emerald-400/40" },
@@ -55,6 +58,21 @@ function Line({ label, value, cls }: { label: string; value: string; cls?: strin
   );
 }
 
+function TotalsBox({ t, isAdmin, title, per = "" }: { t: InboxTotals; isAdmin: boolean; title?: string; per?: string }) {
+  return (
+    <div className="rounded-xl bg-black/20 p-4 flex flex-col gap-1.5">
+      {title && <p className="text-[10px] font-mono uppercase tracking-widest text-[#7cc4ff]">{title}</p>}
+      <Line label="Cliente paga" value={money(t.client) + per} />
+      <div className="no-print flex flex-col gap-1.5">
+        <Line label={isAdmin ? "Agente paga a Pro-DG" : "Pagas a Pro-DG"} value={money(t.toPro) + per} cls="text-white/70" />
+        {isAdmin && <Line label={per ? "Costo mensual" : "Costo de compra"} value={money(t.cost ?? 0) + per} cls="text-white/70" />}
+        <Line label={isAdmin ? "Ganancia agente" : "Tu ganancia"} value={money(t.agentEarn) + per} cls="text-emerald-300" />
+        {isAdmin && <Line label="Ganancia Pro-DG" value={money(t.proEarn ?? 0) + per} cls="text-[#7cc4ff]" />}
+      </div>
+    </div>
+  );
+}
+
 function QuoteCard({
   q,
   isAdmin,
@@ -68,7 +86,11 @@ function QuoteCard({
   const [copied, setCopied] = useState(false);
 
   const invoiceText = () => {
-    const lines = q.items.map((i) => `• ${i.qty} x ${i.name} — ${money(i.sale)} c/u = ${money(i.sale * i.qty)}`);
+    const lines = q.items.map((i) => {
+      const per = i.monthly ? "/mes" : "";
+      return `• ${i.qty} x ${i.name} — ${money(i.sale)}${per} c/u = ${money(i.sale * i.qty)}${per}`;
+    });
+    const hasOnce = q.items.some((i) => !i.monthly);
     const header = [
       `Cotización ${q.code} — ${q.when}`,
       `Cliente: ${q.client.name}`,
@@ -76,7 +98,11 @@ function QuoteCard({
       q.client.notes ? `Notas: ${q.client.notes}` : null,
       `Agente: ${q.agent}`,
     ].filter(Boolean);
-    return [...header, "", ...lines, "", `Total: ${money(q.totals.client)}`].join("\n");
+    const totals = [
+      hasOnce ? (q.monthly ? `Total pago único: ${money(q.totals.client)}` : `Total: ${money(q.totals.client)}`) : null,
+      q.monthly ? `Total mensual: ${money(q.monthly.client)}/mes (incluye soporte)` : null,
+    ].filter(Boolean);
+    return [...header, "", ...lines, "", ...totals].join("\n");
   };
 
   const copy = async () => {
@@ -118,7 +144,15 @@ function QuoteCard({
           </span>
         )}
         <span className="text-xs text-sky-text/60">{q.when}</span>
-        <span className="font-mono font-bold">{money(q.totals.client)}</span>
+        <span className="font-mono font-bold">
+          {q.items.some((i) => !i.monthly) ? money(q.totals.client) : ""}
+          {q.monthly && (
+            <span className="text-emerald-200">
+              {q.items.some((i) => !i.monthly) ? " + " : ""}
+              {money(q.monthly.client)}/mes
+            </span>
+          )}
+        </span>
         <ChevronDown className={"w-4 h-4 text-sky-text/60 transition-transform " + (open ? "rotate-180" : "")} />
       </button>
 
@@ -156,11 +190,23 @@ function QuoteCard({
                   {q.items.map((i) => (
                     <tr key={i.id} className="border-t border-white/5">
                       <td className="p-2.5 font-mono">{i.qty}</td>
-                      <td className="p-2.5">{i.name}</td>
-                      <td className="p-2.5 text-right font-mono">{money(i.sale)}</td>
-                      <td className="p-2.5 text-right font-mono text-white/70 no-print">{money(i.agent)}</td>
-                      {isAdmin && <td className="p-2.5 text-right font-mono text-white/70 no-print">{money(i.cost ?? 0)}</td>}
-                      <td className="p-2.5 text-right font-mono font-bold">{money(i.sale * i.qty)}</td>
+                      <td className="p-2.5">
+                        {i.name}
+                        {i.monthly && (
+                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-200">
+                            mensual
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2.5 text-right font-mono">{money(i.sale)}{i.monthly && "/mes"}</td>
+                      <td className="p-2.5 text-right font-mono text-white/70 no-print">{money(i.agent)}{i.monthly && "/mes"}</td>
+                      {isAdmin && (
+                        <td className="p-2.5 text-right font-mono text-white/70 no-print">
+                          {money(i.cost ?? 0)}
+                          {i.monthly && "/mes"}
+                        </td>
+                      )}
+                      <td className="p-2.5 text-right font-mono font-bold">{money(i.sale * i.qty)}{i.monthly && "/mes"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -169,15 +215,10 @@ function QuoteCard({
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="rounded-xl bg-black/20 p-4 flex flex-col gap-1.5">
-              <Line label="Cliente paga" value={money(q.totals.client)} />
-              <div className="no-print flex flex-col gap-1.5">
-                <Line label={isAdmin ? "Agente paga a Pro-DG" : "Pagas a Pro-DG"} value={money(q.totals.toPro)} cls="text-white/70" />
-                {isAdmin && <Line label="Costo de compra" value={money(q.totals.cost ?? 0)} cls="text-white/70" />}
-                <Line label={isAdmin ? "Ganancia agente" : "Tu ganancia"} value={money(q.totals.agentEarn)} cls="text-emerald-300" />
-                {isAdmin && <Line label="Ganancia Pro-DG" value={money(q.totals.proEarn ?? 0)} cls="text-[#7cc4ff]" />}
-              </div>
-            </div>
+            {q.items.some((i) => !i.monthly) && (
+              <TotalsBox t={q.totals} isAdmin={isAdmin} title={q.monthly ? "Pago único" : undefined} />
+            )}
+            {q.monthly && <TotalsBox t={q.monthly} isAdmin={isAdmin} title="Mensual (suscripción)" per="/mes" />}
 
             {isAdmin && (
               <label className="flex flex-col gap-1.5 no-print">
@@ -261,9 +302,10 @@ export default function QuotesInbox({
     }
   };
 
-  const openTotal = quotes
-    .filter((x) => x.status === "nueva" || x.status === "en_proceso")
-    .reduce((s, x) => s + (isAdmin ? x.totals.proEarn ?? 0 : x.totals.agentEarn), 0);
+  const open = quotes.filter((x) => x.status === "nueva" || x.status === "en_proceso");
+  const earn = (t?: InboxTotals) => (t ? (isAdmin ? t.proEarn ?? 0 : t.agentEarn) : 0);
+  const openTotal = open.reduce((s, x) => s + earn(x.totals), 0);
+  const openMonthly = open.reduce((s, x) => s + earn(x.monthly), 0);
 
   return (
     <>
@@ -304,6 +346,9 @@ export default function QuotesInbox({
           <p className="text-sky-text/75 mt-2">
             {isAdmin ? "Ganancia Pro-DG en cotizaciones abiertas: " : "Tu ganancia en cotizaciones abiertas: "}
             <span className="font-mono font-bold text-white">{money(openTotal)}</span>
+            {openMonthly !== 0 && (
+              <span className="font-mono font-bold text-emerald-300"> + {money(openMonthly)}/mes</span>
+            )}
           </p>
         )}
 

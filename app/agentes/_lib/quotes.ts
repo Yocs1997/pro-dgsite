@@ -15,7 +15,10 @@ export type QuoteItem = {
   sale: number; // unit price to the client
   agent: number; // unit price the agent pays Pro-DG
   cost: number; // unit purchase cost (admin only — stripped before sending to agents)
+  monthly?: boolean; // subscription: prices are per month
 };
+
+export type Totals = { client: number; toPro: number; agentEarn: number; cost: number; proEarn: number };
 
 export type Quote = {
   id: string;
@@ -26,7 +29,8 @@ export type Quote = {
   agent: { u: string; name: string };
   client: { name: string; phone: string; notes: string };
   items: QuoteItem[];
-  totals: { client: number; toPro: number; agentEarn: number; cost: number; proEarn: number };
+  totals: Totals; // one-time purchases
+  monthly?: Totals; // subscriptions, per month (absent on older quotes)
 };
 
 function config() {

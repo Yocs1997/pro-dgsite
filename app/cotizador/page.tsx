@@ -29,6 +29,7 @@ type Product = {
   price: number;
   image: string;
   tag: string;
+  monthly?: boolean; // subscription billed every month
 };
 
 // Edit prices / products here.
@@ -36,10 +37,19 @@ const PRODUCTS: Product[] = [
   {
     id: "licencia-xolopos",
     name: "Licencia Sistema XoloPOS",
-    detail: "Sistema de punto de venta para tu negocio.",
+    detail: "Sistema de punto de venta instalado en tu computadora. Funciona sin internet. Pago único.",
     price: 288.0,
     image: "/cotizador/licencia-xolopos.svg",
     tag: "Software",
+  },
+  {
+    id: "xolopos-web",
+    name: "XoloPOS Web",
+    detail: "Tu punto de venta en la nube: úsalo desde cualquier navegador. Incluye soporte técnico.",
+    price: 50.0,
+    image: "/cotizador/xolopos-web.svg",
+    tag: "Suscripción",
+    monthly: true,
   },
   {
     id: "combo-i5",
@@ -237,7 +247,11 @@ function ProductCard({
             </div>
             <div className="font-display font-black text-2xl text-white">
               {money(product.price)}
+              {product.monthly && <span className="text-base font-bold text-sky-text/70"> /mes</span>}
             </div>
+            {product.monthly && (
+              <div className="text-xs text-emerald-300 font-semibold mt-0.5">Soporte incluido</div>
+            )}
           </div>
 
           {selected ? (
@@ -291,12 +305,14 @@ function ProductCard({
 function Summary({
   lines,
   total,
+  monthlyTotal,
   count,
   onClear,
   onRemove,
 }: {
   lines: { product: Product; qty: number }[];
   total: number;
+  monthlyTotal: number;
   count: number;
   onClear: () => void;
   onRemove: (id: string) => void;
@@ -305,11 +321,19 @@ function Summary({
     const items = lines
       .map(
         ({ product, qty }) =>
-          `• ${qty} x ${product.name} — ${money(product.price * qty)}`
+          `• ${qty} x ${product.name} — ${money(product.price * qty)}${product.monthly ? "/mes" : ""}`
       )
       .join("\n");
-    return `Hola Pro-DG, quiero cotizar lo siguiente:\n\n${items}\n\nTotal estimado: ${money(total)}`;
-  }, [lines, total]);
+    const hasOnce = lines.some((l) => !l.product.monthly);
+    const hasMonthly = lines.some((l) => l.product.monthly);
+    const totals = [
+      hasOnce ? `Total estimado${hasMonthly ? " (pago único)" : ""}: ${money(total)}` : null,
+      hasMonthly ? `Mensualidad: ${money(monthlyTotal)}/mes` : null,
+    ].filter(Boolean);
+    return `Hola Pro-DG, quiero cotizar lo siguiente:\n\n${items}\n\n${totals.join("\n")}`;
+  }, [lines, total, monthlyTotal]);
+  const hasOnce = lines.some((l) => !l.product.monthly);
+  const hasMonthly = lines.some((l) => l.product.monthly);
 
   return (
     <div
@@ -360,10 +384,12 @@ function Summary({
                   <p className="text-sm text-white leading-tight truncate">{product.name}</p>
                   <p className="text-xs font-mono text-[#7cc4ff]">
                     {qty} × {money(product.price)}
+                    {product.monthly && "/mes"}
                   </p>
                 </div>
-                <div className="text-sm font-mono font-bold text-white">
+                <div className="text-sm font-mono font-bold text-white whitespace-nowrap">
                   {money(product.price * qty)}
+                  {product.monthly && <span className="text-xs text-sky-text/60">/mes</span>}
                 </div>
                 <button
                   type="button"
@@ -384,17 +410,35 @@ function Summary({
           <span>Artículos</span>
           <span className="font-mono">{count}</span>
         </div>
-        <div className="flex items-end justify-between">
-          <span className="text-sm font-mono uppercase tracking-widest text-[#7cc4ff]">Total</span>
-          <motion.span
-            key={total}
-            initial={{ scale: 1.08 }}
-            animate={{ scale: 1 }}
-            className="font-display font-black text-4xl text-white glow-text"
-          >
-            {money(total)}
-          </motion.span>
-        </div>
+        {(hasOnce || !hasMonthly) && (
+          <div className="flex items-end justify-between">
+            <span className="text-sm font-mono uppercase tracking-widest text-[#7cc4ff]">
+              {hasMonthly ? "Pago único" : "Total"}
+            </span>
+            <motion.span
+              key={total}
+              initial={{ scale: 1.08 }}
+              animate={{ scale: 1 }}
+              className="font-display font-black text-4xl text-white glow-text"
+            >
+              {money(total)}
+            </motion.span>
+          </div>
+        )}
+        {hasMonthly && (
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-sm font-mono uppercase tracking-widest text-emerald-300">Mensual</span>
+            <motion.span
+              key={monthlyTotal}
+              initial={{ scale: 1.08 }}
+              animate={{ scale: 1 }}
+              className={cn("font-display font-black text-white", hasOnce ? "text-2xl" : "text-4xl glow-text")}
+            >
+              {money(monthlyTotal)}
+              <span className="text-base text-sky-text/70">/mes</span>
+            </motion.span>
+          </div>
+        )}
 
         <a
           href={count > 0 ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}` : undefined}
@@ -429,7 +473,8 @@ export default function CotizadorPage() {
     product: p,
     qty: qty[p.id],
   }));
-  const total = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
+  const total = lines.filter((l) => !l.product.monthly).reduce((s, l) => s + l.product.price * l.qty, 0);
+  const monthlyTotal = lines.filter((l) => l.product.monthly).reduce((s, l) => s + l.product.price * l.qty, 0);
   const count = lines.reduce((s, l) => s + l.qty, 0);
 
   return (
@@ -477,7 +522,7 @@ export default function CotizadorPage() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-sky-text/80 text-lg max-w-2xl mx-auto mt-4"
           >
-            Elige los equipos que necesitas, ajusta las cantidades y obtén tu total al instante.
+            Elige el software y los equipos que necesitas, ajusta las cantidades y obtén tu total al instante.
             Cuando estés listo, envíanos tu cotización por WhatsApp.
           </motion.p>
         </header>
@@ -500,6 +545,7 @@ export default function CotizadorPage() {
             <Summary
               lines={lines}
               total={total}
+              monthlyTotal={monthlyTotal}
               count={count}
               onClear={() => setQty({})}
               onRemove={(id) => setItem(id, 0)}
@@ -521,7 +567,15 @@ export default function CotizadorPage() {
                 <ShoppingCart className="w-4 h-4" />
                 {count} {count === 1 ? "artículo" : "artículos"}
               </span>
-              <span className="font-display font-black text-xl">{money(total)}</span>
+              <span className="font-display font-black text-xl">
+                {lines.some((l) => !l.product.monthly) && money(total)}
+                {monthlyTotal > 0 && (
+                  <span className={lines.some((l) => !l.product.monthly) ? "text-base" : ""}>
+                    {lines.some((l) => !l.product.monthly) ? " + " : ""}
+                    {money(monthlyTotal)}/mes
+                  </span>
+                )}
+              </span>
             </motion.a>
           )}
         </AnimatePresence>

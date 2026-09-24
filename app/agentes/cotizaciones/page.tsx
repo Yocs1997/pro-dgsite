@@ -48,6 +48,7 @@ export default async function CotizacionesPage() {
         sale: i.sale,
         agent: i.agent,
         ...(isAdmin ? { cost: i.cost } : {}),
+        ...(i.monthly ? { monthly: true } : {}),
       })),
       totals: {
         client: q.totals.client,
@@ -55,6 +56,16 @@ export default async function CotizacionesPage() {
         agentEarn: q.totals.agentEarn,
         ...(isAdmin ? { cost: q.totals.cost, proEarn: q.totals.proEarn } : {}),
       },
+      ...(q.monthly
+        ? {
+            monthly: {
+              client: q.monthly.client,
+              toPro: q.monthly.toPro,
+              agentEarn: q.monthly.agentEarn,
+              ...(isAdmin ? { cost: q.monthly.cost, proEarn: q.monthly.proEarn } : {}),
+            },
+          }
+        : {}),
     }));
 
   return <QuotesInbox quotes={visible} isAdmin={isAdmin} userName={user.name} error={error} />;

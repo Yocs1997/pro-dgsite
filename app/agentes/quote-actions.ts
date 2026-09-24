@@ -10,6 +10,7 @@ import {
   STATUSES,
   type QuoteItem,
   type QuoteStatus,
+  type Totals,
 } from "./_lib/quotes";
 
 export type SubmitInput = {
@@ -43,24 +44,37 @@ export async function submitQuote(input: SubmitInput): Promise<SubmitResult> {
     const qty = Math.floor(Number(l?.qty));
     const sale = r2(Number(l?.sale));
     if (!cat || !p || !(qty > 0 && qty <= 999) || !(sale >= 0 && sale < 1_000_000)) continue;
-    items.push({ id: cat.id, name: cat.name, qty, sale, agent: p.agent, cost: p.cost });
+    items.push({
+      id: cat.id,
+      name: cat.name,
+      qty,
+      sale,
+      agent: p.agent,
+      cost: p.cost,
+      ...(cat.monthly ? { monthly: true } : {}),
+    });
   }
   if (!items.length) return { ok: false, error: "Agrega al menos un producto." };
 
   // An admin sending a quote is a direct sale (no agent commission).
   const direct = user.role === "admin";
-  let clientTotal = 0, toPro = 0, agentEarn = 0, cost = 0, proEarn = 0;
-  for (const i of items) {
-    clientTotal += i.sale * i.qty;
-    cost += i.cost * i.qty;
-    if (direct) {
-      proEarn += (i.sale - i.cost) * i.qty;
-    } else {
-      toPro += i.agent * i.qty;
-      agentEarn += (i.sale - i.agent) * i.qty;
-      proEarn += (i.agent - i.cost) * i.qty;
+  const sum = (list: QuoteItem[]): Totals => {
+    const t = { client: 0, toPro: 0, agentEarn: 0, cost: 0, proEarn: 0 };
+    for (const i of list) {
+      t.client += i.sale * i.qty;
+      t.cost += i.cost * i.qty;
+      if (direct) {
+        t.proEarn += (i.sale - i.cost) * i.qty;
+      } else {
+        t.toPro += i.agent * i.qty;
+        t.agentEarn += (i.sale - i.agent) * i.qty;
+        t.proEarn += (i.agent - i.cost) * i.qty;
+      }
     }
-  }
+    return { client: r2(t.client), toPro: r2(t.toPro), agentEarn: r2(t.agentEarn), cost: r2(t.cost), proEarn: r2(t.proEarn) };
+  };
+  const oneTime = sum(items.filter((i) => !i.monthly));
+  const monthlyItems = items.filter((i) => i.monthly);
 
   const now = Date.now();
   try {
@@ -71,13 +85,8 @@ export async function submitQuote(input: SubmitInput): Promise<SubmitResult> {
       agent: { u: user.u, name: user.name },
       client,
       items,
-      totals: {
-        client: r2(clientTotal),
-        toPro: r2(toPro),
-        agentEarn: r2(agentEarn),
-        cost: r2(cost),
-        proEarn: r2(proEarn),
-      },
+      totals: oneTime,
+      ...(monthlyItems.length ? { monthly: sum(monthlyItems) } : {}),
     });
     return { ok: true, code: quoteCode(q.number) };
   } catch {
