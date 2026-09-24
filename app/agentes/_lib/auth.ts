@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { readJsonEnv } from "./env";
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 // Users live in the PORTAL_USERS environment variable (never in the code,
@@ -31,12 +32,16 @@ export function configReady(): boolean {
 }
 
 function loadUsers(): PortalUser[] {
-  try {
-    const list = JSON.parse(process.env.PORTAL_USERS ?? "[]");
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
+  const list = readJsonEnv<unknown>("PORTAL_USERS", []);
+  if (!Array.isArray(list)) return [];
+  return list.filter(
+    (x): x is PortalUser => Boolean(x && typeof x.u === "string" && typeof x.hash === "string")
+  );
+}
+
+/** True when PORTAL_USERS could be read and has at least one user. */
+export function usersLoaded(): boolean {
+  return loadUsers().length > 0;
 }
 
 function findUser(username: string): PortalUser | undefined {

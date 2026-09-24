@@ -1,4 +1,5 @@
 import "server-only";
+import { readJsonEnv } from "./env";
 
 // Public product info (names/pictures). Prices are NOT here: they come from the
 // PORTAL_PRICES environment variable so they never appear in the public repo.
@@ -59,7 +60,7 @@ export type Prices = { cost: number; agent: number; suggested: number };
 export function loadPrices(): Record<string, Prices> {
   const out: Record<string, Prices> = {};
   try {
-    const raw = JSON.parse(process.env.PORTAL_PRICES ?? "{}") as Record<string, number[]>;
+    const raw = readJsonEnv<Record<string, number[]>>("PORTAL_PRICES", {});
     for (const [id, v] of Object.entries(raw)) {
       if (Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === "number")) {
         out[id] = { cost: v[0], agent: v[1], suggested: v[2] };
