@@ -54,6 +54,8 @@ export type SendInput = {
   text?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  /** Shown in the performance dashboard; "notify" (internal heads-ups) is not tracked. */
+  category?: "email" | "reply" | "test" | "confirmation" | "notify";
 };
 
 export async function sendEmail(m: SendInput): Promise<{ id: string }> {
@@ -66,6 +68,7 @@ export async function sendEmail(m: SendInput): Promise<{ id: string }> {
       ...(m.text ? { text: m.text } : {}),
       ...(m.replyTo ?? mailReplyTo() ? { reply_to: m.replyTo ?? mailReplyTo() } : {}),
       ...(m.headers ? { headers: m.headers } : {}),
+      ...(m.category ? { tags: [{ name: "category", value: m.category }] } : {}),
     },
   });
 }

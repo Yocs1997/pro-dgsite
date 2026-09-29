@@ -1,10 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { dbReady } from "@/app/lib/server/redis";
 import { saveInMail } from "@/app/lib/server/mail";
+import { isTrackingEvent, recordEmailEvent, type ResendEmailEvent } from "@/app/lib/server/mail-tracking";
 import { sendEmail, emailLayout, esc, resendReady } from "@/app/lib/server/resend";
 
-// Resend webhook for received emails (event "email.received").
-// In Resend → Webhooks, add:  https://pro-dg.com/api/resend/inbound  and select "email.received".
+// Resend webhook for received emails (event "email.received") and for delivery /
+// engagement tracking of sent emails (email.sent, email.delivered, email.delivery_delayed,
+// email.opened, email.clicked, email.bounced, email.complained, email.failed).
+// In Resend → Webhooks, add:  https://pro-dg.com/api/resend/inbound  and select those events.
 // Copy its signing secret into the RESEND_WEBHOOK_SECRET environment variable.
 
 function verify(body: string, h: Headers): boolean {
@@ -48,6 +51,11 @@ export async function POST(req: Request) {
   } catch {
     return new Response("bad json", { status: 400 });
   }
+  if (isTrackingEvent(event.type)) {
+    if (!dbReady()) return new Response("database not configured", { status: 500 });
+    await recordEmailEvent(event as ResendEmailEvent);
+    return new Response("ok", { status: 200 });
+  }
   if (event.type !== "email.received" || !event.data?.email_id) return new Response("ignored", { status: 200 });
   if (!dbReady()) return new Response("database not configured", { status: 500 });
 
@@ -76,6 +84,7 @@ export async function POST(req: Request) {
 <p style="margin:0 0 18px;font-size:17px;font-weight:700">${esc(String(d.subject ?? "(sin asunto)"))}</p>
 <p style="margin:0">Ábrelo y respóndelo en <a href="https://pro-dg.com/agentes/correo">pro-dg.com/agentes/correo</a>.</p>`
         ),
+        category: "notify",
       });
     } catch (e) {
       console.error("[inbound] notify failed", e);

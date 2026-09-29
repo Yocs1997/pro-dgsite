@@ -1,4 +1,4 @@
-import { Zap, Calculator, Inbox, Car, Mail, LogOut } from "lucide-react";
+import { Zap, Calculator, Inbox, Car, Mail, BarChart3, LogOut } from "lucide-react";
 import { logout } from "./actions";
 
 const LINKS = [
@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/agentes/cotizaciones", label: "Cotizaciones", icon: Inbox },
   { href: "/agentes/seguros", label: "Seguros", icon: Car },
   { href: "/agentes/correo", label: "Correo", icon: Mail },
+  { href: "/agentes/rendimiento", label: "Rendimiento", icon: BarChart3 },
 ];
 
 export default function AdminNav({ active, badges = {} }: { active: string; badges?: Record<string, number> }) {

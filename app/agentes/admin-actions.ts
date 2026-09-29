@@ -123,6 +123,7 @@ export async function sendMessage(input: { to: string; subject: string; body: st
       subject,
       html: emailLayout(textToHtml(body)),
       text: body,
+      category: inReplyTo ? "reply" : "email",
       ...(inReplyTo ? { headers: { "In-Reply-To": inReplyTo, References: references || inReplyTo } } : {}),
     });
     await saveOutMail({ id: r.id || uid(), to, subject, body, createdAt: Date.now(), kind: inReplyTo ? "reply" : "email", ...(inReplyTo ? { inReplyTo } : {}) }).catch(() => {});
@@ -207,7 +208,7 @@ export async function sendCampaign(input: { segment: string; subject: string; bo
     if (input.testTo) {
       const to = clean(input.testTo, 120);
       if (!isEmail(to)) return { ok: false as const, error: "Correo de prueba inválido." };
-      const r = await sendEmail({ to, subject: `${testTag} ${subject}`, html: campaignHtml(body, fallbackName, lang, footerText, { name: admin.name }) });
+      const r = await sendEmail({ to, subject: `${testTag} ${subject}`, html: campaignHtml(body, fallbackName, lang, footerText, { name: admin.name }), category: "test" });
       await saveOutMail({ id: r.id || uid(), to: [to], subject: `${testTag} ${subject}`, body, createdAt: Date.now(), kind: "test" }).catch(() => {});
       return { ok: true as const, test: true };
     }
