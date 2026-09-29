@@ -9,6 +9,7 @@ import {
   Send,
   Reply,
   Trash2,
+  ChevronDown,
   MailOpen,
   Mail,
   Loader2,
@@ -27,6 +28,7 @@ import {
   openMessage,
   removeCampaignRecord,
   removeContact,
+  removeFromList,
   removeMessage,
   removeSent,
   sendCampaign,
@@ -513,6 +515,152 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
   );
 }
 
+/** Takes pasted / uploaded emails out of one list, without deleting the contacts. */
+function RemoveFromList({
+  contacts,
+  setContacts,
+  lists,
+  ready,
+}: {
+  contacts: LocalContact[];
+  setContacts: (f: (c: LocalContact[]) => LocalContact[]) => void;
+  lists: string[];
+  ready: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [list, setList] = useState("");
+  const [onlyNew, setOnlyNew] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ kind: "ok" | "err" | "warn"; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const emails = useMemo(() => parseCsv(text).rows.map((r) => r.email.toLowerCase()), [text]);
+  const byEmail = useMemo(() => new Map(contacts.map((c) => [c.email.toLowerCase(), c])), [contacts]);
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  const inList = emails.map((e) => byEmail.get(e)).filter((c): c is LocalContact => Boolean(c && c.segments.includes(list)));
+  const older = inList.filter((c) => c.addedAt < dayAgo);
+  const targets = onlyNew ? inList.filter((c) => c.addedAt >= dayAgo) : inList;
+
+  const run = async () => {
+    if (!window.confirm(`¿Quitar ${targets.length} contactos de la lista "${list}"? Los contactos no se borran; solo salen de esa lista.`)) return;
+    setRunning(true);
+    setResult(null);
+    const todo = targets.map((c) => c.email);
+    let removed = 0;
+    const failed: string[] = [];
+    let lastError = "";
+    setProgress({ done: 0, total: todo.length });
+    for (let i = 0; i < todo.length; i += 10) {
+      const batch = todo.slice(i, i + 10);
+      const r = await removeFromList(batch, list);
+      if (!r.ok) {
+        lastError = r.error;
+        failed.push(...batch);
+        break;
+      }
+      removed += r.removed.length;
+      failed.push(...r.failed);
+      if (r.lastError) lastError = r.lastError;
+      const gone = new Set([...r.removed, ...r.notInList]);
+      setContacts((all) => all.map((c) => (gone.has(c.email.toLowerCase()) ? { ...c, segments: c.segments.filter((s) => s !== list) } : c)));
+      setProgress({ done: Math.min(i + batch.length, todo.length), total: todo.length });
+    }
+    setRunning(false);
+    if (failed.length) setResult({ kind: "err", text: `Se quitaron ${removed}. No se pudieron quitar ${failed.length}: ${lastError}` });
+    else {
+      setResult({ kind: "ok", text: `Listo: ${removed} contactos quitados de "${list}". Ahora puedes importarlos en la lista correcta.` });
+      setText("");
+    }
+  };
+
+  return (
+    <div className="border-t border-white/10 pt-4 mt-1">
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left">
+        <span>
+          <span className="block font-semibold">Quitar contactos de una lista</span>
+          <span className="block text-xs text-sky-text/60">¿Importaste en la lista equivocada? Quítalos sin borrarlos.</span>
+        </span>
+        <ChevronDown className={"w-4 h-4 transition-transform " + (open ? "rotate-180" : "")} />
+      </button>
+      {open && (
+        <div className="flex flex-col gap-3 mt-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Lista</span>
+            <select value={list} onChange={(e) => setList(e.target.value)} className={input}>
+              <option value="" className="bg-[#0B2B5E]">
+                Elige la lista…
+              </option>
+              {lists.map((s) => (
+                <option key={s} value={s} className="bg-[#0B2B5E]">
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#7cc4ff55] hover:bg-white/10 text-sm font-semibold">
+              <Upload className="w-4 h-4" /> Subir el mismo CSV
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.txt,text/csv"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) setText(await f.text());
+                e.target.value = "";
+              }}
+            />
+          </div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} className={input + " font-mono text-xs"} placeholder="O pega los correos, uno por línea" />
+          {text && list && (
+            <div className="text-sm text-sky-text/80 flex flex-col gap-2">
+              <p>
+                <b className="text-white">{emails.length}</b> correos · <b className="text-white">{inList.length}</b> están en “{list}”
+                {emails.length > inList.length && <span className="text-sky-text/60"> · {emails.length - inList.length} no están en esa lista (se ignoran)</span>}
+              </p>
+              {older.length > 0 && (
+                <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-100 leading-relaxed">
+                  <p>
+                    {older.length} de ellos ya eran contactos antes de hoy, así que quizá ya estaban en “{list}” desde antes:{" "}
+                    {older
+                      .slice(0, 12)
+                      .map((c) => c.firstName || c.email)
+                      .join(", ")}
+                    {older.length > 12 ? "…" : ""}
+                  </p>
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                    <input type="checkbox" checked={onlyNew} onChange={(e) => setOnlyNew(e.target.checked)} className="accent-amber-300" />
+                    Dejar a esos {older.length} en la lista (quitar solo a los agregados en las últimas 24 horas)
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          {progress && running && (
+            <p className="text-xs text-sky-text/70">
+              {progress.done} de {progress.total} quitando…
+            </p>
+          )}
+          {result && <Notice kind={result.kind}>{result.text}</Notice>}
+          <button
+            type="button"
+            onClick={run}
+            disabled={!ready || running || !list || targets.length === 0}
+            className="flex items-center justify-center gap-2 py-3 rounded-full border border-red-400/50 text-red-100 hover:bg-red-500/15 disabled:opacity-50 font-bold"
+          >
+            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            {running ? "Quitando…" : `Quitar ${targets.length || ""} de ${list ? `“${list}”` : "la lista"}`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact[]; setContacts: (f: (c: LocalContact[]) => LocalContact[]) => void; ready: boolean }) {
   const [text, setText] = useState("");
   const [segment, setSegment] = useState("Leads");
@@ -672,6 +820,8 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
           {running ? "Importando…" : `Importar ${parsed.rows.length || ""} contactos`}
         </button>
+
+        <RemoveFromList contacts={contacts} setContacts={setContacts} lists={segments.map(([s]) => s)} ready={ready} />
       </div>
 
       <div className="rounded-2xl border border-[#7cc4ff33] p-5 sm:p-6 flex flex-col gap-3" style={glass}>

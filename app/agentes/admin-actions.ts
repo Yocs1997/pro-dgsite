@@ -7,7 +7,7 @@ import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
 import { deleteQuote, updateQuoteData } from "./_lib/quotes";
 import type { InsuranceInput } from "@/app/seguros/model";
 import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
-import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact, type ContactDetails } from "@/app/lib/server/contacts";
+import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact, removeFromSegment, type ContactDetails } from "@/app/lib/server/contacts";
 import { normalizeInsured, normalizeLang, normalizeState, stateFromPhone } from "@/app/lib/contact-details";
 import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
 import { isEmail } from "@/app/seguros/model";
@@ -358,6 +358,35 @@ export async function removeContact(email: string) {
     if (!isEmail(e)) return { ok: false as const, error: "Correo inválido." };
     await deleteContact(e);
     return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Takes a small batch of contacts out of one list (the page sends ~10 at a time for Resend's rate limit). */
+export async function removeFromList(emails: string[], segment: string) {
+  try {
+    await requireAdmin();
+    if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
+    const seg = clean(segment, 60);
+    if (!seg) return { ok: false as const, error: "Elige la lista." };
+    const removed: string[] = [];
+    const notInList: string[] = [];
+    const failed: string[] = [];
+    let lastError = "";
+    for (const raw of (emails ?? []).slice(0, 15)) {
+      const email = clean(raw, 120).toLowerCase();
+      if (!isEmail(email)) continue;
+      try {
+        ((await removeFromSegment(email, seg)) === "removed" ? removed : notInList).push(email);
+      } catch (e) {
+        failed.push(email);
+        lastError = explain(e);
+      }
+      await new Promise((res) => setTimeout(res, 300));
+    }
+    if (!removed.length && !notInList.length && failed.length) return { ok: false as const, error: lastError };
+    return { ok: true as const, removed, notInList, failed, lastError };
   } catch (e) {
     return failure(e);
   }

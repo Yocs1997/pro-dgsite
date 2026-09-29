@@ -136,6 +136,31 @@ export async function updateContact(email: string, names: { firstName: string; l
   }
 }
 
+/** Takes a contact out of one list (in Resend and locally). The contact itself is kept. */
+export async function removeFromSegment(email: string, segment: string): Promise<"removed" | "not-in-list"> {
+  const key = email.trim().toLowerCase();
+  let local: LocalContact | null = null;
+  if (dbReady()) {
+    const [prev] = (await db([["HGET", CONTACTS, key]])) as [string | null];
+    local = prev ? (JSON.parse(prev) as LocalContact) : null;
+  }
+  const inLocal = Boolean(local?.segments.some((s) => s.toLowerCase() === segment.toLowerCase()));
+  const segId = await segmentId(segment);
+  let inResend = true;
+  try {
+    await resend(`/contacts/${encodeURIComponent(key)}/segments/${segId}`, { method: "DELETE" });
+  } catch (e) {
+    // Not a contact / not in that list in Resend: fine, nothing to remove there.
+    if (!(e instanceof ResendError && (e.status === 404 || e.status === 422))) throw e;
+    inResend = false;
+  }
+  if (local && inLocal) {
+    local.segments = local.segments.filter((s) => s.toLowerCase() !== segment.toLowerCase());
+    await db([["HSET", CONTACTS, key, JSON.stringify(local)]]);
+  }
+  return inResend || inLocal ? "removed" : "not-in-list";
+}
+
 /** Deletes a contact everywhere, so it won't receive future campaigns. */
 export async function deleteContact(email: string) {
   const key = email.trim().toLowerCase();
