@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" style={{ backgroundColor: "#02112A" }}>
+    <html lang="en" style={{ backgroundColor: "#02112A" }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply } from "lucide-react";
-import { updateLeadStatus } from "../admin-actions";
+import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Contact as IdCard } from "lucide-react";
+import { removeLead, updateLeadStatus } from "../admin-actions";
+import LeadEditor from "./LeadEditor";
 import { label, type OptionGroup } from "@/app/seguros/model";
 import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
 
@@ -57,9 +58,31 @@ function summaryText(l: Row) {
   return lines.filter(Boolean).join("\n");
 }
 
-function LeadCard({ l, onStatus }: { l: Row; onStatus: (s: InsStatus) => void }) {
+function LeadCard({
+  l,
+  onStatus,
+  onSaved,
+  onDeleted,
+}: {
+  l: Row;
+  onStatus: (s: InsStatus) => void;
+  onSaved: (d: Pick<Row, "driver" | "extraDrivers" | "vehicles" | "coverage">) => void;
+  onDeleted: () => void;
+}) {
   const [open, setOpen] = useState(l.status === "nueva");
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const del = async () => {
+    if (!confirm(`¿Eliminar la solicitud ${l.code} de ${[l.driver.firstName, l.driver.lastName].join(" ").trim() || l.driver.email}? Esto también borra las fotos de licencia y no se puede deshacer.`)) return;
+    setDeleting(true);
+    const r = await removeLead(l.id);
+    setDeleting(false);
+    if (r.ok) onDeleted();
+    else setErr(r.error);
+  };
   const d = l.driver;
   const phone = d.phone.replace(/[^\d+]/g, "");
   const wa = phone.replace(/^\+/, "").length === 10 ? `1${phone.replace(/^\+/, "")}` : phone.replace(/^\+/, "");
@@ -73,8 +96,13 @@ function LeadCard({ l, onStatus }: { l: Row; onStatus: (s: InsStatus) => void })
         <span className="font-mono font-bold text-[#7cc4ff]">{l.code}</span>
         <span className={"px-2.5 py-0.5 rounded-full border text-xs font-semibold " + STATUS[l.status].cls}>{STATUS[l.status].label}</span>
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">
-          {d.firstName} {d.lastName}
+          {[d.firstName, d.lastName].join(" ").trim() || d.email}
         </span>
+        {l.licensePhotos ? (
+          <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-400/20 text-amber-100">
+            <IdCard className="w-3.5 h-3.5" /> Licencia
+          </span>
+        ) : null}
         <span className="text-sm text-sky-text/75 hidden md:inline">
           {l.vehicles.map((v) => `${v.year} ${v.make}`).join(" · ")}
         </span>
@@ -83,7 +111,21 @@ function LeadCard({ l, onStatus }: { l: Row; onStatus: (s: InsStatus) => void })
         <ChevronDown className={"w-4 h-4 text-sky-text/60 transition-transform " + (open ? "rotate-180" : "")} />
       </button>
 
-      {open && (
+      {open && editing && (
+        <div className="px-5 pb-5">
+          <LeadEditor
+            id={l.id}
+            initial={{ driver: l.driver, extraDrivers: l.extraDrivers, vehicles: l.vehicles, coverage: l.coverage }}
+            onCancel={() => setEditing(false)}
+            onSaved={(data) => {
+              onSaved(data);
+              setEditing(false);
+            }}
+          />
+        </div>
+      )}
+
+      {open && !editing && (
         <div className="px-5 pb-5 grid gap-4 lg:grid-cols-[1fr_280px]">
           <div className="grid gap-4 md:grid-cols-2">
             <Block title="Conductor" icon={User}>
@@ -126,6 +168,22 @@ function LeadCard({ l, onStatus }: { l: Row; onStatus: (s: InsStatus) => void })
           </div>
 
           <div className="flex flex-col gap-3">
+            {l.licensePhotos ? (
+              <div className="rounded-xl bg-black/20 p-3">
+                <p className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#7cc4ff] mb-2">
+                  <IdCard className="w-3.5 h-3.5" /> Licencia de conducir
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: l.licensePhotos }, (_, i) => (
+                    <a key={i} href={`/agentes/seguros/licencia/${l.id}/${i}`} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden bg-black/30 hover:ring-2 ring-[#33aaff]" title={i === 0 ? "Frente (abrir)" : "Reverso (abrir)"}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/agentes/seguros/licencia/${l.id}/${i}`} alt={i === 0 ? "Frente" : "Reverso"} className="w-full h-24 object-cover" />
+                    </a>
+                  ))}
+                </div>
+                <p className="text-[11px] text-sky-text/55 mt-2">Toca para verla completa y copiar los datos.</p>
+              </div>
+            ) : null}
             <div className="rounded-xl bg-black/20 p-4 flex flex-col gap-2 text-sm">
               <a href={`mailto:${d.email}`} className="flex items-center gap-2 text-[#7cc4ff] hover:underline break-all">
                 <Mail className="w-4 h-4 shrink-0" /> {d.email}
@@ -170,6 +228,24 @@ function LeadCard({ l, onStatus }: { l: Row; onStatus: (s: InsStatus) => void })
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? "Copiado" : "Copiar datos para cotizar"}
             </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex items-center justify-center gap-1.5 rounded-full border border-[#7cc4ff55] hover:bg-white/10 py-2.5 text-sm font-semibold"
+              >
+                <Pencil className="w-4 h-4" /> Editar
+              </button>
+              <button
+                type="button"
+                onClick={del}
+                disabled={deleting}
+                className="flex items-center justify-center gap-1.5 rounded-full border border-red-400/50 text-red-200 hover:bg-red-500/20 py-2.5 text-sm font-semibold"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
+              </button>
+            </div>
+            {err && <p className="text-xs text-red-200">{err}</p>}
           </div>
         </div>
       )}
@@ -266,7 +342,13 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
 
       <div className="mt-6 flex flex-col gap-4">
         {shown.map((l) => (
-          <LeadCard key={l.id} l={l} onStatus={(s) => change(l.id, s)} />
+          <LeadCard
+            key={l.id}
+            l={l}
+            onStatus={(s) => change(l.id, s)}
+            onSaved={(data) => setLeads((list) => list.map((x) => (x.id === l.id ? { ...x, ...data } : x)))}
+            onDeleted={() => setLeads((list) => list.filter((x) => x.id !== l.id))}
+          />
         ))}
         {!error && shown.length === 0 && (
           <p className="text-center py-16 text-sky-text/70">

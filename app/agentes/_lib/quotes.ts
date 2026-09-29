@@ -100,3 +100,51 @@ export async function setQuoteStatus(id: string, status: QuoteStatus): Promise<v
 export function quoteCode(n: number) {
   return `COT-${String(n).padStart(4, "0")}`;
 }
+
+export async function deleteQuote(id: string) {
+  await pipeline([["DEL", KEY(id)], ["ZREM", INDEX, id]]);
+}
+
+/** Edits client info and item quantities / sale prices; totals are recalculated. */
+export async function updateQuoteData(
+  id: string,
+  patch: { client: Quote["client"]; items: { id: string; qty: number; sale: number }[] }
+): Promise<Quote | null> {
+  const q = await getQuote(id);
+  if (!q) return null;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const items = q.items
+    .map((it) => {
+      const p = patch.items.find((x) => x.id === it.id);
+      return p ? { ...it, qty: p.qty, sale: p.sale } : it;
+    })
+    .filter((it) => it.qty > 0);
+  // Quotes created by the admin are direct sales (no agent share).
+  const direct = q.totals.toPro === 0 && (q.monthly?.toPro ?? 0) === 0 && q.items.some((i) => i.agent > 0);
+  const sum = (list: QuoteItem[]): Totals => {
+    const t = { client: 0, toPro: 0, agentEarn: 0, cost: 0, proEarn: 0 };
+    for (const i of list) {
+      t.client += i.sale * i.qty;
+      t.cost += i.cost * i.qty;
+      if (direct) t.proEarn += (i.sale - i.cost) * i.qty;
+      else {
+        t.toPro += i.agent * i.qty;
+        t.agentEarn += (i.sale - i.agent) * i.qty;
+        t.proEarn += (i.agent - i.cost) * i.qty;
+      }
+    }
+    return { client: r2(t.client), toPro: r2(t.toPro), agentEarn: r2(t.agentEarn), cost: r2(t.cost), proEarn: r2(t.proEarn) };
+  };
+  const monthly = items.filter((i) => i.monthly);
+  const next: Quote = {
+    ...q,
+    client: patch.client,
+    items,
+    totals: sum(items.filter((i) => !i.monthly)),
+    updatedAt: Date.now(),
+  };
+  if (monthly.length) next.monthly = sum(monthly);
+  else delete next.monthly;
+  await pipeline([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}

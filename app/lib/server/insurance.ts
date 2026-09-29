@@ -5,7 +5,7 @@ import type { InsuranceInput } from "@/app/seguros/model";
 export const INS_STATUSES = ["nueva", "cotizando", "enviada", "vendida", "perdida"] as const;
 export type InsStatus = (typeof INS_STATUSES)[number];
 
-export type InsuranceLead = Omit<InsuranceInput, "consent" | "website"> & {
+export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licensePhotos"> & {
   id: string;
   number: number;
   code: string;
@@ -13,11 +13,13 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website"> & {
   updatedAt: number;
   status: InsStatus;
   consentAt: number;
+  licensePhotos?: number; // how many license photos are stored (0–2)
 };
 
 const KEY = (id: string) => `pdg:ins:${id}`;
 const INDEX = "pdg:ins";
 const SEQ = "pdg:ins:seq";
+const PHOTO = (id: string, n: number) => `pdg:ins:lic:${id}:${n}`;
 
 export const insCode = (n: number) => `SEG-${String(n).padStart(4, "0")}`;
 
@@ -42,4 +44,32 @@ export async function setLeadStatus(id: string, status: InsStatus) {
   lead.status = status;
   lead.updatedAt = Date.now();
   await db([["SET", KEY(id), JSON.stringify(lead)]]);
+}
+
+export async function getLead(id: string): Promise<InsuranceLead | null> {
+  const [raw] = (await db([["GET", KEY(id)]])) as [string | null];
+  return raw ? (JSON.parse(raw) as InsuranceLead) : null;
+}
+
+/** Replaces the editable parts of a lead (already sanitized). */
+export async function updateLead(id: string, patch: Partial<Pick<InsuranceLead, "driver" | "extraDrivers" | "vehicles" | "coverage" | "status">>) {
+  const lead = await getLead(id);
+  if (!lead) return null;
+  const next: InsuranceLead = { ...lead, ...patch, updatedAt: Date.now() };
+  await db([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}
+
+export async function deleteLead(id: string) {
+  await db([["DEL", KEY(id), PHOTO(id, 0), PHOTO(id, 1)], ["ZREM", INDEX, id]]);
+}
+
+export async function saveLicensePhotos(id: string, photos: string[]) {
+  if (!photos.length) return;
+  await db(photos.map((p, i) => ["SET", PHOTO(id, i), p]));
+}
+
+export async function getLicensePhoto(id: string, n: number): Promise<string | null> {
+  const [raw] = (await db([["GET", PHOTO(id, n)]])) as [string | null];
+  return raw;
 }

@@ -21,7 +21,21 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { importContacts, openMessage, removeMessage, sendCampaign, sendMessage, setRead, type ImportRow, type OpenedMail } from "../admin-actions";
+import {
+  editContact,
+  importContacts,
+  openMessage,
+  removeCampaignRecord,
+  removeContact,
+  removeMessage,
+  removeSent,
+  sendCampaign,
+  sendMessage,
+  setRead,
+  type ImportRow,
+  type OpenedMail,
+} from "../admin-actions";
+import { Pencil, Save, X as XIcon } from "lucide-react";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 
@@ -366,6 +380,72 @@ function parseCsv(text: string): { rows: ImportRow[]; invalid: number } {
   return { rows, invalid };
 }
 
+function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: LocalContact) => void; onRemove: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [first, setFirst] = useState(c.firstName);
+  const [last, setLast] = useState(c.lastName);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const small = "w-full rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-2.5 py-1.5 text-sm text-white outline-none focus:border-[#33aaff]";
+
+  const save = async () => {
+    setBusy(true);
+    setErr(null);
+    const r = await editContact(c.email, first, last);
+    setBusy(false);
+    if (!r.ok) return setErr(r.error);
+    onChange({ ...c, firstName: first.trim(), lastName: last.trim() });
+    setEditing(false);
+  };
+  const del = async () => {
+    if (!confirm(`¿Eliminar a ${c.email}? Ya no recibirá campañas.`)) return;
+    setBusy(true);
+    const r = await removeContact(c.email);
+    setBusy(false);
+    if (r.ok) onRemove();
+    else setErr(r.error);
+  };
+
+  return (
+    <li className="py-2 text-sm">
+      {editing ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-sky-text/60 truncate">{c.email}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <input className={small} value={first} onChange={(e) => setFirst(e.target.value)} placeholder="Nombre" aria-label="Nombre" />
+            <input className={small} value={last} onChange={(e) => setLast(e.target.value)} placeholder="Apellido" aria-label="Apellido" />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={() => setEditing(false)} disabled={busy} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#7cc4ff55] text-xs">
+              <XIcon className="w-3.5 h-3.5" /> Cancelar
+            </button>
+            <button type="button" onClick={save} disabled={busy} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs font-bold">
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Guardar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</p>
+            <p className="text-xs text-sky-text/60 truncate">{c.email}</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[11px] text-sky-text/60 mr-1 hidden sm:inline">{c.segments.join(", ")}</span>
+            <button type="button" title="Editar" onClick={() => setEditing(true)} className="p-1.5 rounded-full hover:bg-white/10 text-sky-text/70">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button type="button" title="Eliminar" onClick={del} disabled={busy} className="p-1.5 rounded-full hover:bg-red-500/20 text-sky-text/70 hover:text-red-200">
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+      )}
+      {err && <p className="text-xs text-red-200 mt-1">{err}</p>}
+    </li>
+  );
+}
+
 function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact[]; setContacts: (f: (c: LocalContact[]) => LocalContact[]) => void; ready: boolean }) {
   const [text, setText] = useState("");
   const [segment, setSegment] = useState("Leads");
@@ -511,13 +591,12 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
         </label>
         <ul className="max-h-[55vh] overflow-y-auto divide-y divide-white/5">
           {shown.map((c) => (
-            <li key={c.email} className="py-2 flex items-center justify-between gap-3 text-sm">
-              <div className="min-w-0">
-                <p className="truncate">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</p>
-                <p className="text-xs text-sky-text/60 truncate">{c.email}</p>
-              </div>
-              <span className="text-[11px] text-sky-text/60 shrink-0">{c.segments.join(", ")}</span>
-            </li>
+            <ContactRow
+              key={c.email}
+              c={c}
+              onChange={(n) => setContacts((list) => list.map((x) => (x.email === n.email ? n : x)))}
+              onRemove={() => setContacts((list) => list.filter((x) => x.email !== c.email))}
+            />
           ))}
           {shown.length === 0 && <li className="py-10 text-center text-sm text-sky-text/60">Aún no hay contactos.</li>}
         </ul>
@@ -535,12 +614,14 @@ function CampaignsView({
   setup,
   adminName,
   onDone,
+  onRemove,
 }: {
   contacts: LocalContact[];
   campaigns: (Campaign & { when: string })[];
   setup: Setup;
   adminName: string;
   onDone: (c: Campaign & { when: string }) => void;
+  onRemove: (id: string) => void;
 }) {
   const segments = useMemo(() => {
     const m = new Map<string, number>();
@@ -728,10 +809,22 @@ function CampaignsView({
           <h3 className="font-display font-bold mb-2">Campañas enviadas</h3>
           <ul className="divide-y divide-white/5">
             {campaigns.map((c) => (
-              <li key={c.id} className="py-2 text-sm flex justify-between gap-3">
+              <li key={c.id} className="py-2 text-sm flex items-center justify-between gap-3">
                 <span className="truncate">{c.subject}</span>
-                <span className="text-xs text-sky-text/60 shrink-0">
+                <span className="flex items-center gap-1 text-xs text-sky-text/60 shrink-0">
                   {c.lang ? c.lang.toUpperCase() + " · " : ""}{c.segment} · {c.recipients} · {c.when}
+                  <button
+                    type="button"
+                    title="Quitar del historial"
+                    onClick={async () => {
+                      if (!confirm("¿Quitar esta campaña del historial? (El correo ya enviado no se puede recuperar.)")) return;
+                      const r = await removeCampaignRecord(c.id);
+                      if (r.ok) onRemove(c.id);
+                    }}
+                    className="ml-1 p-1 rounded-full hover:bg-red-500/20 hover:text-red-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               </li>
             ))}
@@ -842,7 +935,14 @@ export default function MailCenter({
         </div>
       )}
       {tab === "campaigns" && (
-        <CampaignsView contacts={contacts} campaigns={campaigns} setup={setup} adminName={adminName} onDone={(c) => setCampaigns((x) => [c, ...x])} />
+        <CampaignsView
+          contacts={contacts}
+          campaigns={campaigns}
+          setup={setup}
+          adminName={adminName}
+          onDone={(c) => setCampaigns((x) => [c, ...x])}
+          onRemove={(id) => setCampaigns((x) => x.filter((c) => c.id !== id))}
+        />
       )}
       {tab === "contacts" && <ContactsView contacts={contacts} setContacts={setContacts} ready={setup.resend} />}
       {tab === "sent" && (
@@ -854,9 +954,22 @@ export default function MailCenter({
                   <span className="block truncate font-medium">{m.subject}</span>
                   <span className="block text-xs text-sky-text/60 truncate">Para: {m.to.join(", ")}</span>
                 </span>
-                <span className="text-xs text-sky-text/55 shrink-0">
+                <span className="flex items-center gap-1 text-xs text-sky-text/55 shrink-0">
                   {m.kind === "reply" ? "Respuesta · " : m.kind === "test" ? "Prueba · " : ""}
                   {m.when}
+                  <button
+                    type="button"
+                    title="Eliminar del registro"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (!confirm("¿Eliminar este correo del registro de enviados?")) return;
+                      const r = await removeSent(m.id);
+                      if (r.ok) setSent((list) => list.filter((x) => x.id !== m.id));
+                    }}
+                    className="ml-1 p-1 rounded-full hover:bg-red-500/20 hover:text-red-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               </summary>
               <pre className="whitespace-pre-wrap font-sans text-sm text-sky-text/85 mt-3">{m.body}</pre>

@@ -75,3 +75,10 @@ export async function saveCampaign(c: Campaign) {
   ]);
 }
 export const listCampaigns = () => listRecords<Campaign>(CAMP_INDEX, CAMP_KEY, 100);
+
+export async function deleteOutMail(id: string) {
+  await db([["DEL", OUT_KEY(id)], ["ZREM", OUT_INDEX, id]]);
+}
+export async function deleteCampaign(id: string) {
+  await db([["DEL", CAMP_KEY(id)], ["ZREM", CAMP_INDEX, id]]);
+}

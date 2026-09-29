@@ -1,10 +1,13 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
-import { INS_STATUSES, setLeadStatus, type InsStatus } from "@/app/lib/server/insurance";
+import { INS_STATUSES, deleteLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
+import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
+import { deleteQuote, updateQuoteData } from "./_lib/quotes";
+import type { InsuranceInput } from "@/app/seguros/model";
 import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
-import { upsertContact, segmentId, listLocalContacts } from "@/app/lib/server/contacts";
-import { deleteInMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
+import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact } from "@/app/lib/server/contacts";
+import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
 import { isEmail } from "@/app/seguros/model";
 
 async function requireAdmin() {
@@ -224,6 +227,112 @@ export async function sendCampaign(input: { segment: string; subject: string; bo
     });
     await saveCampaign({ id: r.id || uid(), name: subject, subject, segment, createdAt: Date.now(), recipients, lang }).catch(() => {});
     return { ok: true as const, test: false };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// ─── Edit / delete records ───────────────────────────────────────────────────
+
+const safeId = (id: unknown) => {
+  const v = clean(id, 64);
+  if (!/^[a-z0-9_-]+$/i.test(v)) throw new Error("Registro inválido");
+  return v;
+};
+
+export async function saveLeadEdits(id: string, data: Pick<InsuranceInput, "driver" | "extraDrivers" | "vehicles" | "coverage">) {
+  try {
+    await requireAdmin();
+    const clean = sanitizeInsurance(data);
+    const lead = await updateLead(safeId(id), clean);
+    if (!lead) return { ok: false as const, error: "La solicitud ya no existe." };
+    return { ok: true as const, lead: clean };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeLead(id: string) {
+  try {
+    await requireAdmin();
+    await deleteLead(safeId(id));
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function saveQuoteEdits(
+  id: string,
+  data: { client: { name: string; phone: string; notes: string }; items: { id: string; qty: number; sale: number }[] }
+) {
+  try {
+    await requireAdmin();
+    const client = { name: clean(data?.client?.name, 120), phone: clean(data?.client?.phone, 40), notes: clean(data?.client?.notes, 1000) };
+    if (!client.name) return { ok: false as const, error: "El nombre del cliente es obligatorio." };
+    const items = (Array.isArray(data?.items) ? data.items : []).slice(0, 50).map((i) => ({
+      id: clean(i?.id, 60),
+      qty: Math.max(0, Math.min(999, Math.floor(Number(i?.qty) || 0))),
+      sale: Math.max(0, Math.min(999999, Math.round((Number(i?.sale) || 0) * 100) / 100)),
+    }));
+    const q = await updateQuoteData(safeId(id), { client, items });
+    if (!q) return { ok: false as const, error: "La cotización ya no existe." };
+    if (!q.items.length) return { ok: false as const, error: "La cotización debe tener al menos un producto." };
+    return { ok: true as const, quote: q };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeQuote(id: string) {
+  try {
+    await requireAdmin();
+    await deleteQuote(safeId(id));
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeSent(id: string) {
+  try {
+    await requireAdmin();
+    await deleteOutMail(safeId(id));
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeCampaignRecord(id: string) {
+  try {
+    await requireAdmin();
+    await deleteCampaign(safeId(id));
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function editContact(email: string, firstName: string, lastName: string) {
+  try {
+    await requireAdmin();
+    const e = clean(email, 120).toLowerCase();
+    if (!isEmail(e)) return { ok: false as const, error: "Correo inválido." };
+    await updateContact(e, { firstName: clean(firstName, 60), lastName: clean(lastName, 60) });
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeContact(email: string) {
+  try {
+    await requireAdmin();
+    const e = clean(email, 120).toLowerCase();
+    if (!isEmail(e)) return { ok: false as const, error: "Correo inválido." };
+    await deleteContact(e);
+    return { ok: true as const };
   } catch (e) {
     return failure(e);
   }

@@ -74,3 +74,27 @@ export async function listLocalContacts(): Promise<LocalContact[]> {
   for (let i = 1; i < (flat?.length ?? 0); i += 2) out.push(JSON.parse(flat[i]));
   return out.sort((a, b) => b.addedAt - a.addedAt);
 }
+
+/** Renames a contact (in Resend and locally). */
+export async function updateContact(email: string, names: { firstName: string; lastName: string }) {
+  const key = email.trim().toLowerCase();
+  await resend(`/contacts/${encodeURIComponent(key)}`, { method: "PATCH", body: { first_name: names.firstName, last_name: names.lastName } });
+  if (dbReady()) {
+    const [prev] = (await db([["HGET", CONTACTS, key]])) as [string | null];
+    if (prev) {
+      const rec = { ...(JSON.parse(prev) as LocalContact), ...names };
+      await db([["HSET", CONTACTS, key, JSON.stringify(rec)]]);
+    }
+  }
+}
+
+/** Deletes a contact everywhere, so it won't receive future campaigns. */
+export async function deleteContact(email: string) {
+  const key = email.trim().toLowerCase();
+  try {
+    await resend(`/contacts/${encodeURIComponent(key)}`, { method: "DELETE" });
+  } catch (e) {
+    if (!(e instanceof ResendError && e.status === 404)) throw e; // already gone in Resend
+  }
+  if (dbReady()) await db([["HDEL", CONTACTS, key]]);
+}

@@ -16,6 +16,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { updateQuoteStatus } from "../quote-actions";
+import { removeQuote, saveQuoteEdits } from "../admin-actions";
+import { Pencil, Trash2, Save, X, Loader2 } from "lucide-react";
 
 type Status = "nueva" | "en_proceso" | "facturada" | "cancelada";
 
@@ -73,17 +75,113 @@ function TotalsBox({ t, isAdmin, title, per = "" }: { t: InboxTotals; isAdmin: b
   );
 }
 
+function QuoteEditor({ q, onCancel, onSaved }: { q: InboxQuote; onCancel: () => void; onSaved: (q: InboxQuote) => void }) {
+  const [client, setClient] = useState(q.client);
+  const [items, setItems] = useState(q.items.map((i) => ({ ...i, qtyStr: String(i.qty), saleStr: i.sale.toFixed(2) })));
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const inp = "w-full rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-3 py-2 text-sm text-white outline-none focus:border-[#33aaff]";
+
+  const save = async () => {
+    setErr(null);
+    setPending(true);
+    const r = await saveQuoteEdits(q.id, {
+      client,
+      items: items.map((i) => ({ id: i.id, qty: Number(i.qtyStr) || 0, sale: Number(i.saleStr) || 0 })),
+    });
+    setPending(false);
+    if (!r.ok) return setErr(r.error);
+    const n = r.quote;
+    onSaved({
+      ...q,
+      client: n.client,
+      items: n.items.map((i) => ({ id: i.id, name: i.name, qty: i.qty, sale: i.sale, agent: i.agent, cost: i.cost, ...(i.monthly ? { monthly: true } : {}) })),
+      totals: n.totals,
+      monthly: n.monthly,
+    });
+  };
+
+  return (
+    <div className="px-5 pb-5 flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl bg-black/20 p-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#7cc4ff]">Cliente / negocio</span>
+          <input className={inp} value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#7cc4ff]">Teléfono</span>
+          <input className={inp} value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} />
+        </label>
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#7cc4ff]">Notas</span>
+          <textarea rows={2} className={inp + " resize-y"} value={client.notes} onChange={(e) => setClient({ ...client, notes: e.target.value })} />
+        </label>
+      </div>
+      <div className="rounded-xl bg-black/20 p-4 flex flex-col gap-2">
+        <p className="text-[11px] font-mono uppercase tracking-wider text-[#7cc4ff]">Productos (cantidad 0 = quitar)</p>
+        {items.map((i, k) => (
+          <div key={i.id} className="grid grid-cols-[1fr_70px_110px] gap-2 items-center text-sm">
+            <span className="truncate">
+              {i.name}
+              {i.monthly && <span className="text-xs text-emerald-200"> (mensual)</span>}
+            </span>
+            <input
+              aria-label="Cantidad"
+              inputMode="numeric"
+              className={inp + " text-center"}
+              value={i.qtyStr}
+              onChange={(e) => setItems((l) => l.map((x, j) => (j === k ? { ...x, qtyStr: e.target.value.replace(/\D/g, "") } : x)))}
+            />
+            <input
+              aria-label="Precio de venta"
+              inputMode="decimal"
+              className={inp + " text-right font-mono"}
+              value={i.saleStr}
+              onChange={(e) => setItems((l) => l.map((x, j) => (j === k ? { ...x, saleStr: e.target.value.replace(/[^\d.]/g, "") } : x)))}
+            />
+          </div>
+        ))}
+        <p className="text-[11px] text-sky-text/55">Los totales y ganancias se recalculan al guardar.</p>
+      </div>
+      {err && <p role="alert" className="rounded-lg border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-100">{err}</p>}
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onCancel} disabled={pending} className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-[#7cc4ff55] hover:bg-white/10 text-sm font-semibold">
+          <X className="w-4 h-4" /> Cancelar
+        </button>
+        <button type="button" onClick={save} disabled={pending} className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-sm font-bold">
+          {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar cambios
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function QuoteCard({
   q,
   isAdmin,
   onStatus,
+  onSaved,
+  onDeleted,
 }: {
   q: InboxQuote;
   isAdmin: boolean;
   onStatus: (s: Status) => void;
+  onSaved: (q: InboxQuote) => void;
+  onDeleted: () => void;
 }) {
   const [open, setOpen] = useState(q.status === "nueva");
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const del = async () => {
+    if (!confirm(`¿Eliminar la cotización ${q.code} de ${q.client.name}? No se puede deshacer.`)) return;
+    setDeleting(true);
+    const r = await removeQuote(q.id);
+    setDeleting(false);
+    if (r.ok) onDeleted();
+    else alert(r.error);
+  };
 
   const invoiceText = () => {
     const lines = q.items.map((i) => {
@@ -156,7 +254,18 @@ function QuoteCard({
         <ChevronDown className={"w-4 h-4 text-sky-text/60 transition-transform " + (open ? "rotate-180" : "")} />
       </button>
 
-      {open && (
+      {open && editing && (
+        <QuoteEditor
+          q={q}
+          onCancel={() => setEditing(false)}
+          onSaved={(n) => {
+            onSaved(n);
+            setEditing(false);
+          }}
+        />
+      )}
+
+      {open && !editing && (
         <div className="px-5 pb-5 grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="flex flex-col gap-4">
             {(q.client.phone || q.client.notes) && (
@@ -255,6 +364,25 @@ function QuoteCard({
                 Imprimir
               </button>
             </div>
+            {isAdmin && (
+              <div className="flex gap-2 no-print">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-[#7cc4ff55] hover:bg-white/10 py-2.5 text-sm font-semibold"
+                >
+                  <Pencil className="w-4 h-4" /> Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={del}
+                  disabled={deleting}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-red-400/50 text-red-200 hover:bg-red-500/20 py-2.5 text-sm font-semibold"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -393,7 +521,14 @@ export default function QuotesInbox({
 
         <div className="mt-6 flex flex-col gap-4">
           {shown.map((x) => (
-            <QuoteCard key={x.id} q={x} isAdmin={isAdmin} onStatus={(s) => changeStatus(x.id, s)} />
+            <QuoteCard
+              key={x.id}
+              q={x}
+              isAdmin={isAdmin}
+              onStatus={(s) => changeStatus(x.id, s)}
+              onSaved={(n) => setQuotes((list) => list.map((y) => (y.id === x.id ? n : y)))}
+              onDeleted={() => setQuotes((list) => list.filter((y) => y.id !== x.id))}
+            />
           ))}
           {!error && shown.length === 0 && (
             <div className="text-center py-16 text-sky-text/70">

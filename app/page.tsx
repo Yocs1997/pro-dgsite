@@ -866,7 +866,7 @@ function Footer({ t }: { t: typeof translations["en"]["footer"] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Page() {
-  const [lang, setLang] = useState<Language>("es");
+  const [lang, setLang] = useState<Language>("en");
   const t = translations[lang];
 
   return (

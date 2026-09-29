@@ -58,6 +58,7 @@ export type InsuranceInput = {
   vehicles: Vehicle[];
   coverage: Coverage;
   consent: boolean;
+  licensePhotos?: string[]; // optional: up to 2 compressed images (data URLs) of the driver's license
   website?: string; // honeypot — must stay empty
 };
 

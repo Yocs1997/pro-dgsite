@@ -4,30 +4,14 @@ import { headers } from "next/headers";
 import { allow, dbReady } from "@/app/lib/server/redis";
 import { resendReady, sendEmail, emailLayout, esc } from "@/app/lib/server/resend";
 import { upsertContact } from "@/app/lib/server/contacts";
-import { saveLead, type InsuranceLead } from "@/app/lib/server/insurance";
-import {
-  isEmail,
-  label,
-  phoneDigits,
-  MAX_EXTRA_DRIVERS,
-  MAX_VEHICLES,
-  OPTIONS,
-  US_STATES,
-  type InsuranceInput,
-  type Lang,
-  type OptionGroup,
-} from "./model";
+import { saveLead, saveLicensePhotos, type InsuranceLead } from "@/app/lib/server/insurance";
+import { missingRequired, sanitizeInsurance, sanitizePhotos } from "@/app/lib/server/insurance-sanitize";
+import { label, type InsuranceInput, type Lang, type OptionGroup } from "./model";
 
 export type InsuranceResult = { ok: true; code: string; email: string } | { ok: false; error: string };
 
 const t = (lang: Lang, es: string, en: string) => (lang === "es" ? es : en);
 const s = (v: unknown, max = 120) => String(v ?? "").trim().slice(0, max);
-const opt = (group: OptionGroup, v: unknown) => {
-  const val = s(v, 40);
-  return val in OPTIONS[group] ? val : "";
-};
-const date = (v: unknown) => (/^\d{4}-\d{2}-\d{2}$/.test(s(v, 10)) ? s(v, 10) : "");
-const stateCode = (v: unknown) => (US_STATES.some(([c]) => c === s(v, 2)) ? s(v, 2) : "");
 
 export async function submitInsuranceQuote(input: InsuranceInput): Promise<InsuranceResult> {
   const lang: Lang = input?.lang === "en" ? "en" : "es";
@@ -44,71 +28,11 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
     return { ok: false, error: t(lang, "Recibimos varias solicitudes desde tu conexión. Inténtalo más tarde.", "Too many requests from your connection. Please try again later.") };
   }
 
-  const d = input?.driver ?? ({} as InsuranceInput["driver"]);
-  const driver = {
-    firstName: s(d.firstName, 60),
-    lastName: s(d.lastName, 60),
-    dob: date(d.dob),
-    gender: opt("gender", d.gender),
-    marital: opt("marital", d.marital),
-    email: s(d.email, 120).toLowerCase(),
-    phone: s(d.phone, 30),
-    street: s(d.street, 120),
-    city: s(d.city, 60),
-    state: stateCode(d.state),
-    zip: s(d.zip, 10),
-    licenseStatus: opt("licenseStatus", d.licenseStatus),
-    licenseState: stateCode(d.licenseState),
-    licenseNumber: s(d.licenseNumber, 30),
-    yearsLicensed: s(d.yearsLicensed, 3).replace(/\D/g, ""),
-    accidents: opt("count", d.accidents) || "0",
-    tickets: opt("count", d.tickets) || "0",
-    sr22: opt("yesno", d.sr22) || "no",
-  };
-
-  const extraDrivers = (Array.isArray(input?.extraDrivers) ? input.extraDrivers : [])
-    .slice(0, MAX_EXTRA_DRIVERS)
-    .map((x) => ({
-      firstName: s(x?.firstName, 60),
-      lastName: s(x?.lastName, 60),
-      dob: date(x?.dob),
-      relationship: opt("relationship", x?.relationship),
-      licenseStatus: opt("licenseStatus", x?.licenseStatus),
-    }))
-    .filter((x) => x.firstName || x.lastName);
-
-  const vehicles = (Array.isArray(input?.vehicles) ? input.vehicles : [])
-    .slice(0, MAX_VEHICLES)
-    .map((v) => ({
-      year: s(v?.year, 4).replace(/\D/g, ""),
-      make: s(v?.make, 40),
-      model: s(v?.model, 60),
-      vin: s(v?.vin, 17).toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ""),
-      ownership: opt("ownership", v?.ownership),
-      use: opt("use", v?.use),
-      miles: opt("miles", v?.miles),
-    }))
-    .filter((v) => v.year || v.make || v.model);
-
-  const c = input?.coverage ?? ({} as InsuranceInput["coverage"]);
-  const coverage = {
-    insured: opt("insured", c.insured),
-    currentCarrier: s(c.currentCarrier, 60),
-    level: opt("level", c.level),
-    deductible: opt("deductible", c.deductible),
-    startDate: date(c.startDate),
-    contactPref: opt("contactPref", c.contactPref) || "email",
-    notes: s(c.notes, 1500),
-  };
+  const { driver, extraDrivers, vehicles, coverage } = sanitizeInsurance(input);
+  const photos = sanitizePhotos(input?.licensePhotos);
 
   // Validation (the browser checks the same things; this is the safety net).
-  const missing =
-    !driver.firstName || !driver.lastName || !driver.dob || !isEmail(driver.email) ||
-    phoneDigits(driver.phone).length < 10 || !driver.state || !/^\d{5}$/.test(driver.zip) ||
-    !driver.licenseStatus || vehicles.length === 0 ||
-    vehicles.some((v) => !/^\d{4}$/.test(v.year) || !v.make || !v.model) ||
-    !coverage.insured || !coverage.level;
-  if (missing) {
+  if (missingRequired({ driver, extraDrivers, vehicles, coverage }, photos.length > 0)) {
     return { ok: false, error: t(lang, "Faltan datos obligatorios. Revisa los campos marcados.", "Some required fields are missing. Please review the form.") };
   }
   if (!input?.consent) {
@@ -116,12 +40,17 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
   }
 
   const now = Date.now();
-  const base = { lang, driver, extraDrivers, vehicles, coverage, createdAt: now, updatedAt: now, status: "nueva" as const, consentAt: now };
+  const base = {
+    lang, driver, extraDrivers, vehicles, coverage,
+    createdAt: now, updatedAt: now, status: "nueva" as const, consentAt: now,
+    licensePhotos: photos.length,
+  };
 
   let lead: InsuranceLead | null = null;
   if (dbReady()) {
     try {
       lead = await saveLead(base);
+      await saveLicensePhotos(lead.id, photos);
     } catch (e) {
       console.error("[seguros] could not save lead", e);
     }
@@ -137,7 +66,7 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
         sendEmail({
           to: notify,
           replyTo: driver.email,
-          subject: `Nueva solicitud de seguro ${code} — ${driver.firstName} ${driver.lastName}`,
+          subject: `Nueva solicitud de seguro ${code} — ${[driver.firstName, driver.lastName].filter(Boolean).join(" ") || driver.email}`,
           html: emailLayout(adminSummary({ ...base, code })),
         }).then(() => (notified = true))
       );
@@ -163,12 +92,12 @@ function confirmationSubject(lang: Lang, code: string) {
 function confirmationBody(lang: Lang, code: string, name: string) {
   const p = (x: string) => `<p style="margin:0 0 16px;line-height:1.6">${x}</p>`;
   return lang === "es"
-    ? p(`Hola ${esc(name)},`) +
+    ? p(`Hola${name ? " " + esc(name) : ""},`) +
         p(`Recibimos tu solicitud de cotización de seguro de auto <strong>${code}</strong>. Estamos comparando opciones y <strong>te enviaremos tu cotización por este mismo correo</strong>.`) +
         p(`Recuerda: la cotización es gratis. Si decides <strong>comprar la póliza</strong> a través de nosotros, se aplica un <strong>cargo de servicio de US$150</strong>.`) +
         p(`Si necesitas corregir algún dato, simplemente responde a este correo.`) +
         p(`— El equipo de Pro-DG`)
-    : p(`Hi ${esc(name)},`) +
+    : p(`Hi${name ? " " + esc(name) : ""},`) +
         p(`We received your car insurance quote request <strong>${code}</strong>. We're comparing options and <strong>will email your quote to this address</strong>.`) +
         p(`Please note: the quote is free. If you choose to <strong>purchase the policy</strong> through us, a <strong>US$150 service fee</strong> applies.`) +
         p(`If anything needs correcting, just reply to this email.`) +
@@ -184,6 +113,9 @@ function adminSummary(l: Omit<InsuranceLead, "id" | "number"> & { code: string }
   const d = l.driver;
   let html = `<p style="margin:0 0 6px;font-size:18px;font-weight:700">Solicitud ${l.code}</p>
 <p style="margin:0 0 14px;color:#5b6b82">Idioma del cliente: ${l.lang === "es" ? "Español" : "Inglés"} · Responde a este correo para escribirle.</p>`;
+  if (l.licensePhotos) {
+    html += `<p style="margin:0 0 14px;padding:10px 12px;background:#fff7e0;border-radius:8px">📎 El cliente subió ${l.licensePhotos === 1 ? "una foto" : "fotos"} de su licencia de conducir. Por seguridad no se adjuntan al correo: ábrelas en el portal → Seguros.</p>`;
+  }
   html += h("Conductor principal") + table(
     row("Nombre", `${d.firstName} ${d.lastName}`) + row("Nacimiento", d.dob) + row("Género", L("gender", d.gender)) +
     row("Estado civil", L("marital", d.marital)) + row("Correo", d.email) + row("Teléfono", d.phone) +

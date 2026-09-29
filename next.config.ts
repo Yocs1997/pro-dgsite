@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [],
   },
+  experimental: {
+    serverActions: {
+      // Room for the optional driver's license photos on /seguros (compressed in the browser).
+      bodySizeLimit: "4mb",
+    },
+  },
 };
 
 export default nextConfig;

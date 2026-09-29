@@ -23,6 +23,8 @@ import {
   Languages,
   AlertCircle,
   Pencil,
+  Camera,
+  Contact as IdCard,
 } from "lucide-react";
 import { submitInsuranceQuote } from "./actions";
 import {
@@ -77,6 +79,20 @@ const COPY = {
     // driver
     driverTitle: "Tus datos",
     driverSub: "Los usamos para calcular tu tarifa y enviarte la cotización.",
+    photoTitle: "¿Quieres ahorrar tiempo?",
+    photoSub: "Sube una foto de tu licencia de conducir y no tendrás que escribir tus datos personales. Es opcional.",
+    photoFront: "Frente de la licencia",
+    photoBack: "Reverso (opcional)",
+    photoAdd: "Subir o tomar foto",
+    photoRemove: "Quitar",
+    photoOn: "¡Listo! Tomaremos tus datos de la licencia. Solo necesitamos tu correo y teléfono; lo demás es opcional.",
+    photoPrivacy: "Tu licencia solo se usa para preparar tu cotización y no se comparte.",
+    photoError: "No pudimos leer esa imagen. Prueba con una foto JPG o PNG.",
+    photoBusy: "Procesando foto…",
+    zipLooking: "Buscando tu ciudad…",
+    zipNotFound: "No encontramos ese código postal. Escribe la ciudad y el estado.",
+    licensePhoto: "Foto de licencia",
+    licenseAttached: (n: number): string => (n === 2 ? "Frente y reverso adjuntos" : "Adjunta"),
     firstName: "Nombre",
     lastName: "Apellido",
     dob: "Fecha de nacimiento",
@@ -141,7 +157,7 @@ const COPY = {
       "Confirmo que la información es correcta, entiendo que se aplica un cargo de servicio de US$150 solo si compro la póliza a través de Pro-DG, y acepto que me contacten por correo, teléfono o WhatsApp sobre mi cotización.",
     consentError: "Debes aceptar para enviar tu solicitud.",
     // success
-    thanks: (n: string) => `¡Gracias, ${n}!`,
+    thanks: (n: string) => (n ? `¡Gracias, ${n}!` : "¡Gracias!"),
     successText: (e: string) => `Recibimos tu solicitud. Te enviaremos tu cotización por correo a ${e}.`,
     successCode: "Número de solicitud",
     successFee: "Recuerda: la cotización es gratis. Si compras la póliza con nosotros, se aplica un cargo de servicio de US$150.",
@@ -176,6 +192,20 @@ const COPY = {
     fixErrors: "Please fix the fields marked in red.",
     driverTitle: "About you",
     driverSub: "We use this to price your policy and send you the quote.",
+    photoTitle: "Want to save time?",
+    photoSub: "Upload a photo of your driver's license and you won't need to type your personal details. It's optional.",
+    photoFront: "Front of license",
+    photoBack: "Back (optional)",
+    photoAdd: "Upload or take photo",
+    photoRemove: "Remove",
+    photoOn: "All set! We'll take your details from your license. We just need your email and phone; everything else is optional.",
+    photoPrivacy: "Your license is only used to prepare your quote and is never shared.",
+    photoError: "We couldn't read that image. Please try a JPG or PNG photo.",
+    photoBusy: "Processing photo…",
+    zipLooking: "Looking up your city…",
+    zipNotFound: "We couldn't find that ZIP code. Please enter your city and state.",
+    licensePhoto: "License photo",
+    licenseAttached: (n: number): string => (n === 2 ? "Front and back attached" : "Attached"),
     firstName: "First name",
     lastName: "Last name",
     dob: "Date of birth",
@@ -236,7 +266,7 @@ const COPY = {
     consent:
       "I confirm the information is correct, I understand a US$150 service fee applies only if I purchase the policy through Pro-DG, and I agree to be contacted by email, phone or WhatsApp about my quote.",
     consentError: "Please accept to submit your request.",
-    thanks: (n: string) => `Thank you, ${n}!`,
+    thanks: (n: string) => (n ? `Thank you, ${n}!` : "Thank you!"),
     successText: (e: string) => `We received your request. We'll email your quote to ${e}.`,
     successCode: "Request number",
     successFee: "Remember: the quote is free. If you purchase the policy through us, a US$150 service fee applies.",
@@ -430,12 +460,44 @@ function CarrierStrip({ carriers, c }: { carriers: Carrier[]; c: Copy }) {
   );
 }
 
+// ─── License photo: resize + compress in the browser ─────────────────────────
+
+async function compressImage(file: File, maxSide = 1600, quality = 0.82): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("not an image");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = url;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no canvas");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    let q = quality;
+    let out = canvas.toDataURL("image/jpeg", q);
+    while (out.length > 1_400_000 && q > 0.4) {
+      q -= 0.12;
+      out = canvas.toDataURL("image/jpeg", q);
+    }
+    if (out.length > 1_500_000) throw new Error("too large");
+    return out;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 type Errors = Record<string, string>;
 
 export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("en"); // English by default; ES button in the top bar
   const c = COPY[lang];
   const L = (g: OptionGroup) => Object.keys(OPTIONS[g]).map((v) => [v, label(g, v, lang)] as [string, string]);
 
@@ -447,6 +509,11 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
   const [coverage, setCoverage] = useState<Coverage>(emptyCoverage);
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
+  const [photos, setPhotos] = useState<{ front?: string; back?: string }>({});
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoErr, setPhotoErr] = useState(false);
+  const [zipState, setZipState] = useState<"idle" | "loading" | "found" | "notfound">("idle");
+  const hasPhoto = Boolean(photos.front);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [done, setDone] = useState<{ code: string; email: string; name: string } | null>(null);
@@ -465,8 +532,6 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
         if (Array.isArray(d.vehicles) && d.vehicles.length) setVehicles(d.vehicles);
         if (d.coverage) setCoverage({ ...emptyCoverage(), ...d.coverage });
         if (d.lang === "en" || d.lang === "es") setLang(d.lang);
-      } else if (typeof navigator !== "undefined" && !navigator.language.toLowerCase().startsWith("es")) {
-        setLang("en");
       }
     } catch {
       /* storage unavailable */
@@ -481,6 +546,44 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
       /* ignore */
     }
   }, [driver, extra, vehicles, coverage, lang, done]);
+
+  // ZIP → city + state (fills the fields; they stay editable).
+  useEffect(() => {
+    const zip = driver.zip;
+    if (!/^\d{5}$/.test(zip)) {
+      setZipState("idle");
+      return;
+    }
+    let cancelled = false;
+    setZipState("loading");
+    fetch(`/api/zip?z=${zip}`)
+      .then((r) => r.json())
+      .then((j: { ok: boolean; city?: string; state?: string }) => {
+        if (cancelled) return;
+        if (j.ok && j.city && j.state) {
+          setDriver((p) => (p.zip === zip ? { ...p, city: j.city!, state: j.state! } : p));
+          setZipState("found");
+        } else setZipState("notfound");
+      })
+      .catch(() => !cancelled && setZipState("notfound"));
+    return () => {
+      cancelled = true;
+    };
+  }, [driver.zip]);
+
+  const addPhoto = async (side: "front" | "back", file: File | undefined) => {
+    if (!file) return;
+    setPhotoErr(false);
+    setPhotoBusy(true);
+    try {
+      const url = await compressImage(file);
+      setPhotos((p) => ({ ...p, [side]: url }));
+    } catch {
+      setPhotoErr(true);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const years = useMemo(() => {
     const y = new Date().getFullYear() + 1;
@@ -498,18 +601,19 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
     const e: Errors = {};
     const req = c.required;
     if (s === 0) {
-      if (!driver.firstName.trim()) e.firstName = req;
-      if (!driver.lastName.trim()) e.lastName = req;
-      if (!driver.dob) e.dob = req;
-      else {
+      if (!hasPhoto && !driver.firstName.trim()) e.firstName = req;
+      if (!hasPhoto && !driver.lastName.trim()) e.lastName = req;
+      if (!driver.dob) {
+        if (!hasPhoto) e.dob = req;
+      } else {
         const age = (Date.now() - new Date(driver.dob).getTime()) / (365.25 * 864e5);
         if (age < 15 || age > 110) e.dob = lang === "es" ? "Revisa la fecha" : "Check the date";
       }
       if (!isEmail(driver.email)) e.email = driver.email ? (lang === "es" ? "Correo no válido" : "Invalid email") : req;
       if (phoneDigits(driver.phone).length < 10) e.phone = driver.phone ? (lang === "es" ? "Mínimo 10 dígitos" : "At least 10 digits") : req;
-      if (!driver.state) e.state = req;
-      if (!/^\d{5}$/.test(driver.zip)) e.zip = driver.zip ? (lang === "es" ? "5 dígitos" : "5 digits") : req;
-      if (!driver.licenseStatus) e.licenseStatus = req;
+      if (!hasPhoto && !driver.state) e.state = req;
+      if (driver.zip ? !/^\d{5}$/.test(driver.zip) : !hasPhoto) e.zip = driver.zip ? (lang === "es" ? "5 dígitos" : "5 digits") : req;
+      if (!hasPhoto && !driver.licenseStatus) e.licenseStatus = req;
       extra.forEach((x, i) => {
         if (!x.firstName.trim()) e[`x${i}.firstName`] = req;
         if (!x.dob) e[`x${i}.dob`] = req;
@@ -535,7 +639,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
   useEffect(() => {
     setErrors((prev) => (Object.keys(prev).length ? validate(step) : prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [driver, extra, vehicles, coverage, consent, lang]);
+  }, [driver, extra, vehicles, coverage, consent, lang, hasPhoto]);
 
   const scrollTop = () => formTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -579,7 +683,16 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
     if (Object.keys(e).length) return setErrors(e);
     setServerError(null);
     start(async () => {
-      const res = await submitInsuranceQuote({ lang, driver, extraDrivers: extra, vehicles, coverage, consent, website });
+      const res = await submitInsuranceQuote({
+        lang,
+        driver,
+        extraDrivers: extra,
+        vehicles,
+        coverage,
+        consent,
+        website,
+        licensePhotos: [photos.front, photos.back].filter((x): x is string => Boolean(x)),
+      });
       if (res.ok) {
         setDone({ code: res.code, email: res.email || driver.email, name: driver.firstName });
         try {
@@ -600,6 +713,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
     setVehicles([emptyVehicle()]);
     setCoverage(emptyCoverage());
     setConsent(false);
+    setPhotos({});
     setStep(0);
     setDone(null);
     scrollTop();
@@ -612,20 +726,69 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
   const stepIcons = [User, Car, ShieldCheck, ClipboardCheck];
 
   // ─── Step content ────────────────────────────────────────────────────
+  const opt = hasPhoto ? { optional: true, optLabel: c.optional } : {};
+  const photoSlot = (side: "front" | "back", title: string) => {
+    const url = photos[side];
+    return (
+      <div className="flex flex-col gap-2 min-w-0">
+        <span className="text-sm font-medium text-sky-text/90">{title}</span>
+        {url ? (
+          <div className="relative rounded-xl overflow-hidden border border-emerald-300/50 bg-black/20">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={title} className="w-full h-36 object-contain" />
+            <button
+              type="button"
+              onClick={() => setPhotos((p) => ({ ...p, [side]: undefined }))}
+              className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs hover:bg-red-500/80"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> {c.photoRemove}
+            </button>
+          </div>
+        ) : (
+          <label className="flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#7cc4ff55] bg-white/[0.04] text-sm text-sky-text/80 hover:border-[#33aaff] hover:bg-white/[0.07] transition-colors">
+            <Camera className="w-6 h-6 text-electric-light" />
+            {c.photoAdd}
+            <input type="file" accept="image/*" className="sr-only" onChange={(e) => { addPhoto(side, e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+        )}
+      </div>
+    );
+  };
+
   const stepDriver = (
     <div className="flex flex-col gap-5">
+      <section className={"rounded-2xl border p-5 sm:p-6 " + (hasPhoto ? "border-emerald-300/50 bg-emerald-500/10" : "border-[#33aaff66] bg-[#0096ff14]")}>
+        <div className="flex items-start gap-3 mb-4">
+          <span className="mt-0.5 w-9 h-9 shrink-0 rounded-xl bg-[#0096ff26] border border-[#33aaff55] flex items-center justify-center">
+            <IdCard className="w-4.5 h-4.5 text-electric-light" />
+          </span>
+          <div>
+            <h3 className="font-display font-bold text-lg leading-tight">{c.photoTitle}</h3>
+            <p className="text-sm text-sky-text/70 mt-0.5">{c.photoSub}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {photoSlot("front", c.photoFront)}
+          {photos.front && photoSlot("back", c.photoBack)}
+        </div>
+        {photoBusy && <p className="mt-3 flex items-center gap-2 text-sm text-sky-text/80"><Loader2 className="w-4 h-4 animate-spin" /> {c.photoBusy}</p>}
+        {photoErr && <p className="mt-3 flex items-center gap-2 text-sm text-red-200"><AlertCircle className="w-4 h-4" /> {c.photoError}</p>}
+        {hasPhoto && <p className="mt-3 flex items-start gap-2 text-sm text-emerald-100"><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> {c.photoOn}</p>}
+        <p className="mt-2 text-[11px] text-sky-text/50">{c.photoPrivacy}</p>
+      </section>
+
       <Card title={c.driverTitle} sub={c.driverSub} icon={User}>
         <div className="flex flex-col gap-4">
           <div className={grid2}>
-            <Field label={c.firstName} error={E("firstName")}>
+            <Field label={c.firstName} error={E("firstName")} {...opt}>
               <TextInput value={driver.firstName} onChange={setD("firstName")} autoComplete="given-name" error={E("firstName")} />
             </Field>
-            <Field label={c.lastName} error={E("lastName")}>
+            <Field label={c.lastName} error={E("lastName")} {...opt}>
               <TextInput value={driver.lastName} onChange={setD("lastName")} autoComplete="family-name" error={E("lastName")} />
             </Field>
           </div>
           <div className={grid3}>
-            <Field label={c.dob} error={E("dob")}>
+            <Field label={c.dob} error={E("dob")} {...opt}>
               <TextInput type="date" value={driver.dob} onChange={setD("dob")} autoComplete="bday" error={E("dob")} max={new Date().toISOString().slice(0, 10)} />
             </Field>
             <Field label={c.gender} optional optLabel={c.optional}>
@@ -643,26 +806,35 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
               <TextInput type="tel" inputMode="tel" value={driver.phone} onChange={setD("phone")} autoComplete="tel" error={E("phone")} placeholder="(555) 123-4567" />
             </Field>
           </div>
-          <Field label={c.street} optional optLabel={c.optional}>
-            <TextInput value={driver.street} onChange={setD("street")} autoComplete="street-address" />
-          </Field>
           <div className={grid3}>
+            <Field
+              label={c.zip}
+              error={E("zip")}
+              hint={zipState === "loading" ? c.zipLooking : zipState === "notfound" ? c.zipNotFound : undefined}
+              {...opt}
+            >
+              <div className="relative">
+                <TextInput inputMode="numeric" maxLength={5} value={driver.zip} onChange={(v) => setD("zip")(v.replace(/\D/g, ""))} autoComplete="postal-code" error={E("zip")} placeholder="11207" />
+                {zipState === "loading" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-[#7cc4ff]" />}
+                {zipState === "found" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-300" />}
+              </div>
+            </Field>
             <Field label={c.city} optional optLabel={c.optional}>
               <TextInput value={driver.city} onChange={setD("city")} autoComplete="address-level2" />
             </Field>
-            <Field label={c.state} error={E("state")}>
+            <Field label={c.state} error={E("state")} {...opt}>
               <Select value={driver.state} onChange={setD("state")} options={states} placeholder={c.choose} error={E("state")} />
             </Field>
-            <Field label={c.zip} error={E("zip")}>
-              <TextInput inputMode="numeric" maxLength={5} value={driver.zip} onChange={(v) => setD("zip")(v.replace(/\D/g, ""))} autoComplete="postal-code" error={E("zip")} />
-            </Field>
           </div>
+          <Field label={c.street} optional optLabel={c.optional}>
+            <TextInput value={driver.street} onChange={setD("street")} autoComplete="street-address" />
+          </Field>
         </div>
       </Card>
 
       <Card title={c.licenseTitle} icon={ShieldCheck}>
         <div className="flex flex-col gap-4">
-          <Field label={c.licenseStatus} error={E("licenseStatus")}>
+          <Field label={c.licenseStatus} error={E("licenseStatus")} {...opt}>
             <Pills value={driver.licenseStatus} onChange={setD("licenseStatus")} options={L("licenseStatus")} error={E("licenseStatus")} />
           </Field>
           <AnimatePresence initial={false}>
@@ -944,7 +1116,8 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <RevBlock title={c.steps[0]} to={0}>
-          <RevRow k={c.firstName} v={`${driver.firstName} ${driver.lastName}`} />
+          <RevRow k={c.licensePhoto} v={hasPhoto ? c.licenseAttached(photos.back ? 2 : 1) : undefined} />
+          <RevRow k={c.firstName} v={`${driver.firstName} ${driver.lastName}`.trim()} />
           <RevRow k={c.dob} v={driver.dob} />
           <RevRow k={c.email} v={driver.email} />
           <RevRow k={c.phone} v={driver.phone} />
