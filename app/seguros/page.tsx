@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Script from "next/script";
 import InsuranceQuote from "./InsuranceQuote";
+import { FAQ } from "./faq";
 
 const BUSINESS = "Car Tag & Registration Services";
 const TITLE = "Car Insurance Quotes | Car Tag & Registration Services";
@@ -37,6 +38,17 @@ const jsonLd = {
   areaServed: { "@type": "Country", name: "United States" },
   availableLanguage: ["English", "Spanish"],
   parentOrganization: { "@type": "Organization", name: "Pro-DG", url: "https://www.pro-dg.com" },
+};
+
+// The page opens in English, so the FAQ structured data is the English version.
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((f) => ({
+    "@type": "Question",
+    name: f.q.en,
+    acceptedAnswer: { "@type": "Answer", text: f.a.en },
+  })),
 };
 
 // Carriers shown in the moving strip. By default each one shows as a styled name.
@@ -78,6 +90,7 @@ export default function SegurosPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, "\\u003c") }} />
       <InsuranceQuote carriers={withLogos()} mailingAddress={process.env.MAIL_POSTAL_ADDRESS ?? ""} />
 
       {/* Meta Pixel Code */}

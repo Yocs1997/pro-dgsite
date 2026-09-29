@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/agentes", "/api/", "/strategy"],
+      disallow: ["/agentes", "/api/"],
     },
     sitemap: "https://www.pro-dg.com/sitemap.xml",
     host: "https://www.pro-dg.com",

@@ -27,6 +27,7 @@ import {
   Contact as IdCard,
 } from "lucide-react";
 import { submitInsuranceQuote } from "./actions";
+import { FAQ } from "./faq";
 import {
   COMMON_MAKES,
   MAX_EXTRA_DRIVERS,
@@ -1442,6 +1443,31 @@ export default function InsuranceQuote({ carriers, mailingAddress = "" }: { carr
             </div>
           </aside>
         </main>
+
+        <section id="faq" className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-16" aria-labelledby="faq-title">
+          <h2 id="faq-title" className="font-display font-bold text-2xl sm:text-3xl text-center mb-6">
+            {lang === "es" ? "Preguntas frecuentes" : "Frequently asked questions"}
+          </h2>
+          <div className="flex flex-col gap-2">
+            {FAQ.map((f) => (
+              <details key={f.q.en} className="group rounded-2xl border border-[#7cc4ff33] bg-white/[0.03] open:bg-white/[0.06]">
+                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none px-5 py-4 font-semibold [&::-webkit-details-marker]:hidden">
+                  {f.q[lang]}
+                  <span className="text-electric-light text-xl leading-none transition-transform group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+                <p className="px-5 pb-5 -mt-1 text-sm sm:text-base text-sky-text/85 leading-relaxed">{f.a[lang]}</p>
+              </details>
+            ))}
+          </div>
+          <p className="text-center text-sm text-sky-text/70 mt-6">
+            {lang === "es" ? "¿Otra pregunta? Llámanos al " : "Still have a question? Call us at "}
+            <a href={PHONE_URL} className="text-white font-semibold hover:underline">
+              {PHONE_DISPLAY}
+            </a>
+          </p>
+        </section>
 
         <footer className="relative z-10 border-t border-[#7cc4ff1a] py-8 text-center px-4 flex flex-col gap-1.5">
           <p className="text-sm text-sky-text/80">
