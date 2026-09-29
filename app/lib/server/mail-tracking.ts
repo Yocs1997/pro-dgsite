@@ -60,7 +60,15 @@ function tag(tags: Tags, name: string) {
   return tags[name] ?? "";
 }
 
-export type RecordedEvent = { milestone: Milestone; to: string[]; permanentBounce: boolean } | null;
+export type RecordedEvent = {
+  milestone: Milestone;
+  to: string[];
+  permanentBounce: boolean;
+  firstTime: boolean;
+  subject: string;
+  category: string; // campaign | sequence | confirmation | email | reply | test
+  bounceReason: string;
+} | null;
 
 /** Records one Resend event. Returns null when the event is not tracked. */
 export async function recordEmailEvent(ev: ResendEmailEvent): Promise<RecordedEvent> {
@@ -113,7 +121,15 @@ export async function recordEmailEvent(ev: ResendEmailEvent): Promise<RecordedEv
   if (seq && stepId && firstTime) await db([["HINCRBY", STEP_STAT_KEY(seq, stepId), milestone, 1]]);
   // Occasionally drop index entries older than the retention window.
   if (Math.random() < 0.02) await db([["ZREMRANGEBYSCORE", TRK_INDEX, 0, Date.now() - TTL_SEC * 1000]]);
-  return { milestone, to: (d.to ?? []).map((t) => t.toLowerCase()), permanentBounce: milestone === "bounced" && d.bounce?.type !== "Transient" };
+  return {
+    milestone,
+    to: (d.to ?? []).map((t) => t.toLowerCase()),
+    permanentBounce: milestone === "bounced" && d.bounce?.type !== "Transient",
+    firstTime,
+    subject: d.subject ?? "",
+    category: broadcast ? "campaign" : category || "email",
+    bounceReason: [d.bounce?.type, d.bounce?.message].filter(Boolean).join(" — "),
+  };
 }
 
 export type TrackedEmail = {

@@ -9,6 +9,7 @@ import type { InsuranceInput } from "@/app/seguros/model";
 import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
 import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact, removeFromSegment, type ContactDetails } from "@/app/lib/server/contacts";
 import { normalizeInsured, normalizeLang, normalizeState, stateFromPhone } from "@/app/lib/contact-details";
+import { notifyTelegram, telegramReady, tg } from "@/app/lib/server/telegram";
 import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
 import { isEmail } from "@/app/seguros/model";
 
@@ -358,6 +359,19 @@ export async function removeContact(email: string) {
     if (!isEmail(e)) return { ok: false as const, error: "Correo inválido." };
     await deleteContact(e);
     return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function testTelegram() {
+  try {
+    const admin = await requireAdmin();
+    if (!telegramReady()) return { ok: false as const, error: "Falta configurar TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID en Vercel." };
+    const sent = await notifyTelegram(`✅ <b>Telegram conectado</b>\nPrueba enviada por ${tg(admin.name)} desde el portal de Pro-DG.`);
+    return sent
+      ? { ok: true as const }
+      : { ok: false as const, error: "Telegram rechazó el mensaje. Revisa el token y el chat id, y que le hayas escrito al bot (o que esté en el grupo)." };
   } catch (e) {
     return failure(e);
   }

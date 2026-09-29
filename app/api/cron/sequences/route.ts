@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { dbReady } from "@/app/lib/server/redis";
 import { resendReady } from "@/app/lib/server/resend";
 import { processDue } from "@/app/lib/server/sequences";
+import { notifyTelegram } from "@/app/lib/server/telegram";
 
 // Daily run (vercel.json → crons) that sends the sequence emails that are due.
 // Vercel calls it with "Authorization: Bearer <CRON_SECRET>"; set CRON_SECRET in
@@ -22,5 +23,11 @@ export async function GET(req: Request) {
   if (!dbReady() || !resendReady()) return Response.json({ ok: false, error: "not configured" }, { status: 500 });
   const result = await processDue(500);
   console.log("[cron] sequences", result);
+  if (result.sent || result.failed)
+    await notifyTelegram(
+      `📤 <b>Envío diario de secuencias</b>\nEnviados: ${result.sent}` +
+        (result.failed ? `\nFallaron: ${result.failed} (se reintentan)` : "") +
+        (result.remaining ? `\nPendientes: ${result.remaining}` : "")
+    );
   return Response.json({ ok: true, ...result });
 }

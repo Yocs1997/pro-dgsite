@@ -5,6 +5,7 @@ import { resend, mailFrom, mailReplyTo, esc } from "./resend";
 import { listLeads, type InsuranceLead } from "./insurance";
 import { STEP_STAT_KEY } from "./mail-tracking";
 import { getLocalContacts } from "./contacts";
+import { notifyTelegram, tg } from "./telegram";
 import { normalizeState, stateLabel } from "@/app/lib/contact-details";
 
 // Automated email sequences ("drip"): a list of steps sent N days after a contact
@@ -228,11 +229,19 @@ export async function isUnsubscribed(emails: string[]): Promise<Set<string>> {
   return new Set(emails.filter((_, i) => Number(res[i]) === 1).map(norm));
 }
 
-/** Records an unsubscribe everywhere: local list, Resend contact, active sequences. */
-export async function unsubscribe(email: string, alsoResend = true) {
+/**
+ * Records an unsubscribe everywhere: local list, Resend contact, active sequences.
+ * `why` only changes the Telegram message; it is sent once per email address.
+ */
+export async function unsubscribe(email: string, alsoResend = true, why: "link" | "complained" | "resend" = "link") {
   const e = norm(email);
-  await db([["SADD", UNSUB, e]]);
-  await stopFor(e, "unsubscribed");
+  const [added] = (await db([["SADD", UNSUB, e]])) as [number];
+  const stopped = await stopFor(e, why === "complained" ? "complained" : "unsubscribed");
+  if (Number(added) === 1) {
+    const head =
+      why === "complained" ? "⚠️ <b>Marcó un correo como spam</b>" : why === "resend" ? "🚫 <b>Se dio de baja de las campañas</b>" : "🚫 <b>Se dio de baja</b>";
+    await notifyTelegram(`${head}\n${tg(e)}${stopped ? `\nSalió de ${stopped} secuencia(s).` : ""}`);
+  }
   if (alsoResend) {
     try {
       await resend(`/contacts/${encodeURIComponent(e)}`, { method: "PATCH", body: { unsubscribed: true } });
@@ -332,15 +341,18 @@ async function getEnrollment(seqId: string, email: string): Promise<Enrollment |
 }
 
 /** Stops every active sequence for this email. */
-export async function stopFor(email: string, reason: string) {
+/** Stops every active sequence for this email. Returns how many were stopped. */
+export async function stopFor(email: string, reason: string): Promise<number> {
   const e = norm(email);
   const [ids] = (await db([["SMEMBERS", OF(e)]])) as [string[]];
-  for (const id of ids ?? []) await stopOne(id, e, reason);
+  let n = 0;
+  for (const id of ids ?? []) if (await stopOne(id, e, reason)) n++;
+  return n;
 }
 
-export async function stopOne(seqId: string, email: string, reason: string) {
+export async function stopOne(seqId: string, email: string, reason: string): Promise<boolean> {
   const enr = await getEnrollment(seqId, norm(email));
-  if (!enr || enr.status !== "active") return;
+  if (!enr || enr.status !== "active") return false;
   enr.status = "stopped";
   enr.stopReason = reason;
   enr.stoppedAt = Date.now();
@@ -349,6 +361,7 @@ export async function stopOne(seqId: string, email: string, reason: string) {
   const last = enr.sent[enr.sent.length - 1];
   if (last && (reason === "reply" || reason === "unsubscribed")) cmds.push(["HINCRBY", STEP_STAT_KEY(seqId, last.stepId), reason === "reply" ? "replied" : "unsubscribed", 1]);
   await db(cmds);
+  return true;
 }
 
 // ─── Sending ─────────────────────────────────────────────────────────────────

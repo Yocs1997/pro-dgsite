@@ -29,6 +29,7 @@ import {
   removeCampaignRecord,
   removeContact,
   removeFromList,
+  testTelegram,
   removeMessage,
   removeSent,
   sendCampaign,
@@ -42,7 +43,32 @@ import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
 
-type Setup = { resend: boolean; db: boolean; from: string; replyTo: string; postal: boolean; postalAddress: string; webhook: boolean };
+type Setup = { resend: boolean; db: boolean; from: string; replyTo: string; postal: boolean; postalAddress: string; webhook: boolean; telegram: boolean };
+
+/** Telegram status + "send a test message" button. */
+function TelegramButton({ ready }: { ready: boolean }) {
+  const [state, setState] = useState<{ busy: boolean; msg?: string; ok?: boolean }>({ busy: false });
+  const run = async () => {
+    setState({ busy: true });
+    const r = await testTelegram();
+    setState({ busy: false, ok: r.ok, msg: r.ok ? "Mensaje de prueba enviado a Telegram." : r.error });
+  };
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={run}
+        disabled={state.busy}
+        className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#7cc4ff40] text-sm text-sky-text/85 hover:text-white disabled:opacity-50"
+        title={ready ? "Enviar un mensaje de prueba" : "Falta configurar TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID"}
+      >
+        {state.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        Telegram: {ready ? "probar" : "sin configurar"}
+      </button>
+      {state.msg && <span className={"text-xs " + (state.ok ? "text-emerald-300" : "text-red-200")}>{state.msg}</span>}
+    </div>
+  );
+}
 type Tab = "inbox" | "compose" | "campaigns" | "contacts" | "sent";
 
 const input =
@@ -1153,6 +1179,7 @@ export default function MailCenter({
             </p>
           )}
         </div>
+        <TelegramButton ready={setup.telegram} />
       </div>
 
       {missing.length > 0 && (

@@ -4,6 +4,7 @@ import { saveInMail } from "@/app/lib/server/mail";
 import { isTrackingEvent, noteWebhookEvent, recordEmailEvent, type ResendEmailEvent } from "@/app/lib/server/mail-tracking";
 import { sendEmail, emailLayout, esc, resendReady } from "@/app/lib/server/resend";
 import { stopFor, unsubscribe } from "@/app/lib/server/sequences";
+import { notifyTelegram, portalLink, tg } from "@/app/lib/server/telegram";
 
 // Resend webhook for received emails (event "email.received") and for delivery /
 // engagement tracking of sent emails (email.sent, email.delivered, email.delivery_delayed,
@@ -58,13 +59,26 @@ export async function POST(req: Request) {
   if (isTrackingEvent(event.type)) {
     if (!dbReady()) return new Response("database not configured", { status: 500 });
     const rec = await recordEmailEvent(event as ResendEmailEvent);
-    if (rec?.milestone === "complained") for (const to of rec.to) await unsubscribe(to);
-    else if (rec?.permanentBounce) for (const to of rec.to) await stopFor(to, "bounced");
+    if (rec?.milestone === "complained") for (const to of rec.to) await unsubscribe(to, true, "complained");
+    else if (rec?.permanentBounce) {
+      for (const to of rec.to) await stopFor(to, "bounced");
+      if (rec.firstTime && rec.category !== "test")
+        await notifyTelegram(`↩️ <b>Correo rebotado</b>
+${tg(rec.to.join(", "))}
+«${tg(rec.subject)}»${rec.bounceReason ? `
+${tg(rec.bounceReason.slice(0, 200))}` : ""}`);
+    }
+    // First click on a marketing email = warm lead worth a call.
+    else if (rec?.milestone === "clicked" && rec.firstTime && ["sequence", "campaign", "confirmation"].includes(rec.category))
+      await notifyTelegram(`🔥 <b>Hizo clic en un correo</b>
+${tg(rec.to.join(", "))}
+«${tg(rec.subject)}»
+Buen momento para llamar.`);
     return new Response("ok", { status: 200 });
   }
   if (event.type === "contact.updated") {
     const c = (event as unknown as { data?: { email?: string; unsubscribed?: boolean } }).data;
-    if (c?.email && c.unsubscribed === true && dbReady()) await unsubscribe(c.email, false);
+    if (c?.email && c.unsubscribed === true && dbReady()) await unsubscribe(c.email, false, "resend");
     return new Response("ok", { status: 200 });
   }
   if (event.type !== "email.received" || !event.data?.email_id) return new Response("ignored", { status: 200 });
@@ -73,7 +87,7 @@ export async function POST(req: Request) {
   const d = event.data;
   // A reply ends any sequence for the sender.
   const sender = String(d.from ?? "").match(/<([^>]+)>/)?.[1] ?? String(d.from ?? "");
-  if (sender.includes("@")) await stopFor(sender, "reply").catch((e) => console.error("[inbound] stop sequence failed", e));
+  const stopped = sender.includes("@") ? await stopFor(sender, "reply").catch((e) => (console.error("[inbound] stop sequence failed", e), 0)) : 0;
   await saveInMail({
     id: d.email_id,
     from: String(d.from ?? ""),
@@ -84,6 +98,17 @@ export async function POST(req: Request) {
     read: false,
     attachments: Array.isArray(d.attachments) ? d.attachments.length : 0,
   });
+
+  await notifyTelegram(
+    `📩 <b>Nuevo correo</b>
+De: ${tg(d.from)}
+«${tg(d.subject ?? "(sin asunto)")}»` +
+      (stopped ? `
+Respondió a una secuencia (se detuvo automáticamente).` : "") +
+      `
+
+${portalLink("/correo", "Abrir la bandeja")}`
+  );
 
   // Optional heads-up to your personal email (skipped if it would loop back here).
   const notify = process.env.NOTIFY_EMAIL;

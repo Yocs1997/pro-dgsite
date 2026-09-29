@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import { resendReady, mailFrom, mailReplyTo } from "@/app/lib/server/resend";
+import { telegramReady } from "@/app/lib/server/telegram";
 import { listCampaigns, listInMail, listOutMail } from "@/app/lib/server/mail";
 import { listLocalContacts } from "@/app/lib/server/contacts";
 import AdminNav from "../AdminNav";
@@ -28,6 +29,7 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
     postal: Boolean(process.env.MAIL_POSTAL_ADDRESS),
     postalAddress: process.env.MAIL_POSTAL_ADDRESS ?? "",
     webhook: Boolean(process.env.RESEND_WEBHOOK_SECRET),
+    telegram: telegramReady(),
   };
 
   const safe = async <T,>(p: Promise<T>, fallback: T) => {

@@ -6,6 +6,8 @@ import { resendReady, sendEmail, emailLayout, esc } from "@/app/lib/server/resen
 import { upsertContact } from "@/app/lib/server/contacts";
 import { saveLead, saveLicensePhotos, type InsuranceLead } from "@/app/lib/server/insurance";
 import { enroll, formSequence, sendNowFor, varsFromLead } from "@/app/lib/server/sequences";
+import { notifyTelegram, telegramReady } from "@/app/lib/server/telegram";
+import { leadTelegram } from "@/app/lib/server/lead-telegram";
 import { missingRequired, sanitizeInsurance, sanitizePhotos } from "@/app/lib/server/insurance-sanitize";
 import { label, type InsuranceInput, type Lang, type OptionGroup } from "./model";
 
@@ -59,6 +61,7 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
   const code = lead?.code ?? `SEG-${now.toString(36).toUpperCase()}`;
 
   let notified = false;
+  const telegram = telegramReady() ? notifyTelegram(leadTelegram({ ...base, code })) : Promise.resolve(false);
   if (resendReady()) {
     const tasks: Promise<unknown>[] = [];
     const notify = process.env.NOTIFY_EMAIL;
@@ -84,6 +87,7 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
     const results = await Promise.allSettled(tasks);
     results.forEach((r) => r.status === "rejected" && console.error("[seguros] email step failed", r.reason));
   }
+  if (await telegram) notified = true;
 
   if (!lead && !notified) {
     return { ok: false, error: t(lang, "No pudimos enviar tu solicitud. Inténtalo de nuevo o llámanos al (240) 256-6360.", "We couldn't send your request. Please try again or call us at (240) 256-6360.") };
