@@ -695,6 +695,16 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
       });
       if (res.ok) {
         setDone({ code: res.code, email: res.email || driver.email, name: driver.firstName });
+        // Meta Pixel: report the lead only once the server has accepted the request
+        // (the honeypot path also returns ok, so skip it when `website` is filled).
+        if (!website) {
+          try {
+            const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq;
+            fbq?.("track", "Lead", { content_name: "Auto insurance quote", lang }, { eventID: res.code });
+          } catch {
+            /* ignore */
+          }
+        }
         try {
           sessionStorage.removeItem(DRAFT_KEY);
         } catch {
