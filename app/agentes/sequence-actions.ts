@@ -75,6 +75,45 @@ export async function createInsuranceSequence() {
   }
 }
 
+/** New sequence: "blank" (one empty email), "copy" (duplicate of `fromId`, paused, no one enrolled) or "insurance" (template). */
+export async function newSequence(kind: "blank" | "copy" | "insurance", fromId?: string) {
+  try {
+    await requireAdmin();
+    const now = Date.now();
+    const id = `seq-${now.toString(36)}`;
+    let seq: Sequence;
+    if (kind === "insurance") seq = { ...defaultInsuranceSequence(now), id };
+    else if (kind === "copy") {
+      const src = await getSequence(safeId(fromId));
+      if (!src) return { ok: false as const, error: "La secuencia original ya no existe." };
+      seq = { ...src, id, name: `${src.name} (copia)`, active: false, autoEnrollForm: false, createdAt: now, updatedAt: now };
+    } else {
+      const base = defaultInsuranceSequence(now);
+      seq = {
+        ...base,
+        id,
+        name: "Nueva secuencia",
+        agentName: "",
+        steps: [
+          {
+            id: "s1",
+            day: 0,
+            audience: "all",
+            subject: { es: "", en: "" },
+            preview: { es: "", en: "" },
+            body: { es: "Hola {{name}},\n\n\n\n{{agent}}, {{phone}}", en: "Hi {{name}},\n\n\n\n{{agent}}, {{phone}}" },
+            button: { es: "", en: "" },
+          },
+        ],
+      };
+    }
+    await saveSequence(seq);
+    return { ok: true as const, id: seq.id };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
 export async function saveSequenceAction(input: Sequence) {
   try {
     await requireAdmin();

@@ -9,6 +9,7 @@ import {
   createInsuranceSequence,
   deleteSequenceAction,
   enrollLists,
+  newSequence,
   runSequencesNow,
   saveSequenceAction,
   sendSequenceTest,
@@ -334,6 +335,14 @@ export default function SequencesView({
     });
   };
 
+  const createNew = (kind: "blank" | "copy" | "insurance") =>
+    start(async () => {
+      setMsg(null);
+      const r = await newSequence(kind, seq.id);
+      if (!r.ok) return setMsg({ kind: "err", text: r.error });
+      window.location.assign(`/agentes/secuencias?id=${r.id}`);
+    });
+
   const rows = enrollments.filter((e) => filter === "all" || e.status === filter);
 
   return (
@@ -343,9 +352,9 @@ export default function SequencesView({
           <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Correo Pro-DG</p>
           <h1 className="font-display font-black text-3xl md:text-4xl mt-1">Secuencias</h1>
         </div>
-        {list.length > 1 && (
-          <div className="flex gap-1.5 overflow-x-auto">
-            {list.map((s) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {list.length > 1 &&
+            list.map((s) => (
               <a
                 key={s.id}
                 href={`/agentes/secuencias?id=${s.id}`}
@@ -354,8 +363,33 @@ export default function SequencesView({
                 {s.name}
               </a>
             ))}
-          </div>
-        )}
+          <details className="relative">
+            <summary className={ghost + " list-none cursor-pointer"}>
+              <Plus className="w-4 h-4" /> Nueva secuencia
+            </summary>
+            <div className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-[#7cc4ff40] p-1.5 flex flex-col" style={{ background: "#0B2B5E" }}>
+              {(
+                [
+                  ["copy", "Duplicar esta secuencia", "Copia sus correos para editarlos. Empieza pausada y sin inscritos."],
+                  ["blank", "En blanco", "Un solo correo vacío para escribir desde cero."],
+                  ["insurance", "Plantilla de seguro de auto", "La secuencia original de seguimiento de cotización."],
+                ] as const
+              ).map(([kind, title, hint]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  disabled={pending || dirty}
+                  onClick={() => createNew(kind)}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/10 disabled:opacity-50"
+                >
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="block text-xs text-sky-text/65">{hint}</span>
+                </button>
+              ))}
+              {dirty && <p className="px-3 py-2 text-xs text-amber-200">Guarda los cambios antes de crear otra.</p>}
+            </div>
+          </details>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 mb-5">
