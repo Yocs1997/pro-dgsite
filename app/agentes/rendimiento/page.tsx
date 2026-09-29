@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import { listCampaigns } from "@/app/lib/server/mail";
-import { campaignStats, listTrackedEmails, type CampaignStats, type TrackedEmail } from "@/app/lib/server/mail-tracking";
+import { campaignStats, listTrackedEmails, webhookHealth, type CampaignStats, type TrackedEmail } from "@/app/lib/server/mail-tracking";
 import AdminNav from "../AdminNav";
 
 export const metadata = { title: "Rendimiento de correos | Pro-DG" };
@@ -104,6 +104,9 @@ export default async function RendimientoPage({ searchParams }: { searchParams: 
   };
   const [tracked, campaigns] = ready ? await Promise.all([safe(listTrackedEmails(1000), []), safe(listCampaigns(), [])]) : [[], []];
   const stats: Record<string, CampaignStats> = ready ? await safe(campaignStats(campaigns.map((c) => c.id)), {}) : {};
+  const hooks = ready ? await safe(webhookHealth(), []) : [];
+  const hook = new Map(hooks.map((h) => [h.type, h]));
+  const gotDelivery = hook.has("email.delivered") || hook.has("email.sent");
 
   const since = Date.now() - days * 24 * 3600 * 1000;
   const inPeriod = tracked.filter((e) => e.sentAt >= since);
@@ -331,6 +334,43 @@ export default async function RendimientoPage({ searchParams }: { searchParams: 
           {inPeriod.filter((e) => filter.match(statusOf(e))).length > rows.length && (
             <p className="text-xs text-sky-text/55 mt-2">Mostrando los 100 más recientes.</p>
           )}
+        </section>
+
+        <section className="mt-10">
+          <h2 className="font-display font-bold text-xl mb-1">Eventos recibidos de Resend</h2>
+          <p className="text-xs text-sky-text/60 mb-3">
+            Cuándo llegó por última vez cada tipo de aviso al webhook. Si un tipo dice &quot;nunca&quot;, ese dato no llegará al panel.
+          </p>
+          {gotDelivery && !hook.has("email.opened") && (
+            <div className="mb-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100 leading-relaxed">
+              Llegan entregas pero ninguna apertura. Revisa en Resend → Domains → tu dominio de envío que <strong>Open tracking</strong> esté
+              activado (y Click tracking), y en Resend → Webhooks que el evento <span className="font-mono">email.opened</span> esté marcado. Solo se
+              cuentan los correos enviados después de activarlo.
+            </div>
+          )}
+          <div className="rounded-2xl border border-[#7cc4ff33] overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-white/10">
+                <tr>
+                  <th className={th}>Evento</th>
+                  <th className={th}>Último recibido</th>
+                  <th className={th}>Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {["email.sent", "email.delivered", "email.opened", "email.clicked", "email.bounced", "email.complained", "email.received", "contact.updated"].map((type) => {
+                  const h = hook.get(type);
+                  return (
+                    <tr key={type}>
+                      <td className={td + " font-mono text-xs"}>{type}</td>
+                      <td className={td + (h ? "" : " text-amber-200")}>{h ? when(h.last) : "nunca"}</td>
+                      <td className={td}>{h?.count ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       </main>
     </>

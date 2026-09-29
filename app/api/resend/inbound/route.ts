@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { dbReady } from "@/app/lib/server/redis";
 import { saveInMail } from "@/app/lib/server/mail";
-import { isTrackingEvent, recordEmailEvent, type ResendEmailEvent } from "@/app/lib/server/mail-tracking";
+import { isTrackingEvent, noteWebhookEvent, recordEmailEvent, type ResendEmailEvent } from "@/app/lib/server/mail-tracking";
 import { sendEmail, emailLayout, esc, resendReady } from "@/app/lib/server/resend";
 import { stopFor, unsubscribe } from "@/app/lib/server/sequences";
 
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
   } catch {
     return new Response("bad json", { status: 400 });
   }
+  if (dbReady()) await noteWebhookEvent(String(event.type ?? "")).catch(() => {});
   if (isTrackingEvent(event.type)) {
     if (!dbReady()) return new Response("database not configured", { status: 500 });
     const rec = await recordEmailEvent(event as ResendEmailEvent);

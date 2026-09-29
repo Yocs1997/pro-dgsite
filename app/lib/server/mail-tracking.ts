@@ -180,6 +180,25 @@ export async function campaignStats(ids: string[]): Promise<Record<string, Campa
   return out;
 }
 
+// ─── Webhook health: last time each event type arrived, and how many ─────────
+
+const HOOK_LAST = "pdg:mail:hook:last";
+const HOOK_COUNT = "pdg:mail:hook:count";
+
+export async function noteWebhookEvent(type: string) {
+  const t = type.replace(/[^a-z._]/gi, "").slice(0, 40) || "unknown";
+  await db([["HSET", HOOK_LAST, t, Date.now()], ["HINCRBY", HOOK_COUNT, t, 1]]);
+}
+
+export async function webhookHealth(): Promise<{ type: string; last: number; count: number }[]> {
+  const [last, count] = await db([["HGETALL", HOOK_LAST], ["HGETALL", HOOK_COUNT]]);
+  const l = hashToObj(last);
+  const c = hashToObj(count);
+  return Object.keys(l)
+    .map((type) => ({ type, last: Number(l[type]), count: Number(c[type] ?? 0) }))
+    .sort((a, b) => a.type.localeCompare(b.type));
+}
+
 export async function stepStats(seq: string, stepIds: string[]): Promise<Record<string, CampaignStats>> {
   if (!stepIds.length) return {};
   const rows = await db(stepIds.map((id) => ["HGETALL", STEP_STAT_KEY(seq, id)]));
