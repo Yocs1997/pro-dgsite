@@ -167,16 +167,25 @@ export async function importContacts(rows: ImportRow[], segment: string) {
 
 // ─── Campaigns ───────────────────────────────────────────────────────────────
 
-function campaignHtml(body: string, fallbackName: string, preview?: { name: string }) {
+type CampaignLang = "es" | "en";
+
+const FOOTER: Record<CampaignLang, { why: string; unsub: string; test: string }> = {
+  es: { why: "Recibes este correo porque estuviste en contacto con Pro-DG.", unsub: "Cancelar suscripción", test: "[PRUEBA]" },
+  en: { why: "You're receiving this email because you were in contact with Pro-DG.", unsub: "Unsubscribe", test: "[TEST]" },
+};
+
+function campaignHtml(body: string, fallbackName: string, lang: CampaignLang, preview?: { name: string }) {
   const address = process.env.MAIL_POSTAL_ADDRESS ?? "";
   const nameToken = preview ? esc(preview.name) : `{{{contact.first_name|${fallbackName.replace(/[{}|]/g, "")}}}}`;
-  const bodyHtml = textToHtml(body).replace(/\{\{\s*nombre\s*\}\}/gi, nameToken);
+  // {{nombre}} and {{name}} both work, in either language.
+  const bodyHtml = textToHtml(body).replace(/\{\{\s*(nombre|name)\s*\}\}/gi, nameToken);
   const unsub = preview ? "#" : "{{{RESEND_UNSUBSCRIBE_URL}}}";
-  const footer = `Pro-DG · ${esc(address)}<br>Recibes este correo porque estuviste en contacto con Pro-DG. <a href="${unsub}" style="color:#0B2B5E">Cancelar suscripción / Unsubscribe</a>`;
+  const f = FOOTER[lang];
+  const footer = `Pro-DG · ${esc(address)}<br>${f.why} <a href="${unsub}" style="color:#0B2B5E">${f.unsub}</a>`;
   return emailLayout(bodyHtml, footer);
 }
 
-export async function sendCampaign(input: { segment: string; subject: string; body: string; fallbackName: string; testTo?: string }) {
+export async function sendCampaign(input: { segment: string; subject: string; body: string; fallbackName: string; lang?: CampaignLang; testTo?: string }) {
   try {
     const admin = await requireAdmin();
     if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
@@ -186,13 +195,15 @@ export async function sendCampaign(input: { segment: string; subject: string; bo
     const body = clean(input.body, 20000);
     const segment = clean(input.segment, 60);
     const fallbackName = clean(input.fallbackName, 30);
+    const lang: CampaignLang = input.lang === "en" ? "en" : "es";
+    const testTag = FOOTER[lang].test;
     if (!subject || !body || !segment) return { ok: false as const, error: "Completa segmento, asunto y mensaje." };
 
     if (input.testTo) {
       const to = clean(input.testTo, 120);
       if (!isEmail(to)) return { ok: false as const, error: "Correo de prueba inválido." };
-      const r = await sendEmail({ to, subject: `[PRUEBA] ${subject}`, html: campaignHtml(body, fallbackName, { name: admin.name }) });
-      await saveOutMail({ id: r.id || uid(), to: [to], subject: `[PRUEBA] ${subject}`, body, createdAt: Date.now(), kind: "test" }).catch(() => {});
+      const r = await sendEmail({ to, subject: `${testTag} ${subject}`, html: campaignHtml(body, fallbackName, lang, { name: admin.name }) });
+      await saveOutMail({ id: r.id || uid(), to: [to], subject: `${testTag} ${subject}`, body, createdAt: Date.now(), kind: "test" }).catch(() => {});
       return { ok: true as const, test: true };
     }
 
@@ -204,12 +215,12 @@ export async function sendCampaign(input: { segment: string; subject: string; bo
         from: mailFrom(),
         ...(mailReplyTo() ? { reply_to: mailReplyTo() } : {}),
         subject,
-        html: campaignHtml(body, fallbackName),
+        html: campaignHtml(body, fallbackName, lang),
         name: `${subject} — ${new Date().toISOString().slice(0, 10)}`,
         send: true,
       },
     });
-    await saveCampaign({ id: r.id || uid(), name: subject, subject, segment, createdAt: Date.now(), recipients }).catch(() => {});
+    await saveCampaign({ id: r.id || uid(), name: subject, subject, segment, createdAt: Date.now(), recipients, lang }).catch(() => {});
     return { ok: true as const, test: false };
   } catch (e) {
     return failure(e);

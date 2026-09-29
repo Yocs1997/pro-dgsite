@@ -58,12 +58,14 @@ function previewHtml(body: string, name: string, footer?: string) {
     .split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 16px;line-height:1.6">${esc(p).replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)]/g, (u) => `<a href="${u}" style="color:#0096FF">${u}</a>`).replace(/\n/g, "<br>")}</p>`)
     .join("")
-    .replace(/\{\{\s*nombre\s*\}\}/gi, esc(name));
+    .replace(/\{\{\s*(nombre|name)\s*\}\}/gi, esc(name));
   return `<body style="margin:0;background:#eef3fa;font-family:Arial,sans-serif;color:#10213d"><div style="max-width:600px;margin:16px auto;background:#fff;border-radius:14px;overflow:hidden">
 <div style="background:#0B2B5E;padding:18px 24px;font-size:20px;font-weight:800;color:#fff">Pro<span style="color:#33aaff">-DG</span></div>
 <div style="padding:24px;font-size:15px">${paras || '<p style="color:#8a97aa">Tu mensaje aparecerá aquí…</p>'}</div>
 ${footer ? `<div style="padding:14px 24px;background:#f5f8fc;font-size:12px;color:#5b6b82">${footer}</div>` : ""}</div></body>`;
 }
+
+const GREETING = { es: "Hola {{nombre}},\n\n", en: "Hi {{name}},\n\n" } as const;
 
 // ─── Compose (also used for replies) ─────────────────────────────────────────
 
@@ -538,7 +540,8 @@ function CampaignsView({
   }, [contacts]);
   const [segment, setSegment] = useState(segments[0]?.[0] ?? "Leads");
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("Hola {{nombre}},\n\n");
+  const [lang, setLang] = useState<"es" | "en">("es");
+  const [body, setBody] = useState<string>(GREETING.es);
   const [fallback, setFallback] = useState("");
   const [testTo, setTestTo] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -547,36 +550,70 @@ function CampaignsView({
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const count = segments.find(([s]) => s === segment)?.[1] ?? 0;
 
+  const token = lang === "es" ? "{{nombre}}" : "{{name}}";
   const insertName = () => {
     const el = bodyRef.current;
-    if (!el) return setBody((b) => b + "{{nombre}}");
+    if (!el) return setBody((b) => b + token);
     const { selectionStart: a, selectionEnd: z } = el;
-    setBody((b) => b.slice(0, a) + "{{nombre}}" + b.slice(z));
+    setBody((b) => b.slice(0, a) + token + b.slice(z));
     requestAnimationFrame(() => {
       el.focus();
-      el.setSelectionRange(a + 10, a + 10);
+      el.setSelectionRange(a + token.length, a + token.length);
+    });
+  };
+
+  const switchLang = (l: "es" | "en") => {
+    setLang(l);
+    // Swap the greeting line if it's still the default one.
+    setBody((b) => {
+      const other = l === "es" ? GREETING.en : GREETING.es;
+      return b.startsWith(other.trim()) ? GREETING[l] + b.slice(other.trim().length).replace(/^\n+/, "") : b;
     });
   };
 
   const run = (test: boolean) =>
     start(async () => {
       setMsg(null);
-      const r = await sendCampaign({ segment, subject, body, fallbackName: fallback, ...(test ? { testTo } : {}) });
+      const r = await sendCampaign({ segment, subject, body, fallbackName: fallback, lang, ...(test ? { testTo } : {}) });
       setConfirming(false);
       if (!r.ok) return setMsg({ kind: "err", text: r.error });
       if (r.test) setMsg({ kind: "ok", text: `Prueba enviada a ${testTo}. Revisa cómo se ve.` });
       else {
         setMsg({ kind: "ok", text: `¡Campaña enviada a la lista "${segment}"! Resend la está entregando.` });
-        onDone({ id: String(Date.now()), name: subject, subject, segment, createdAt: Date.now(), recipients: count, when: "ahora" });
+        onDone({ id: String(Date.now()), name: subject, subject, segment, createdAt: Date.now(), recipients: count, lang, when: "ahora" });
         setSubject("");
-        setBody("Hola {{nombre}},\n\n");
+        setBody(GREETING[lang]);
       }
     });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
       <div className="rounded-2xl border border-[#7cc4ff33] p-5 sm:p-6 flex flex-col gap-4" style={glass}>
-        <h2 className="font-display font-bold text-xl">Nueva campaña</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display font-bold text-xl">Nueva campaña</h2>
+          <div role="radiogroup" aria-label="Idioma del correo" className="flex rounded-full border border-[#7cc4ff40] p-1">
+            {([
+              ["es", "Español"],
+              ["en", "English"],
+            ] as const).map(([l, text]) => (
+              <button
+                key={l}
+                type="button"
+                role="radio"
+                aria-checked={lang === l}
+                onClick={() => switchLang(l)}
+                className={"px-4 py-1.5 rounded-full text-sm font-semibold transition-colors " + (lang === l ? "bg-electric text-white" : "text-sky-text/75 hover:text-white")}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-sky-text/60 -mt-2">
+          {lang === "es"
+            ? "El pie del correo y el enlace de baja irán en español."
+            : "The footer and unsubscribe link will be in English."}
+        </p>
         {!setup.postal && <Notice kind="warn">Antes de enviar campañas, agrega tu dirección postal en la variable MAIL_POSTAL_ADDRESS (la ley CAN-SPAM de EE. UU. la exige en el pie del correo).</Notice>}
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Enviar a la lista</span>
@@ -591,7 +628,7 @@ function CampaignsView({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Asunto</span>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={input} placeholder="Ej. ¿Ya cotizaste tu seguro de auto este año?" />
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={input} placeholder={lang === "es" ? "Ej. ¿Ya cotizaste tu seguro de auto este año?" : "e.g. Have you compared car insurance this year?"} />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="flex items-center justify-between">
@@ -604,7 +641,7 @@ function CampaignsView({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Si no tenemos el nombre, usar</span>
-          <input value={fallback} onChange={(e) => setFallback(e.target.value)} className={input} placeholder='(vacío) → "Hola ,"   ·   ej. "amigo"' />
+          <input value={fallback} onChange={(e) => setFallback(e.target.value)} className={input} placeholder={lang === "es" ? '(vacío) → "Hola ,"   ·   ej. "amigo"' : '(empty) → "Hi ,"   ·   e.g. "there"'} />
         </label>
         <div className="grid sm:grid-cols-[1fr_auto] gap-2">
           <input value={testTo} onChange={(e) => setTestTo(e.target.value)} className={input} placeholder="Tu correo para una prueba" inputMode="email" />
@@ -654,7 +691,11 @@ function CampaignsView({
             title="Vista previa"
             sandbox=""
             className="w-full h-[420px] rounded-xl bg-white"
-            srcDoc={previewHtml(body, adminName, `Pro-DG · ${setup.postal ? "(tu dirección postal)" : "⚠ falta dirección postal"}<br>Cancelar suscripción / Unsubscribe`)}
+            srcDoc={previewHtml(body, adminName, `Pro-DG · ${setup.postal ? "(tu dirección postal)" : "⚠ falta dirección postal"}<br>${
+                lang === "es"
+                  ? "Recibes este correo porque estuviste en contacto con Pro-DG. Cancelar suscripción"
+                  : "You're receiving this email because you were in contact with Pro-DG. Unsubscribe"
+              }`)}
           />
         </div>
         <div className="rounded-2xl border border-[#7cc4ff33] p-5" style={glass}>
@@ -664,7 +705,7 @@ function CampaignsView({
               <li key={c.id} className="py-2 text-sm flex justify-between gap-3">
                 <span className="truncate">{c.subject}</span>
                 <span className="text-xs text-sky-text/60 shrink-0">
-                  {c.segment} · {c.recipients} · {c.when}
+                  {c.lang ? c.lang.toUpperCase() + " · " : ""}{c.segment} · {c.recipients} · {c.when}
                 </span>
               </li>
             ))}

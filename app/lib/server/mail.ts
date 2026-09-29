@@ -32,6 +32,7 @@ export type Campaign = {
   segment: string;
   createdAt: number;
   recipients: number;
+  lang?: "es" | "en";
 };
 
 const IN_KEY = (id: string) => `pdg:mail:in:${id}`;
