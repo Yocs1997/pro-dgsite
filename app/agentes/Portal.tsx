@@ -17,6 +17,8 @@ import {
   Store,
   Trash2,
   Inbox,
+  Car,
+  Mail,
 } from "lucide-react";
 import { logout } from "./actions";
 import SendQuote from "./SendQuote";
@@ -345,6 +347,24 @@ export default function Portal({
                 </span>
               )}
             </a>
+            {isAdmin && (
+              <>
+                <a
+                  href="/agentes/seguros"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <Car className="w-4 h-4" />
+                  <span className="hidden sm:inline">Seguros</span>
+                </a>
+                <a
+                  href="/agentes/correo"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span className="hidden sm:inline">Correo</span>
+                </a>
+              </>
+            )}
             <form action={logout}>
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors">
                 <LogOut className="w-4 h-4" />

@@ -109,6 +109,7 @@ function Nav({ lang, setLang, t }: { lang: Language; setLang: (l: Language) => v
     { href: "#team", label: t.team },
     { href: "#clients", label: t.clients },
     { href: "/cotizador", label: lang === "es" ? "Cotizador" : "Quote Builder" },
+    { href: "/seguros", label: lang === "es" ? "Seguros de auto" : "Car Insurance" },
   ];
 
   return (

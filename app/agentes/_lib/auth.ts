@@ -91,8 +91,11 @@ export async function destroySession() {
 }
 
 export async function getSession(): Promise<SessionUser | null> {
+  // Read cookies first: this marks every page that checks the login as dynamic,
+  // even if the portal variables are missing at build time.
+  const jar = await cookies();
   if (!configReady()) return null;
-  const token = (await cookies()).get(COOKIE)?.value;
+  const token = jar.get(COOKIE)?.value;
   if (!token) return null;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return null;

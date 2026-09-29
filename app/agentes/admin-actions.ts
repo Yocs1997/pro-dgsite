@@ -1,0 +1,206 @@
+"use server";
+
+import { getSession } from "./_lib/auth";
+import { INS_STATUSES, setLeadStatus, type InsStatus } from "@/app/lib/server/insurance";
+import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
+import { upsertContact, segmentId, listLocalContacts } from "@/app/lib/server/contacts";
+import { deleteInMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
+import { isEmail } from "@/app/seguros/model";
+
+async function requireAdmin() {
+  const u = await getSession();
+  if (!u || u.role !== "admin") throw new Error("No autorizado");
+  return u;
+}
+
+const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
+const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const failure = (e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : "Error inesperado" });
+
+// ─── Insurance leads ─────────────────────────────────────────────────────────
+
+export async function updateLeadStatus(id: string, status: InsStatus) {
+  try {
+    await requireAdmin();
+    if (!INS_STATUSES.includes(status)) return { ok: false as const, error: "Estado inválido" };
+    await setLeadStatus(clean(id, 64), status);
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// ─── Inbox ───────────────────────────────────────────────────────────────────
+
+export type OpenedMail = {
+  id: string;
+  from: string;
+  to: string[];
+  cc: string[];
+  subject: string;
+  html: string | null;
+  text: string | null;
+  createdAt: string;
+  messageId: string;
+  replyTo: string[];
+  attachments: { filename: string; size?: number }[];
+};
+
+export async function openMessage(id: string) {
+  try {
+    await requireAdmin();
+    const m = await resend<{
+      id: string; from: string; to: string[]; cc?: string[]; subject: string; html: string | null; text: string | null;
+      created_at: string; message_id: string; reply_to?: string[]; attachments?: { filename: string; size?: number }[];
+    }>(`/emails/receiving/${encodeURIComponent(clean(id, 64))}`);
+    await markRead(id).catch(() => {});
+    const out: OpenedMail = {
+      id: m.id,
+      from: m.from,
+      to: m.to ?? [],
+      cc: m.cc ?? [],
+      subject: m.subject ?? "",
+      html: m.html,
+      text: m.text,
+      createdAt: m.created_at,
+      messageId: m.message_id,
+      replyTo: m.reply_to ?? [],
+      attachments: (m.attachments ?? []).map((a) => ({ filename: a.filename, size: a.size })),
+    };
+    return { ok: true as const, mail: out };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function setRead(id: string, read: boolean) {
+  try {
+    await requireAdmin();
+    await markRead(clean(id, 64), read);
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function removeMessage(id: string) {
+  try {
+    await requireAdmin();
+    await deleteInMail(clean(id, 64));
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// ─── Compose / reply ─────────────────────────────────────────────────────────
+
+export async function sendMessage(input: { to: string; subject: string; body: string; inReplyTo?: string; references?: string }) {
+  try {
+    await requireAdmin();
+    if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
+    const to = clean(input.to, 500)
+      .split(/[,;\s]+/)
+      .filter(Boolean);
+    if (!to.length || to.length > 20 || !to.every(isEmail)) return { ok: false as const, error: "Revisa los destinatarios (máximo 20, separados por coma)." };
+    const subject = clean(input.subject, 200);
+    const body = clean(input.body, 20000);
+    if (!subject || !body) return { ok: false as const, error: "Escribe un asunto y un mensaje." };
+    const inReplyTo = clean(input.inReplyTo, 300);
+    const references = clean(input.references, 2000);
+    const r = await sendEmail({
+      to,
+      subject,
+      html: emailLayout(textToHtml(body)),
+      text: body,
+      ...(inReplyTo ? { headers: { "In-Reply-To": inReplyTo, References: references || inReplyTo } } : {}),
+    });
+    await saveOutMail({ id: r.id || uid(), to, subject, body, createdAt: Date.now(), kind: inReplyTo ? "reply" : "email", ...(inReplyTo ? { inReplyTo } : {}) }).catch(() => {});
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// ─── Contacts ────────────────────────────────────────────────────────────────
+
+export type ImportRow = { email: string; firstName?: string; lastName?: string };
+
+/** Imports a small batch (the page sends ~10 at a time to stay within Resend's rate limit). */
+export async function importContacts(rows: ImportRow[], segment: string) {
+  try {
+    await requireAdmin();
+    if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
+    const seg = clean(segment, 60) || "Leads";
+    let added = 0;
+    const failed: string[] = [];
+    for (const r of (rows ?? []).slice(0, 15)) {
+      const email = clean(r.email, 120).toLowerCase();
+      if (!isEmail(email)) {
+        failed.push(email || "(vacío)");
+        continue;
+      }
+      try {
+        await upsertContact({ email, firstName: clean(r.firstName, 60), lastName: clean(r.lastName, 60) }, seg);
+        added++;
+      } catch {
+        failed.push(email);
+      }
+      await new Promise((res) => setTimeout(res, 300));
+    }
+    return { ok: true as const, added, failed };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+// ─── Campaigns ───────────────────────────────────────────────────────────────
+
+function campaignHtml(body: string, fallbackName: string, preview?: { name: string }) {
+  const address = process.env.MAIL_POSTAL_ADDRESS ?? "";
+  const nameToken = preview ? esc(preview.name) : `{{{contact.first_name|${fallbackName.replace(/[{}|]/g, "")}}}}`;
+  const bodyHtml = textToHtml(body).replace(/\{\{\s*nombre\s*\}\}/gi, nameToken);
+  const unsub = preview ? "#" : "{{{RESEND_UNSUBSCRIBE_URL}}}";
+  const footer = `Pro-DG · ${esc(address)}<br>Recibes este correo porque estuviste en contacto con Pro-DG. <a href="${unsub}" style="color:#0B2B5E">Cancelar suscripción / Unsubscribe</a>`;
+  return emailLayout(bodyHtml, footer);
+}
+
+export async function sendCampaign(input: { segment: string; subject: string; body: string; fallbackName: string; testTo?: string }) {
+  try {
+    const admin = await requireAdmin();
+    if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
+    if (!process.env.MAIL_POSTAL_ADDRESS)
+      return { ok: false as const, error: "Agrega tu dirección postal en la variable MAIL_POSTAL_ADDRESS (la ley exige incluirla en campañas)." };
+    const subject = clean(input.subject, 200);
+    const body = clean(input.body, 20000);
+    const segment = clean(input.segment, 60);
+    const fallbackName = clean(input.fallbackName, 30);
+    if (!subject || !body || !segment) return { ok: false as const, error: "Completa segmento, asunto y mensaje." };
+
+    if (input.testTo) {
+      const to = clean(input.testTo, 120);
+      if (!isEmail(to)) return { ok: false as const, error: "Correo de prueba inválido." };
+      const r = await sendEmail({ to, subject: `[PRUEBA] ${subject}`, html: campaignHtml(body, fallbackName, { name: admin.name }) });
+      await saveOutMail({ id: r.id || uid(), to: [to], subject: `[PRUEBA] ${subject}`, body, createdAt: Date.now(), kind: "test" }).catch(() => {});
+      return { ok: true as const, test: true };
+    }
+
+    const segId = await segmentId(segment);
+    const recipients = (await listLocalContacts()).filter((c) => c.segments.includes(segment)).length;
+    const r = await resend<{ id: string }>("/broadcasts", {
+      body: {
+        segment_id: segId,
+        from: mailFrom(),
+        ...(mailReplyTo() ? { reply_to: mailReplyTo() } : {}),
+        subject,
+        html: campaignHtml(body, fallbackName),
+        name: `${subject} — ${new Date().toISOString().slice(0, 10)}`,
+        send: true,
+      },
+    });
+    await saveCampaign({ id: r.id || uid(), name: subject, subject, segment, createdAt: Date.now(), recipients }).catch(() => {});
+    return { ok: true as const, test: false };
+  } catch (e) {
+    return failure(e);
+  }
+}
