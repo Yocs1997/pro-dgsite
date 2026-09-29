@@ -38,6 +38,7 @@ import {
 import { Pencil, Save, X as XIcon } from "lucide-react";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
+import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
 
 type Setup = { resend: boolean; db: boolean; from: string; replyTo: string; postal: boolean; postalAddress: string; webhook: boolean };
 type Tab = "inbox" | "compose" | "campaigns" | "contacts" | "sent";
@@ -346,6 +347,15 @@ function parseCsv(text: string): { rows: ImportRow[]; invalid: number } {
   const iFirst = find(/first|^nombre$|^primer/);
   const iLast = find(/last|apellido|surname/);
   const iFull = iFirst < 0 ? find(/name|nombre/) : -1;
+  const iPhone = find(/tel|phone|cel|m[oó]vil|whats/);
+  const iState = find(/^estado$|^state$|^st$|^provincia$/);
+  const iVehicle = find(/veh[ií]culo|vehicle|^car$|^auto$|^carro$/);
+  const iYear = find(/^a[nñ]o$|^year$/);
+  const iMake = find(/^marca$|^make$/);
+  const iModel = find(/^modelo$|^model$/);
+  const iLang = find(/idioma|^lang|language/);
+  const iIns = find(/seguro|insur|asegurado/);
+  const cell = (cells: string[], i: number) => (i >= 0 ? cells[i] ?? "" : "");
 
   const rows: ImportRow[] = [];
   let invalid = 0;
@@ -375,7 +385,17 @@ function parseCsv(text: string): { rows: ImportRow[]; invalid: number } {
       first = parts[0] ?? "";
       last = parts.slice(1).join(" ");
     }
-    rows.push({ email, firstName: first.trim(), lastName: last.trim() });
+    const vehicle = cell(cells, iVehicle) || [cell(cells, iYear), cell(cells, iMake), cell(cells, iModel)].filter(Boolean).join(" ");
+    rows.push({
+      email,
+      firstName: first.trim(),
+      lastName: last.trim(),
+      phone: cell(cells, iPhone),
+      state: cell(cells, iState),
+      vehicle: vehicle.trim(),
+      lang: cell(cells, iLang),
+      insured: cell(cells, iIns),
+    });
   }
   return { rows, invalid };
 }
@@ -384,6 +404,11 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
   const [editing, setEditing] = useState(false);
   const [first, setFirst] = useState(c.firstName);
   const [last, setLast] = useState(c.lastName);
+  const [phone, setPhone] = useState(c.phone ?? "");
+  const [state, setState] = useState(c.state ?? "");
+  const [vehicle, setVehicle] = useState(c.vehicle ?? "");
+  const [lang, setLang] = useState<string>(c.lang ?? "");
+  const [insured, setInsured] = useState(c.insured ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const small = "w-full rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-2.5 py-1.5 text-sm text-white outline-none focus:border-[#33aaff]";
@@ -391,10 +416,19 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
   const save = async () => {
     setBusy(true);
     setErr(null);
-    const r = await editContact(c.email, first, last);
+    const r = await editContact(c.email, first, last, { phone, state, vehicle, lang, insured });
     setBusy(false);
     if (!r.ok) return setErr(r.error);
-    onChange({ ...c, firstName: first.trim(), lastName: last.trim() });
+    const d = r.details;
+    setState(d.state ?? "");
+    onChange({
+      email: c.email,
+      segments: c.segments,
+      addedAt: c.addedAt,
+      firstName: first.trim(),
+      lastName: last.trim(),
+      ...d,
+    });
     setEditing(false);
   };
   const del = async () => {
@@ -414,6 +448,26 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
           <div className="grid grid-cols-2 gap-2">
             <input className={small} value={first} onChange={(e) => setFirst(e.target.value)} placeholder="Nombre" aria-label="Nombre" />
             <input className={small} value={last} onChange={(e) => setLast(e.target.value)} placeholder="Apellido" aria-label="Apellido" />
+            <input className={small} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono" aria-label="Teléfono" />
+            <input
+              className={small}
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder={stateFromPhone(phone) ? `Estado (por teléfono: ${stateFromPhone(phone)})` : "Estado (NY, Florida…)"}
+              aria-label="Estado"
+            />
+            <input className={small + " col-span-2"} value={vehicle} onChange={(e) => setVehicle(e.target.value)} placeholder="Vehículo (2019 Honda Civic)" aria-label="Vehículo" />
+            <select className={small} value={lang} onChange={(e) => setLang(e.target.value)} aria-label="Idioma">
+              <option value="" className="bg-[#0B2B5E]">Idioma: sin dato</option>
+              <option value="es" className="bg-[#0B2B5E]">Español</option>
+              <option value="en" className="bg-[#0B2B5E]">English</option>
+            </select>
+            <select className={small} value={insured} onChange={(e) => setInsured(e.target.value)} aria-label="Seguro">
+              <option value="" className="bg-[#0B2B5E]">Seguro: sin dato</option>
+              <option value="yes" className="bg-[#0B2B5E]">Con seguro</option>
+              <option value="lapsed" className="bg-[#0B2B5E]">Vencido</option>
+              <option value="no" className="bg-[#0B2B5E]">Sin seguro</option>
+            </select>
           </div>
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setEditing(false)} disabled={busy} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#7cc4ff55] text-xs">
@@ -429,6 +483,19 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
           <div className="min-w-0">
             <p className="truncate">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</p>
             <p className="text-xs text-sky-text/60 truncate">{c.email}</p>
+            {(c.state || c.vehicle || c.phone || c.insured) && (
+              <p className="text-[11px] text-sky-text/55 truncate">
+                {[
+                  c.state && `${stateLabel(c.state)}${c.stateGuessed ? " (por teléfono)" : ""}`,
+                  c.vehicle,
+                  c.phone,
+                  c.insured && INSURED_LABEL[c.insured],
+                  c.lang && c.lang.toUpperCase(),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-[11px] text-sky-text/60 mr-1 hidden sm:inline">{c.segments.join(", ")}</span>
@@ -455,6 +522,19 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
   const [q, setQ] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const parsed = useMemo(() => parseCsv(text), [text]);
+  const found = useMemo(() => {
+    let typed = 0,
+      guessed = 0,
+      vehicle = 0,
+      phone = 0;
+    for (const r of parsed.rows) {
+      if (normalizeState(r.state ?? "")) typed++;
+      else if (stateFromPhone(r.phone ?? "")) guessed++;
+      if (r.vehicle) vehicle++;
+      if (r.phone) phone++;
+    }
+    return { typed, guessed, vehicle, phone };
+  }, [parsed]);
 
   const segments = useMemo(() => {
     const m = new Map<string, number>();
@@ -487,12 +567,21 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
           const e = b.email.toLowerCase();
           if (r.failed.includes(e)) return;
           const old = map.get(e);
+          const typed = normalizeState(b.state ?? "");
+          const guessed = typed ? "" : stateFromPhone(b.phone ?? "");
+          const keepTyped = !typed && old?.state && !old.stateGuessed;
           map.set(e, {
+            ...old,
             email: e,
             firstName: b.firstName || old?.firstName || "",
             lastName: b.lastName || old?.lastName || "",
             segments: Array.from(new Set([...(old?.segments ?? []), segment])),
             addedAt: old?.addedAt ?? now,
+            ...(b.phone ? { phone: b.phone } : {}),
+            ...(b.vehicle ? { vehicle: b.vehicle } : {}),
+            ...(normalizeLang(b.lang ?? "") ? { lang: normalizeLang(b.lang ?? "") as "es" | "en" } : {}),
+            ...(normalizeInsured(b.insured ?? "") ? { insured: normalizeInsured(b.insured ?? "") } : {}),
+            ...(typed ? { state: typed, stateGuessed: false } : guessed && !keepTyped ? { state: guessed, stateGuessed: true } : {}),
           });
         });
         return [...map.values()].sort((a, b) => b.addedAt - a.addedAt);
@@ -511,6 +600,11 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
           <h2 className="font-display font-bold text-xl">Importar contactos</h2>
           <p className="text-sm text-sky-text/65 mt-1">
             Sube un archivo CSV (desde Excel: Guardar como → CSV) o pega la lista. Columnas: <b>correo</b>, <b>nombre</b>, <b>apellido</b>.
+          </p>
+          <p className="text-xs text-sky-text/55 mt-1.5 leading-relaxed">
+            Opcionales, para personalizar las secuencias: <b>telefono</b>, <b>estado</b>, <b>vehiculo</b> (o <b>año</b>, <b>marca</b>,{" "}
+            <b>modelo</b>), <b>idioma</b> (es/en) y <b>seguro</b> (sí / vencido / no). Si falta el estado, se calcula con el código de área del
+            teléfono. Volver a importar una lista con más columnas completa los datos sin duplicar a nadie.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -534,7 +628,7 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
           onChange={(e) => setText(e.target.value)}
           rows={7}
           className={input + " font-mono text-xs"}
-          placeholder={"correo,nombre,apellido\nmaria@correo.com,María,López\njose@correo.com,José,Pérez"}
+          placeholder={"correo,nombre,apellido,telefono,estado,vehiculo,idioma,seguro\nmaria@correo.com,María,López,(718) 555-0101,NY,2019 Honda Civic,es,vencido\njose@correo.com,José,Pérez,305-555-0199,,2021 Toyota Corolla,en,sí"}
         />
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Guardar en la lista</span>
@@ -549,6 +643,12 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
           <p className="text-sm text-sky-text/80">
             <b className="text-white">{parsed.rows.length}</b> contactos listos para importar
             {parsed.invalid > 0 && <span className="text-amber-200"> · {parsed.invalid} filas sin correo válido (se omiten)</span>}
+            {parsed.rows.length > 0 && (found.typed || found.guessed || found.vehicle || found.phone) ? (
+              <span className="block text-xs text-sky-text/65 mt-1">
+                Con estado: {found.typed + found.guessed}
+                {found.guessed ? ` (${found.guessed} calculado por el teléfono)` : ""} · Con vehículo: {found.vehicle} · Con teléfono: {found.phone}
+              </span>
+            ) : null}
           </p>
         )}
         {progress && (

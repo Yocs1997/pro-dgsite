@@ -7,7 +7,8 @@ import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
 import { deleteQuote, updateQuoteData } from "./_lib/quotes";
 import type { InsuranceInput } from "@/app/seguros/model";
 import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
-import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact } from "@/app/lib/server/contacts";
+import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact, type ContactDetails } from "@/app/lib/server/contacts";
+import { normalizeInsured, normalizeLang, normalizeState, stateFromPhone } from "@/app/lib/contact-details";
 import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
 import { isEmail } from "@/app/seguros/model";
 
@@ -141,7 +142,23 @@ export async function sendMessage(input: { to: string; subject: string; body: st
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
 
-export type ImportRow = { email: string; firstName?: string; lastName?: string };
+export type ImportRow = { email: string; firstName?: string; lastName?: string; phone?: string; state?: string; vehicle?: string; lang?: string; insured?: string };
+
+/** Cleans the optional details; a missing state is guessed from the phone's area code. */
+function details(r: Pick<ImportRow, "phone" | "state" | "vehicle" | "lang" | "insured">): ContactDetails {
+  const phone = clean(r.phone, 30);
+  const typed = normalizeState(clean(r.state, 40));
+  const guessed = typed ? "" : stateFromPhone(phone);
+  const lang = normalizeLang(clean(r.lang, 20));
+  const insured = normalizeInsured(clean(r.insured, 30));
+  return {
+    ...(phone ? { phone } : {}),
+    ...(typed || guessed ? { state: typed || guessed, stateGuessed: !typed } : {}),
+    ...(clean(r.vehicle, 80) ? { vehicle: clean(r.vehicle, 80) } : {}),
+    ...(lang ? { lang } : {}),
+    ...(insured ? { insured } : {}),
+  };
+}
 
 /** Imports a small batch (the page sends ~10 at a time to stay within Resend's rate limit). */
 export async function importContacts(rows: ImportRow[], segment: string) {
@@ -159,7 +176,7 @@ export async function importContacts(rows: ImportRow[], segment: string) {
         continue;
       }
       try {
-        await upsertContact({ email, firstName: clean(r.firstName, 60), lastName: clean(r.lastName, 60) }, seg);
+        await upsertContact({ email, firstName: clean(r.firstName, 60), lastName: clean(r.lastName, 60), ...details(r) }, seg);
         added++;
       } catch (e) {
         failed.push(email);
@@ -321,13 +338,14 @@ export async function removeCampaignRecord(id: string) {
   }
 }
 
-export async function editContact(email: string, firstName: string, lastName: string) {
+export async function editContact(email: string, firstName: string, lastName: string, extra?: Pick<ImportRow, "phone" | "state" | "vehicle" | "lang" | "insured">) {
   try {
     await requireAdmin();
     const e = clean(email, 120).toLowerCase();
     if (!isEmail(e)) return { ok: false as const, error: "Correo inválido." };
-    await updateContact(e, { firstName: clean(firstName, 60), lastName: clean(lastName, 60) });
-    return { ok: true as const };
+    const d = extra ? details(extra) : undefined;
+    await updateContact(e, { firstName: clean(firstName, 60), lastName: clean(lastName, 60) }, d);
+    return { ok: true as const, details: d ?? {} };
   } catch (e) {
     return failure(e);
   }

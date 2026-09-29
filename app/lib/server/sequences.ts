@@ -4,6 +4,8 @@ import { db, listRecords } from "./redis";
 import { resend, mailFrom, mailReplyTo, esc } from "./resend";
 import { listLeads, type InsuranceLead } from "./insurance";
 import { STEP_STAT_KEY } from "./mail-tracking";
+import { getLocalContacts } from "./contacts";
+import { normalizeState, stateLabel } from "@/app/lib/contact-details";
 
 // Automated email sequences ("drip"): a list of steps sent N days after a contact
 // is enrolled. Contacts are enrolled from one or more contact lists (segments) or
@@ -268,11 +270,7 @@ function varsFromLead(l: InsuranceLead) {
   return { vehicle, state: stateName(l.driver?.state ?? ""), insured: l.coverage?.insured ?? "", firstName: l.driver?.firstName ?? "", lang: l.lang };
 }
 
-const STATE_NAMES: Record<string, string> = {
-  NY: "New York", NJ: "New Jersey", FL: "Florida", DC: "DC", PA: "Pennsylvania", CT: "Connecticut", MD: "Maryland", VA: "Virginia",
-  MA: "Massachusetts", GA: "Georgia", TX: "Texas", CA: "California", IL: "Illinois", NC: "North Carolina",
-};
-const stateName = (s: string) => STATE_NAMES[s.toUpperCase()] ?? s;
+const stateName = (s: string) => (s ? stateLabel(normalizeState(s) || s) : "");
 
 /** Most recent lead data per email, to personalize list contacts who also filled the form. */
 export async function leadVarsByEmail(): Promise<Map<string, ReturnType<typeof varsFromLead>>> {
@@ -385,7 +383,24 @@ const fromFor = (seq: Sequence) => {
 
 type Job = { seq: Sequence; enr: Enrollment; step: Step };
 
+/** Fills details still missing on an enrollment from the contact record (e.g. after re-importing a list with more columns). */
+async function fillFromContacts(jobs: Job[]) {
+  const need = jobs.filter(({ enr }) => !enr.firstName || !enr.vehicle || !enr.state || !enr.insured);
+  if (!need.length) return;
+  const recs = await getLocalContacts(need.map(({ enr }) => enr.email));
+  need.forEach(({ enr }, i) => {
+    const c = recs[i];
+    if (!c) return;
+    if (!enr.firstName && c.firstName) enr.firstName = c.firstName;
+    if (!enr.vehicle && c.vehicle) enr.vehicle = c.vehicle;
+    if (!enr.state && c.state) enr.state = stateName(c.state);
+    if (!enr.insured && c.insured) enr.insured = c.insured;
+  });
+}
+
 async function sendJobs(jobs: Job[]): Promise<(string | null)[]> {
+  // Nice to have: never let it block sending.
+  await fillFromContacts(jobs).catch((e) => console.error("[sequences] could not read contact details", e));
   const out: (string | null)[] = [];
   for (let i = 0; i < jobs.length; i += 100) {
     const chunk = jobs.slice(i, i + 100);

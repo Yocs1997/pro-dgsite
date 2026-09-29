@@ -2,6 +2,7 @@
 
 import { getSession } from "./_lib/auth";
 import { isEmail } from "@/app/seguros/model";
+import { stateLabel } from "@/app/lib/contact-details";
 import { listLocalContacts } from "@/app/lib/server/contacts";
 import { resendReady } from "@/app/lib/server/resend";
 import { defaultInsuranceSequence } from "@/app/lib/server/sequence-default";
@@ -154,14 +155,15 @@ export async function enrollLists(id: string, segments: string[], lang: Lang) {
     const res = await enroll(
       seq,
       contacts.map((c) => {
+        // Details typed into the contact list win; otherwise use their quote form, if any.
         const l = leads.get(c.email.toLowerCase());
         return {
           email: c.email,
           firstName: c.firstName || l?.firstName || "",
-          lang: l?.lang ?? fallbackLang,
-          vehicle: l?.vehicle ?? "",
-          state: l?.state ?? "",
-          insured: l?.insured ?? "",
+          lang: c.lang || l?.lang || fallbackLang,
+          vehicle: c.vehicle || l?.vehicle || "",
+          state: c.state ? stateLabel(c.state) : l?.state || "",
+          insured: c.insured || l?.insured || "",
           source: c.segments.filter((s) => chosen.has(s)).join(", "),
         };
       })
