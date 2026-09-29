@@ -201,7 +201,7 @@ export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "first
 
 // ─── Unsubscribe ─────────────────────────────────────────────────────────────
 
-const siteUrl = () => (process.env.SITE_URL || "https://pro-dg.com").replace(/\/$/, "");
+const siteUrl = () => (process.env.SITE_URL || "https://www.pro-dg.com").replace(/\/$/, "");
 
 /** Opaque token for the unsubscribe link (no email address in the URL). */
 export async function unsubToken(email: string): Promise<string> {

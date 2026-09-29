@@ -150,7 +150,7 @@ export default async function RendimientoPage({ searchParams }: { searchParams: 
         )}
         {ready && tracked.length === 0 && (
           <div className="mb-5 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100 leading-relaxed">
-            Aún no hay datos. En Resend → Webhooks, abre el webhook <span className="font-mono">https://pro-dg.com/api/resend/inbound</span> y
+            Aún no hay datos. En Resend → Webhooks, abre el webhook <span className="font-mono">https://www.pro-dg.com/api/resend/inbound</span> y
             activa los eventos <span className="font-mono">email.sent, email.delivered, email.delivery_delayed, email.opened, email.clicked,
             email.bounced, email.complained, email.failed</span>. Para ver aperturas y clics, activa también Open tracking y Click tracking en
             Resend → Domains. Solo se registran los correos enviados después de activarlo.

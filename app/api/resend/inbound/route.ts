@@ -8,7 +8,7 @@ import { stopFor, unsubscribe } from "@/app/lib/server/sequences";
 // Resend webhook for received emails (event "email.received") and for delivery /
 // engagement tracking of sent emails (email.sent, email.delivered, email.delivery_delayed,
 // email.opened, email.clicked, email.bounced, email.complained, email.failed).
-// In Resend → Webhooks, add:  https://pro-dg.com/api/resend/inbound  and select those events.
+// In Resend → Webhooks, add:  https://www.pro-dg.com/api/resend/inbound  and select those events.
 // Also "contact.updated" (unsubscribes from campaigns). Replies, permanent bounces, spam
 // complaints and unsubscribes stop any email sequence the contact is in.
 // Copy its signing secret into the RESEND_WEBHOOK_SECRET environment variable.
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
         html: emailLayout(
           `<p style="margin:0 0 12px">Recibiste un correo de <strong>${esc(String(d.from))}</strong>:</p>
 <p style="margin:0 0 18px;font-size:17px;font-weight:700">${esc(String(d.subject ?? "(sin asunto)"))}</p>
-<p style="margin:0">Ábrelo y respóndelo en <a href="https://pro-dg.com/agentes/correo">pro-dg.com/agentes/correo</a>.</p>`
+<p style="margin:0">Ábrelo y respóndelo en <a href="https://www.pro-dg.com/agentes/correo">www.pro-dg.com/agentes/correo</a>.</p>`
         ),
         category: "notify",
       });
