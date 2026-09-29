@@ -300,38 +300,57 @@ function InboxView({ items, setItems, onSent }: { items: (InMail & { when: strin
 
 // ─── Contacts ────────────────────────────────────────────────────────────────
 
+const EMAIL_RE = /[^\s,;<>"'()]+@[^\s,;<>"'()]+\.[^\s,;<>"'()]{2,}/;
+
+/**
+ * Reads a pasted list or CSV. Accepts commas, semicolons, tabs or plain spaces between
+ * columns, with or without a header row. A full name ("Elton Murray") is split into
+ * first name + last name so {{nombre}} greets people by their first name.
+ */
 function parseCsv(text: string): { rows: ImportRow[]; invalid: number } {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (!lines.length) return { rows: [], invalid: 0 };
-  const sep = [",", ";", "\t"].sort((a, b) => lines[0].split(b).length - lines[0].split(a).length)[0];
-  const split = (l: string) => l.split(sep).map((c) => c.trim().replace(/^"|"$/g, ""));
-  const head = split(lines[0]).map((h) => h.toLowerCase());
-  const hasHeader = head.some((h) => /mail|correo/.test(h));
-  const col = (re: RegExp, dflt: number) => {
-    const i = head.findIndex((h) => re.test(h));
-    return hasHeader ? i : dflt;
-  };
-  const iEmail = col(/mail|correo/, -1);
-  const iFirst = col(/first|nombre|^name$/, -1);
-  const iLast = col(/last|apellido/, -1);
+
+  const sep = [",", ";", "\t"].find((c) => lines[0].includes(c) || lines[1]?.includes(c)) ?? null;
+  const split = (l: string) => (sep ? l.split(sep) : [l]).map((c) => c.trim().replace(/^"|"$/g, ""));
+
+  // Header row = first line without an email address in it.
+  const hasHeader = !EMAIL_RE.test(lines[0]);
+  const head = hasHeader && sep ? split(lines[0]).map((h) => h.toLowerCase()) : [];
+  const find = (re: RegExp) => head.findIndex((h) => re.test(h));
+  const iFirst = find(/first|^nombre$|^primer/);
+  const iLast = find(/last|apellido|surname/);
+  const iFull = iFirst < 0 ? find(/name|nombre/) : -1;
+
   const rows: ImportRow[] = [];
   let invalid = 0;
   const seen = new Set<string>();
   for (const l of hasHeader ? lines.slice(1) : lines) {
-    const cells = split(l);
-    const email = (iEmail >= 0 ? cells[iEmail] : cells.find((c) => c.includes("@"))) ?? "";
-    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-    if (!ok || seen.has(email.toLowerCase())) {
-      if (!ok) invalid++;
+    const email = l.match(EMAIL_RE)?.[0] ?? "";
+    if (!email) {
+      invalid++;
       continue;
     }
-    seen.add(email.toLowerCase());
-    const others = cells.filter((c) => c !== email);
-    rows.push({
-      email,
-      firstName: iFirst >= 0 ? cells[iFirst] : others[0] ?? "",
-      lastName: iLast >= 0 ? cells[iLast] : others[1] ?? "",
-    });
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const cells = split(l);
+    let first = "";
+    let last = "";
+    if (head.length && (iFirst >= 0 || iLast >= 0)) {
+      first = cells[iFirst] ?? "";
+      last = cells[iLast] ?? "";
+    } else {
+      const full = (head.length && iFull >= 0 ? cells[iFull] ?? "" : l.replace(email, " "))
+        .replace(/[,;\t"<>()]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const parts = full.split(" ");
+      first = parts[0] ?? "";
+      last = parts.slice(1).join(" ");
+    }
+    rows.push({ email, firstName: first.trim(), lastName: last.trim() });
   }
   return { rows, invalid };
 }
@@ -367,6 +386,7 @@ function ContactsView({ contacts, setContacts, ready }: { contacts: LocalContact
         break;
       }
       failed.push(...r.failed);
+      if (r.failed.length && r.lastError) setErr(`${r.failed.length} contacto(s) no se agregaron: ${r.lastError}`);
       done += batch.length;
       setProgress({ done, total: rows.length, failed: [...failed] });
       const now = Date.now();

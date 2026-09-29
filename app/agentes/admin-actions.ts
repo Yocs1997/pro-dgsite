@@ -15,7 +15,14 @@ async function requireAdmin() {
 
 const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-const failure = (e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : "Error inesperado" });
+function explain(e: unknown): string {
+  const msg = e instanceof Error ? e.message : "Error inesperado";
+  if (/restricted|not allowed|permission|scope/i.test(msg))
+    return `Resend rechazó la operación: tu API key no tiene permiso. Crea una API key con "Full access" y ponla en RESEND_API_KEY. (${msg})`;
+  if (/api key is invalid|unauthorized|invalid api/i.test(msg)) return `La API key de Resend no es válida. Revisa RESEND_API_KEY. (${msg})`;
+  return msg;
+}
+const failure = (e: unknown) => ({ ok: false as const, error: explain(e) });
 
 // ─── Insurance leads ─────────────────────────────────────────────────────────
 
@@ -134,6 +141,7 @@ export async function importContacts(rows: ImportRow[], segment: string) {
     const seg = clean(segment, 60) || "Leads";
     let added = 0;
     const failed: string[] = [];
+    let lastError = "";
     for (const r of (rows ?? []).slice(0, 15)) {
       const email = clean(r.email, 120).toLowerCase();
       if (!isEmail(email)) {
@@ -143,12 +151,15 @@ export async function importContacts(rows: ImportRow[], segment: string) {
       try {
         await upsertContact({ email, firstName: clean(r.firstName, 60), lastName: clean(r.lastName, 60) }, seg);
         added++;
-      } catch {
+      } catch (e) {
         failed.push(email);
+        lastError = explain(e);
       }
       await new Promise((res) => setTimeout(res, 300));
     }
-    return { ok: true as const, added, failed };
+    // Every contact failed → report it as an error so the reason is visible.
+    if (added === 0 && failed.length && lastError) return { ok: false as const, error: lastError };
+    return { ok: true as const, added, failed, lastError };
   } catch (e) {
     return failure(e);
   }
