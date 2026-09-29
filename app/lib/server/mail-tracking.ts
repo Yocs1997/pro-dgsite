@@ -14,6 +14,8 @@ import { db } from "./redis";
 const TRK_KEY = (id: string) => `pdg:mail:trk:${id}`;
 const TRK_INDEX = "pdg:mail:trk";
 const CAMP_STAT_KEY = (id: string) => `pdg:mail:campstat:${id}`;
+/** Per sequence step: unique counts per milestone, plus "replied" / "unsubscribed". */
+export const STEP_STAT_KEY = (seq: string, step: string) => `pdg:mail:stepstat:${seq}:${step}`;
 const TTL_SEC = 180 * 24 * 3600;
 
 /** Each tracked milestone is stored once (first time it happens) as `${name}At`. */
@@ -58,28 +60,34 @@ function tag(tags: Tags, name: string) {
   return tags[name] ?? "";
 }
 
-/** Records one Resend event. Returns false when the event is not tracked. */
-export async function recordEmailEvent(ev: ResendEmailEvent): Promise<boolean> {
+export type RecordedEvent = { milestone: Milestone; to: string[]; permanentBounce: boolean } | null;
+
+/** Records one Resend event. Returns null when the event is not tracked. */
+export async function recordEmailEvent(ev: ResendEmailEvent): Promise<RecordedEvent> {
   const milestone = EVENT_TO_MILESTONE[ev.type];
   const d = ev.data;
-  if (!milestone || !d?.email_id) return false;
+  if (!milestone || !d?.email_id) return null;
 
   const category = tag(d.tags, "category");
-  if (category === "notify") return false; // internal heads-up emails to ourselves
+  if (category === "notify") return null; // internal heads-up emails to ourselves
 
   const id = d.email_id;
   const key = TRK_KEY(id);
   const at = Date.parse(ev.created_at ?? "") || Date.now();
   const sentAt = Date.parse(d.created_at ?? "") || at;
   const broadcast = d.broadcast_id ?? "";
+  const seq = tag(d.tags, "seq");
+  const stepId = tag(d.tags, "step");
 
   const cmds: (string | number)[][] = [
     ["HSETNX", key, "to", (d.to ?? []).join(", ")],
     ["HSETNX", key, "subject", d.subject ?? ""],
     ["HSETNX", key, "category", broadcast ? "campaign" : category || "email"],
     ["HSETNX", key, "broadcast", broadcast],
+    ["HSETNX", key, "seq", seq],
+    ["HSETNX", key, "step", stepId],
     ["HSETNX", key, "createdAt", sentAt],
-    ["HSETNX", key, `${milestone}At`, at], // index 5 → 1 if first time
+    ["HSETNX", key, `${milestone}At`, at], // index 7 → 1 if first time
     ["HSET", key, "last", milestone, "updatedAt", at],
     ["ZADD", TRK_INDEX, "NX", sentAt, id],
     ["EXPIRE", key, TTL_SEC],
@@ -93,7 +101,7 @@ export async function recordEmailEvent(ev: ResendEmailEvent): Promise<boolean> {
   if (milestone === "failed") cmds.push(["HSET", key, "failReason", (d.failed?.reason ?? "").slice(0, 300)]);
 
   const res = await db(cmds);
-  const firstTime = Number(res[5]) === 1;
+  const firstTime = Number(res[7]) === 1;
 
   // Campaign totals count each recipient once per milestone.
   if (broadcast && firstTime) {
@@ -102,9 +110,10 @@ export async function recordEmailEvent(ev: ResendEmailEvent): Promise<boolean> {
       ["EXPIRE", CAMP_STAT_KEY(broadcast), TTL_SEC],
     ]);
   }
+  if (seq && stepId && firstTime) await db([["HINCRBY", STEP_STAT_KEY(seq, stepId), milestone, 1]]);
   // Occasionally drop index entries older than the retention window.
   if (Math.random() < 0.02) await db([["ZREMRANGEBYSCORE", TRK_INDEX, 0, Date.now() - TTL_SEC * 1000]]);
-  return true;
+  return { milestone, to: (d.to ?? []).map((t) => t.toLowerCase()), permanentBounce: milestone === "bounced" && d.bounce?.type !== "Transient" };
 }
 
 export type TrackedEmail = {
@@ -156,7 +165,7 @@ export async function listTrackedEmails(limit = 500): Promise<TrackedEmail[]> {
   return out;
 }
 
-export type CampaignStats = Partial<Record<Milestone, number>>;
+export type CampaignStats = Partial<Record<Milestone | "replied" | "unsubscribed", number>>;
 
 export async function campaignStats(ids: string[]): Promise<Record<string, CampaignStats>> {
   if (!ids.length) return {};
@@ -167,6 +176,19 @@ export async function campaignStats(ids: string[]): Promise<Record<string, Campa
     const s: CampaignStats = {};
     for (const m of MILESTONES) if (h[m]) s[m] = Number(h[m]);
     out[ids[i]] = s;
+  });
+  return out;
+}
+
+export async function stepStats(seq: string, stepIds: string[]): Promise<Record<string, CampaignStats>> {
+  if (!stepIds.length) return {};
+  const rows = await db(stepIds.map((id) => ["HGETALL", STEP_STAT_KEY(seq, id)]));
+  const out: Record<string, CampaignStats> = {};
+  rows.forEach((raw, i) => {
+    const h = hashToObj(raw);
+    const s: CampaignStats = {};
+    for (const [k, v] of Object.entries(h)) (s as Record<string, number>)[k] = Number(v);
+    out[stepIds[i]] = s;
   });
   return out;
 }

@@ -11,6 +11,7 @@ const PERIODS = [7, 30, 90] as const;
 
 const CATEGORY_LABEL: Record<string, string> = {
   campaign: "Campañas",
+  sequence: "Secuencias",
   confirmation: "Confirmaciones de cotización",
   email: "Correos individuales",
   reply: "Respuestas",

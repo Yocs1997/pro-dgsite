@@ -1,7 +1,8 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
-import { INS_STATUSES, deleteLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
+import { INS_STATUSES, deleteLead, getLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
+import { stopFor } from "@/app/lib/server/sequences";
 import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
 import { deleteQuote, updateQuoteData } from "./_lib/quotes";
 import type { InsuranceInput } from "@/app/seguros/model";
@@ -34,6 +35,11 @@ export async function updateLeadStatus(id: string, status: InsStatus) {
     await requireAdmin();
     if (!INS_STATUSES.includes(status)) return { ok: false as const, error: "Estado inválido" };
     await setLeadStatus(clean(id, 64), status);
+    // Sold or lost: no more follow-up emails.
+    if (status === "vendida" || status === "perdida") {
+      const lead = await getLead(clean(id, 64));
+      if (lead?.driver?.email) await stopFor(lead.driver.email, status);
+    }
     return { ok: true as const };
   } catch (e) {
     return failure(e);

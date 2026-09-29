@@ -5,6 +5,7 @@ import { allow, dbReady } from "@/app/lib/server/redis";
 import { resendReady, sendEmail, emailLayout, esc } from "@/app/lib/server/resend";
 import { upsertContact } from "@/app/lib/server/contacts";
 import { saveLead, saveLicensePhotos, type InsuranceLead } from "@/app/lib/server/insurance";
+import { enroll, formSequence, sendNowFor, varsFromLead } from "@/app/lib/server/sequences";
 import { missingRequired, sanitizeInsurance, sanitizePhotos } from "@/app/lib/server/insurance-sanitize";
 import { label, type InsuranceInput, type Lang, type OptionGroup } from "./model";
 
@@ -72,7 +73,13 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
         }).then(() => (notified = true))
       );
     }
-    tasks.push(sendEmail({ to: driver.email, subject: confirmationSubject(lang, code), html: emailLayout(confirmationBody(lang, code, driver.firstName)), category: "confirmation" }));
+    // Exactly one email to the customer: Email 1 of the follow-up sequence when one is set
+    // to take form leads, otherwise the plain confirmation.
+    tasks.push(
+      startSequence(lead, driver.email).then((sent) =>
+        sent ? undefined : sendEmail({ to: driver.email, subject: confirmationSubject(lang, code), html: emailLayout(confirmationBody(lang, code, driver.firstName)), category: "confirmation" })
+      )
+    );
     tasks.push(upsertContact({ email: driver.email, firstName: driver.firstName, lastName: driver.lastName }, "Seguros"));
     const results = await Promise.allSettled(tasks);
     results.forEach((r) => r.status === "rejected" && console.error("[seguros] email step failed", r.reason));
@@ -82,6 +89,21 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
     return { ok: false, error: t(lang, "No pudimos enviar tu solicitud. Inténtalo de nuevo o llámanos al (240) 256-6360.", "We couldn't send your request. Please try again or call us at (240) 256-6360.") };
   }
   return { ok: true, code, email: driver.email };
+}
+
+/** Enrolls the lead in the form sequence and sends its first email. True if that email went out. */
+async function startSequence(lead: InsuranceLead | null, email: string): Promise<boolean> {
+  if (!lead || !dbReady()) return false;
+  try {
+    const seq = await formSequence();
+    if (!seq) return false;
+    const v = varsFromLead(lead);
+    const { added } = await enroll(seq, [{ email, firstName: v.firstName, lang: v.lang, vehicle: v.vehicle, state: v.state, insured: v.insured, source: "Formulario" }]);
+    return added > 0 && (await sendNowFor(seq, email));
+  } catch (e) {
+    console.error("[seguros] sequence start failed", e);
+    return false;
+  }
 }
 
 // ─── Emails ──────────────────────────────────────────────────────────────────
