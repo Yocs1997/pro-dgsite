@@ -20,7 +20,7 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
   if (s(input?.website)) return { ok: true, code: "SEG-0000", email: "" };
 
   if (!dbReady() && !resendReady()) {
-    return { ok: false, error: t(lang, "El formulario aún no está disponible. Escríbenos por WhatsApp.", "The form isn't available yet. Please contact us on WhatsApp.") };
+    return { ok: false, error: t(lang, "El formulario aún no está disponible. Llámanos al (240) 256-6360.", "The form isn't available yet. Please call us at (240) 256-6360.") };
   }
 
   const ip = ((await headers()).get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
@@ -68,17 +68,18 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
           replyTo: driver.email,
           subject: `Nueva solicitud de seguro ${code} — ${[driver.firstName, driver.lastName].filter(Boolean).join(" ") || driver.email}`,
           html: emailLayout(adminSummary({ ...base, code })),
+          category: "notify",
         }).then(() => (notified = true))
       );
     }
-    tasks.push(sendEmail({ to: driver.email, subject: confirmationSubject(lang, code), html: emailLayout(confirmationBody(lang, code, driver.firstName)) }));
+    tasks.push(sendEmail({ to: driver.email, subject: confirmationSubject(lang, code), html: emailLayout(confirmationBody(lang, code, driver.firstName)), category: "confirmation" }));
     tasks.push(upsertContact({ email: driver.email, firstName: driver.firstName, lastName: driver.lastName }, "Seguros"));
     const results = await Promise.allSettled(tasks);
     results.forEach((r) => r.status === "rejected" && console.error("[seguros] email step failed", r.reason));
   }
 
   if (!lead && !notified) {
-    return { ok: false, error: t(lang, "No pudimos enviar tu solicitud. Inténtalo de nuevo o escríbenos por WhatsApp.", "We couldn't send your request. Please try again or message us on WhatsApp.") };
+    return { ok: false, error: t(lang, "No pudimos enviar tu solicitud. Inténtalo de nuevo o llámanos al (240) 256-6360.", "We couldn't send your request. Please try again or call us at (240) 256-6360.") };
   }
   return { ok: true, code, email: driver.email };
 }

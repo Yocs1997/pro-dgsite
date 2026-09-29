@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   Globe,
-  MessageCircle,
+  Phone,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -48,7 +48,8 @@ import {
   type Vehicle,
 } from "./model";
 
-const WHATSAPP_URL = "https://wa.me/50557449428";
+const PHONE_URL = "tel:+12402566360";
+const PHONE_DISPLAY = "(240) 256-6360";
 const BG = "#0B2B5E";
 const DRAFT_KEY = "pdg-seguro-draft";
 
@@ -59,6 +60,7 @@ type Carrier = { slug: string; name: string; logo?: string };
 const COPY = {
   es: {
     home: "Inicio",
+    callUs: "Llámanos",
     badge: "Seguro de auto",
     title1: "Cotiza tu seguro de auto",
     title2: "sin complicaciones",
@@ -173,6 +175,7 @@ const COPY = {
   },
   en: {
     home: "Home",
+    callUs: "Call us",
     badge: "Car insurance",
     title1: "Get your car insurance quote",
     title2: "without the hassle",
@@ -1231,13 +1234,14 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
                 <Globe className="w-3 h-3" /> {lang === "es" ? "EN" : "ES"}
               </button>
               <a
-                href={WHATSAPP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={PHONE_URL}
+                aria-label={`${c.callUs} ${PHONE_DISPLAY}`}
                 className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full bg-electric hover:bg-electric-light text-sm font-semibold glow-electric-sm"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">WhatsApp</span>
+                <Phone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {c.callUs} {PHONE_DISPLAY}
+                </span>
               </a>
             </div>
           </div>
