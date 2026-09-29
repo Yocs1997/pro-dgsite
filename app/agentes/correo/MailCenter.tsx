@@ -25,7 +25,7 @@ import { importContacts, openMessage, removeMessage, sendCampaign, sendMessage, 
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 
-type Setup = { resend: boolean; db: boolean; from: string; replyTo: string; postal: boolean; webhook: boolean };
+type Setup = { resend: boolean; db: boolean; from: string; replyTo: string; postal: boolean; postalAddress: string; webhook: boolean };
 type Tab = "inbox" | "compose" | "campaigns" | "contacts" | "sent";
 
 const input =
@@ -50,6 +50,8 @@ function Notice({ kind, children }: { kind: "ok" | "err" | "warn"; children: Rea
   );
 }
 
+const escHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 // Same look as the real email template (for previews).
 function previewHtml(body: string, name: string, footer?: string) {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -66,6 +68,13 @@ ${footer ? `<div style="padding:14px 24px;background:#f5f8fc;font-size:12px;colo
 }
 
 const GREETING = { es: "Hola {{nombre}},\n\n", en: "Hi {{name}},\n\n" } as const;
+
+// Default footer sentence (the postal address and unsubscribe link are always added).
+const FOOTER_TEXT = {
+  es: "Recibes este correo porque recientemente mostraste interés en obtener un seguro de auto.",
+  en: "You're receiving this email because you recently showed interest in getting car insurance.",
+} as const;
+const UNSUB = { es: "Cancelar suscripción", en: "Unsubscribe" } as const;
 
 // ─── Compose (also used for replies) ─────────────────────────────────────────
 
@@ -543,6 +552,7 @@ function CampaignsView({
   const [lang, setLang] = useState<"es" | "en">("es");
   const [body, setBody] = useState<string>(GREETING.es);
   const [fallback, setFallback] = useState("");
+  const [footerText, setFooterText] = useState<string>(FOOTER_TEXT.es);
   const [testTo, setTestTo] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -564,6 +574,8 @@ function CampaignsView({
 
   const switchLang = (l: "es" | "en") => {
     setLang(l);
+    // Swap the footer sentence too, unless you've customized it.
+    setFooterText((f) => (f === FOOTER_TEXT.es || f === FOOTER_TEXT.en || !f.trim() ? FOOTER_TEXT[l] : f));
     // Swap the greeting line if it's still the default one.
     setBody((b) => {
       const other = l === "es" ? GREETING.en : GREETING.es;
@@ -574,7 +586,7 @@ function CampaignsView({
   const run = (test: boolean) =>
     start(async () => {
       setMsg(null);
-      const r = await sendCampaign({ segment, subject, body, fallbackName: fallback, lang, ...(test ? { testTo } : {}) });
+      const r = await sendCampaign({ segment, subject, body, fallbackName: fallback, lang, footerText, ...(test ? { testTo } : {}) });
       setConfirming(false);
       if (!r.ok) return setMsg({ kind: "err", text: r.error });
       if (r.test) setMsg({ kind: "ok", text: `Prueba enviada a ${testTo}. Revisa cómo se ve.` });
@@ -643,6 +655,18 @@ function CampaignsView({
           <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Si no tenemos el nombre, usar</span>
           <input value={fallback} onChange={(e) => setFallback(e.target.value)} className={input} placeholder={lang === "es" ? '(vacío) → "Hola ,"   ·   ej. "amigo"' : '(empty) → "Hi ,"   ·   e.g. "there"'} />
         </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Texto del pie de correo</span>
+            {footerText !== FOOTER_TEXT[lang] && (
+              <button type="button" onClick={() => setFooterText(FOOTER_TEXT[lang])} className="text-xs text-[#7cc4ff] hover:underline">
+                Restablecer
+              </button>
+            )}
+          </span>
+          <textarea value={footerText} onChange={(e) => setFooterText(e.target.value)} rows={2} maxLength={300} className={input + " resize-none text-sm"} />
+          <span className="text-[11px] text-sky-text/50">Tu dirección postal y el enlace de baja se agregan siempre (lo exige la ley).</span>
+        </label>
         <div className="grid sm:grid-cols-[1fr_auto] gap-2">
           <input value={testTo} onChange={(e) => setTestTo(e.target.value)} className={input} placeholder="Tu correo para una prueba" inputMode="email" />
           <button
@@ -691,11 +715,13 @@ function CampaignsView({
             title="Vista previa"
             sandbox=""
             className="w-full h-[420px] rounded-xl bg-white"
-            srcDoc={previewHtml(body, adminName, `Pro-DG · ${setup.postal ? "(tu dirección postal)" : "⚠ falta dirección postal"}<br>${
-                lang === "es"
-                  ? "Recibes este correo porque estuviste en contacto con Pro-DG. Cancelar suscripción"
-                  : "You're receiving this email because you were in contact with Pro-DG. Unsubscribe"
-              }`)}
+            srcDoc={previewHtml(
+              body,
+              adminName,
+              `Pro-DG · ${setup.postalAddress ? escHtml(setup.postalAddress) : "⚠ falta dirección postal (MAIL_POSTAL_ADDRESS)"}<br>${escHtml(
+                footerText || FOOTER_TEXT[lang]
+              )} <u>${UNSUB[lang]}</u>`
+            )}
           />
         </div>
         <div className="rounded-2xl border border-[#7cc4ff33] p-5" style={glass}>

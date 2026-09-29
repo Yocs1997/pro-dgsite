@@ -26,6 +26,7 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
     from: mailFrom(),
     replyTo: mailReplyTo() ?? "",
     postal: Boolean(process.env.MAIL_POSTAL_ADDRESS),
+    postalAddress: process.env.MAIL_POSTAL_ADDRESS ?? "",
     webhook: Boolean(process.env.RESEND_WEBHOOK_SECRET),
   };
 
