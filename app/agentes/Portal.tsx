@@ -236,11 +236,15 @@ export default function Portal({
   items,
   quotesEnabled,
   newCount,
+  segurosCount = 0,
+  correoCount = 0,
 }: {
   user: { name: string; role: "admin" | "agent" };
   items: PortalItem[];
   quotesEnabled: boolean;
   newCount: number;
+  segurosCount?: number;
+  correoCount?: number;
 }) {
   const isAdmin = user.role === "admin";
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -351,17 +355,23 @@ export default function Portal({
               <>
                 <a
                   href="/agentes/seguros"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
+                  className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <Car className="w-4 h-4" />
                   <span className="hidden sm:inline">Seguros</span>
+                  {segurosCount > 0 && (
+                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">{segurosCount}</span>
+                  )}
                 </a>
                 <a
                   href="/agentes/correo"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
+                  className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   <span className="hidden sm:inline">Correo</span>
+                  {correoCount > 0 && (
+                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">{correoCount}</span>
+                  )}
                 </a>
               </>
             )}

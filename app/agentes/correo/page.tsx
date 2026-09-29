@@ -43,11 +43,9 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
     ? await Promise.all([safe(listInMail(), []), safe(listOutMail(), []), safe(listCampaigns(), []), safe(listLocalContacts(), [])])
     : [[], [], [], []];
 
-  const unread = inbox.filter((m) => !m.read).length;
-
   return (
     <>
-      <AdminNav active="/agentes/correo" badges={{ "/agentes/correo": unread }} />
+      <AdminNav active="/agentes/correo" />
       <MailCenter
         setup={setup}
         inbox={inbox.map((m) => ({ ...m, when: when(m.createdAt) }))}

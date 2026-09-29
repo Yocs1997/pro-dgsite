@@ -29,7 +29,7 @@ export default async function SegurosAdminPage() {
   const rows = leads.map((l) => ({ ...l, when: when(l.createdAt) }));
   return (
     <>
-      <AdminNav active="/agentes/seguros" badges={{ "/agentes/seguros": leads.filter((l) => l.status === "nueva").length }} />
+      <AdminNav active="/agentes/seguros" />
       <LeadsInbox leads={rows} error={error} />
     </>
   );

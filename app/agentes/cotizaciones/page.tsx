@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "../_lib/auth";
 import { listQuotes, quoteCode, quotesReady, type Quote } from "../_lib/quotes";
 import QuotesInbox, { type InboxQuote } from "./QuotesInbox";
+import AdminNav from "../AdminNav";
 
 function when(ts: number) {
   return new Date(ts).toLocaleString("es-NI", {
@@ -68,5 +69,10 @@ export default async function CotizacionesPage() {
         : {}),
     }));
 
-  return <QuotesInbox quotes={visible} isAdmin={isAdmin} userName={user.name} error={error} />;
+  return (
+    <>
+      {isAdmin && <AdminNav active="/agentes/cotizaciones" />}
+      <QuotesInbox quotes={visible} isAdmin={isAdmin} userName={user.name} error={error} hideNav={isAdmin} />
+    </>
+  );
 }

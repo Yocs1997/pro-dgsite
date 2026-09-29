@@ -395,11 +395,13 @@ export default function QuotesInbox({
   isAdmin,
   userName,
   error,
+  hideNav = false,
 }: {
   quotes: InboxQuote[];
   isAdmin: boolean;
   userName: string;
   error: string | null;
+  hideNav?: boolean; // admins get the full admin menu from the page instead
 }) {
   const [quotes, setQuotes] = useState(initial);
   const [filter, setFilter] = useState<Status | "todas">("todas");
@@ -446,6 +448,7 @@ export default function QuotesInbox({
         }
       `}</style>
 
+      {!hideNav && (
       <nav className="sticky top-0 z-50 border-b border-[#7cc4ff20] backdrop-blur-xl no-print" style={{ background: "rgba(11,43,94,0.8)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <a href="/agentes" className="flex items-center gap-2.5">
@@ -462,6 +465,7 @@ export default function QuotesInbox({
           </a>
         </div>
       </nav>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">

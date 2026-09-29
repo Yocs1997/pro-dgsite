@@ -1,5 +1,6 @@
 import { Zap, Calculator, Inbox, Car, Mail, Repeat, BarChart3, LogOut } from "lucide-react";
 import { logout } from "./actions";
+import { adminBadges } from "./_lib/badges";
 
 const LINKS = [
   { href: "/agentes", label: "Calculadora", icon: Calculator },
@@ -10,9 +11,16 @@ const LINKS = [
   { href: "/agentes/rendimiento", label: "Rendimiento", icon: BarChart3 },
 ];
 
-export default function AdminNav({ active, badges = {} }: { active: string; badges?: Record<string, number> }) {
+/** Admin menu. Looks up its own badge counts so every page shows unread emails / new requests. */
+export default async function AdminNav({ active }: { active: string }) {
+  const counts = await adminBadges();
+  const badges: Record<string, number> = {
+    "/agentes/cotizaciones": counts.cotizaciones,
+    "/agentes/seguros": counts.seguros,
+    "/agentes/correo": counts.correo,
+  };
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#7cc4ff20] backdrop-blur-xl" style={{ background: "rgba(11,43,94,0.85)" }}>
+    <nav className="sticky top-0 z-50 border-b border-[#7cc4ff20] backdrop-blur-xl no-print" style={{ background: "rgba(11,43,94,0.85)" }}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         <a href="/agentes" className="flex items-center gap-2.5 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-electric flex items-center justify-center glow-electric-sm">
