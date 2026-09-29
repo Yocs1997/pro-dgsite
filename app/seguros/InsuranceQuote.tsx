@@ -500,8 +500,17 @@ async function compressImage(file: File, maxSide = 1600, quality = 0.82): Promis
 
 type Errors = Record<string, string>;
 
-export default function InsuranceQuote({ carriers, mailingAddress = "" }: { carriers: Carrier[]; mailingAddress?: string }) {
-  const [lang, setLang] = useState<Lang>("en"); // English by default; ES button in the top bar
+export default function InsuranceQuote({
+  carriers,
+  mailingAddress = "",
+  initialLang = "en",
+}: {
+  carriers: Carrier[];
+  mailingAddress?: string;
+  initialLang?: Lang;
+}) {
+  // /seguros opens in English, /es/seguros in Spanish; the EN/ES button switches in place.
+  const [lang, setLang] = useState<Lang>(initialLang);
   const c = COPY[lang];
   // Keep the page language (screen readers, translation prompts) in sync with the toggle.
   useEffect(() => {
@@ -539,7 +548,7 @@ export default function InsuranceQuote({ carriers, mailingAddress = "" }: { carr
         if (Array.isArray(d.extra)) setExtra(d.extra);
         if (Array.isArray(d.vehicles) && d.vehicles.length) setVehicles(d.vehicles);
         if (d.coverage) setCoverage({ ...emptyCoverage(), ...d.coverage });
-        if (d.lang === "en" || d.lang === "es") setLang(d.lang);
+        // The language comes from the address (/seguros or /es/seguros), not the saved draft.
       }
     } catch {
       /* storage unavailable */
