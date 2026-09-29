@@ -4,10 +4,39 @@ import path from "node:path";
 import Script from "next/script";
 import InsuranceQuote from "./InsuranceQuote";
 
+const BUSINESS = "Car Tag & Registration Services";
+const TITLE = "Car Insurance Quotes | Car Tag & Registration Services";
+const DESCRIPTION =
+  "Compare car insurance quotes from several carriers in one form. Free quote, help in English and Spanish, drivers in all 50 states. Call (240) 256-6360.";
+
 export const metadata: Metadata = {
-  title: "Cotiza tu seguro de auto | Pro-DG",
-  description:
-    "Compara opciones de seguro de auto en minutos. Cotización gratis, atención en español e inglés. / Compare car insurance options in minutes.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/seguros" },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/seguros",
+    siteName: BUSINESS,
+    type: "website",
+    locale: "en_US",
+    alternateLocale: ["es_US"],
+  },
+  twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
+};
+
+// Structured data so search engines know who we are and what we offer. The PO box is
+// intentionally not used as an address (Google asks for a physical location there).
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "InsuranceAgency",
+  name: BUSINESS,
+  url: "https://www.pro-dg.com/seguros",
+  telephone: "+1-240-256-6360",
+  description: DESCRIPTION,
+  areaServed: { "@type": "Country", name: "United States" },
+  availableLanguage: ["English", "Spanish"],
+  parentOrganization: { "@type": "Organization", name: "Pro-DG", url: "https://www.pro-dg.com" },
 };
 
 // Carriers shown in the moving strip. By default each one shows as a styled name.
@@ -48,7 +77,8 @@ function withLogos() {
 export default function SegurosPage() {
   return (
     <>
-      <InsuranceQuote carriers={withLogos()} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <InsuranceQuote carriers={withLogos()} mailingAddress={process.env.MAIL_POSTAL_ADDRESS ?? ""} />
 
       {/* Meta Pixel Code */}
       <Script id="meta-pixel" strategy="afterInteractive">

@@ -499,9 +499,13 @@ async function compressImage(file: File, maxSide = 1600, quality = 0.82): Promis
 
 type Errors = Record<string, string>;
 
-export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
+export default function InsuranceQuote({ carriers, mailingAddress = "" }: { carriers: Carrier[]; mailingAddress?: string }) {
   const [lang, setLang] = useState<Lang>("en"); // English by default; ES button in the top bar
   const c = COPY[lang];
+  // Keep the page language (screen readers, translation prompts) in sync with the toggle.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
   const L = (g: OptionGroup) => Object.keys(OPTIONS[g]).map((v) => [v, label(g, v, lang)] as [string, string]);
 
   const [step, setStep] = useState(0);
@@ -1201,6 +1205,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
       `}</style>
 
       <div
+        lang={lang}
         className="min-h-screen relative overflow-x-hidden text-white"
         style={{
           backgroundColor: BG,
@@ -1250,7 +1255,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
         {/* Hero */}
         <header className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-2 text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#7cc4ff55] bg-[#0096ff1f] mb-6"
           >
@@ -1259,7 +1264,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
           </motion.div>
           <motion.h1
             key={lang}
-            initial={{ opacity: 0, y: 24 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="font-display font-black text-4xl sm:text-5xl md:text-6xl leading-[1.05]"
@@ -1358,7 +1363,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
 
                 {/* Step body */}
                 <div className="relative px-5 sm:px-8 py-6 sm:py-8">
-                  <AnimatePresence mode="wait" custom={dir}>
+                  <AnimatePresence mode="wait" custom={dir} initial={false}>
                     <motion.div
                       key={step}
                       custom={dir}
@@ -1438,8 +1443,24 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
           </aside>
         </main>
 
-        <footer className="relative z-10 border-t border-[#7cc4ff1a] py-8 text-center px-4">
-          <p className="text-xs font-mono text-[#7cc4ff99]">© {new Date().getFullYear()} Pro-DG</p>
+        <footer className="relative z-10 border-t border-[#7cc4ff1a] py-8 text-center px-4 flex flex-col gap-1.5">
+          <p className="text-sm text-sky-text/80">
+            <span className="font-semibold text-white">Car Tag &amp; Registration Services</span>
+            {lang === "es" ? ", una empresa de Pro-DG" : ", a Pro-DG company"}
+          </p>
+          <p className="text-xs text-sky-text/65">
+            {lang === "es" ? "Atendemos a conductores en los 50 estados" : "Serving drivers in all 50 states"} ·{" "}
+            <a href={PHONE_URL} className="hover:text-white underline-offset-2 hover:underline">
+              {PHONE_DISPLAY}
+            </a>
+            {mailingAddress && (
+              <>
+                {" "}
+                · {lang === "es" ? "Dirección postal" : "Mailing address"}: {mailingAddress}
+              </>
+            )}
+          </p>
+          <p className="text-xs font-mono text-[#7cc4ff99]">© {new Date().getFullYear()} Car Tag &amp; Registration Services · Pro-DG</p>
         </footer>
       </div>
     </>
