@@ -156,7 +156,7 @@ const COPY = {
     feeTitle: "Cargo de servicio",
     feeText: "La cotización es gratis. Si decides comprar la póliza a través de Pro-DG, se aplica un cargo de servicio de US$150.",
     consent:
-      "Confirmo que la información es correcta, entiendo que se aplica un cargo de servicio de US$150 solo si compro la póliza a través de Pro-DG, y acepto que me contacten por correo, teléfono o WhatsApp sobre mi cotización.",
+      "Confirmo que la información es correcta, entiendo que se aplica un cargo de servicio de US$150 solo si compro la póliza a través de Pro-DG, y acepto que me contacten por correo o teléfono sobre mi cotización.",
     consentError: "Debes aceptar para enviar tu solicitud.",
     // success
     thanks: (n: string) => (n ? `¡Gracias, ${n}!` : "¡Gracias!"),
@@ -267,7 +267,7 @@ const COPY = {
     feeTitle: "Service fee",
     feeText: "The quote is free. If you choose to purchase the policy through Pro-DG, a US$150 service fee applies.",
     consent:
-      "I confirm the information is correct, I understand a US$150 service fee applies only if I purchase the policy through Pro-DG, and I agree to be contacted by email, phone or WhatsApp about my quote.",
+      "I confirm the information is correct, I understand a US$150 service fee applies only if I purchase the policy through Pro-DG, and I agree to be contacted by email or phone about my quote.",
     consentError: "Please accept to submit your request.",
     thanks: (n: string) => (n ? `Thank you, ${n}!` : "Thank you!"),
     successText: (e: string) => `We received your request. We'll email your quote to ${e}.`,
@@ -1085,7 +1085,7 @@ export default function InsuranceQuote({ carriers }: { carriers: Carrier[] }) {
             <TextInput type="date" value={coverage.startDate} onChange={setC("startDate")} min={new Date().toISOString().slice(0, 10)} />
           </Field>
           <Field label={c.contactPref}>
-            <Select value={coverage.contactPref} onChange={setC("contactPref")} options={L("contactPref")} placeholder={c.choose} />
+            <Select value={coverage.contactPref} onChange={setC("contactPref")} options={L("contactPref").filter(([v]) => v !== "whatsapp")} placeholder={c.choose} />
           </Field>
         </div>
         <Field label={c.notes} optional optLabel={c.optional}>
