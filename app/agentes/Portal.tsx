@@ -236,15 +236,13 @@ export default function Portal({
   items,
   quotesEnabled,
   newCount,
-  segurosCount = 0,
-  correoCount = 0,
+  hideNav = false,
 }: {
   user: { name: string; role: "admin" | "agent" };
   items: PortalItem[];
   quotesEnabled: boolean;
   newCount: number;
-  segurosCount?: number;
-  correoCount?: number;
+  hideNav?: boolean; // admins get the full admin menu from the page instead
 }) {
   const isAdmin = user.role === "admin";
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -324,6 +322,7 @@ export default function Portal({
   return (
     <>
       {/* Nav */}
+      {!hideNav && (
       <nav className="sticky top-0 z-50 border-b border-[#7cc4ff20] backdrop-blur-xl" style={{ background: "rgba(11,43,94,0.8)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <a href="/" className="flex items-center gap-2.5">
@@ -359,9 +358,6 @@ export default function Portal({
                 >
                   <Car className="w-4 h-4" />
                   <span className="hidden sm:inline">Seguros</span>
-                  {segurosCount > 0 && (
-                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">{segurosCount}</span>
-                  )}
                 </a>
                 <a
                   href="/agentes/correo"
@@ -369,9 +365,6 @@ export default function Portal({
                 >
                   <Mail className="w-4 h-4" />
                   <span className="hidden sm:inline">Correo</span>
-                  {correoCount > 0 && (
-                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">{correoCount}</span>
-                  )}
                 </a>
               </>
             )}
@@ -384,6 +377,7 @@ export default function Portal({
           </div>
         </div>
       </nav>
+      )}
 
       <header className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-8">
         <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">
