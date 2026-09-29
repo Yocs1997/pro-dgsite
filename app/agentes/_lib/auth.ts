@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { db, dbReady } from "@/app/lib/server/redis";
 import { readJsonEnv } from "./env";
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -8,6 +9,10 @@ import { readJsonEnv } from "./env";
 // because the GitHub repo is public). Format (JSON array):
 // [{"u":"joel","name":"Joel","role":"agent","hash":"scrypt:<salt>:<hash>"}]
 // Create a hash with:  node scripts/hash-password.mjs "the-password"
+//
+// Admins can also add users from the portal (/agentes/usuarios). Those are stored
+// in the database (hash pdg:portal:users) and work alongside PORTAL_USERS; a
+// username that exists in PORTAL_USERS always uses the PORTAL_USERS entry.
 
 export type Role = "admin" | "agent";
 export type PortalUser = { u: string; name: string; role: Role; hash: string };
@@ -44,9 +49,55 @@ export function usersLoaded(): boolean {
   return loadUsers().length > 0;
 }
 
-function findUser(username: string): PortalUser | undefined {
+// ─── Users added from the portal (stored in the database) ────────────────────
+
+const DB_USERS = "pdg:portal:users"; // hash: lowercase username -> JSON DbUser
+
+export type DbUser = PortalUser & { createdAt: number; createdBy: string; updatedAt?: number };
+
+export const envUsers = () => loadUsers();
+
+export async function dbUsers(): Promise<DbUser[]> {
+  if (!dbReady()) return [];
+  const [flat] = (await db([["HGETALL", DB_USERS]])) as [string[] | Record<string, string>];
+  const values = Array.isArray(flat) ? flat.filter((_, i) => i % 2 === 1) : Object.values(flat ?? {});
+  return values.map((v) => JSON.parse(v) as DbUser);
+}
+
+export async function saveDbUser(u: DbUser) {
+  await db([["HSET", DB_USERS, u.u.toLowerCase(), JSON.stringify(u)]]);
+}
+
+export async function deleteDbUser(username: string) {
+  await db([["HDEL", DB_USERS, username.toLowerCase()]]);
+}
+
+/** Same format as scripts/hash-password.mjs. */
+export function hashPassword(password: string): string {
+  const salt = randomBytes(16);
+  return `scrypt:${salt.toString("hex")}:${scryptSync(password, salt, 64).toString("hex")}`;
+}
+
+/** True when anyone can log in (PORTAL_USERS or portal-added users). */
+export async function anyUsers(): Promise<boolean> {
+  if (usersLoaded()) return true;
+  try {
+    return (await dbUsers()).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function findUser(username: string): Promise<PortalUser | undefined> {
   const key = username.trim().toLowerCase();
-  return loadUsers().find((x) => x.u.toLowerCase() === key);
+  const fromEnv = loadUsers().find((x) => x.u.toLowerCase() === key);
+  if (fromEnv || !dbReady() || !key) return fromEnv;
+  try {
+    const [raw] = (await db([["HGET", DB_USERS, key]])) as [string | null];
+    return raw ? (JSON.parse(raw) as PortalUser) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // A fixed dummy hash so unknown usernames take the same time as real ones.
@@ -60,8 +111,8 @@ export function verifyPassword(password: string, stored: string): boolean {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-export function checkCredentials(username: string, password: string): SessionUser | null {
-  const user = findUser(username);
+export async function checkCredentials(username: string, password: string): Promise<SessionUser | null> {
+  const user = await findUser(username);
   const ok = verifyPassword(password, user?.hash ?? DUMMY);
   if (!user || !ok) return null;
   return { u: user.u, name: user.name, role: user.role };
@@ -105,8 +156,8 @@ export async function getSession(): Promise<SessionUser | null> {
   try {
     const { u, exp } = JSON.parse(Buffer.from(payload, "base64url").toString());
     if (typeof exp !== "number" || exp < Date.now() / 1000) return null;
-    // Look the user up again so removing someone from PORTAL_USERS logs them out.
-    const user = findUser(String(u));
+    // Look the user up again so removing someone (Vercel or portal) logs them out.
+    const user = await findUser(String(u));
     return user ? { u: user.u, name: user.name, role: user.role } : null;
   } catch {
     return null;

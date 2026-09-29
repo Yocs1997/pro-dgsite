@@ -10,7 +10,7 @@ import {
   destroySession,
   recordFailure,
   tooManyAttempts,
-  usersLoaded,
+  anyUsers,
 } from "./_lib/auth";
 
 export type LoginState = { error?: string; username?: string } | undefined;
@@ -30,7 +30,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   if (tooManyAttempts(key)) {
     return { error: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.", username };
   }
-  if (!usersLoaded()) {
+  if (!(await anyUsers())) {
     return {
       error: "No se pudo leer la lista de usuarios (PORTAL_USERS). Revisa esa variable en Vercel y vuelve a publicar.",
       username,
@@ -40,7 +40,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "Escribe tu usuario y contraseña.", username };
   }
 
-  const user = checkCredentials(username, password);
+  const user = await checkCredentials(username, password);
   if (!user) {
     recordFailure(key);
     return { error: "Usuario o contraseña incorrectos.", username };
