@@ -44,16 +44,14 @@ export async function upsertContact(c: { email: string; firstName?: string; last
         email,
         ...(c.firstName ? { first_name: c.firstName } : {}),
         ...(c.lastName ? { last_name: c.lastName } : {}),
-        segments: [segId],
+        segments: [{ id: segId }],
       },
     });
   } catch (e) {
-    // Already exists → just add it to the segment.
-    if (e instanceof ResendError && (e.status === 409 || e.status === 422)) {
-      await resend(`/contacts/${encodeURIComponent(email)}/segments/${segId}`, { method: "POST" });
-    } else {
-      throw e;
-    }
+    // Only when the contact already exists: add the existing contact to the segment.
+    const exists = e instanceof ResendError && (e.status === 409 || /already exist/i.test(e.message));
+    if (!exists) throw e;
+    await resend(`/contacts/${encodeURIComponent(email)}/segments/${segId}`, { method: "POST" });
   }
   if (dbReady()) {
     const [prev] = (await db([["HGET", CONTACTS, email]])) as [string | null];
