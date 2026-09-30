@@ -11,16 +11,18 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  Plus,
   Receipt,
   Search,
   Store,
   Trash2,
   UserCheck,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 import type { PosLead, PosStatus } from "@/app/lib/server/pos-leads";
-import { assignPosLead, removePosLead, setPosStatus } from "../pos-actions";
+import { addPosLead, assignPosLead, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
 import { logout } from "../actions";
 
 export type PosRow = PosLead & { wa: string; tel: string; when: string; assignedWhen: string };
@@ -162,6 +164,107 @@ function TeamSummary({ leads, team, onPick, picked }: { leads: PosRow[]; team: T
   );
 }
 
+// ─── New lead by hand (e.g. from a WhatsApp ad chat) ─────────────────────────
+
+const EMPTY: NewPosLead = { name: "", phone: "", business: "", city: "", message: "", assignTo: "" };
+
+function NewLeadForm({ team, onClose }: { team: TeamUser[]; onClose: () => void }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [f, setF] = useState<NewPosLead>(EMPTY);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [dup, setDup] = useState(false);
+  const set = (k: keyof NewPosLead) => (e: { target: { value: string } }) => {
+    setF({ ...f, [k]: e.target.value });
+    if (k === "phone") setDup(false);
+  };
+
+  const save = (force: boolean) =>
+    start(async () => {
+      setMsg(null);
+      const r = await addPosLead(f, force);
+      if (!r.ok) {
+        setDup("duplicate" in r && Boolean(r.duplicate));
+        return setMsg({ ok: false, text: r.error });
+      }
+      const who = team.find((t) => t.u === f.assignTo)?.name;
+      setMsg({
+        ok: true,
+        text: `${r.code} guardado y avisado en el grupo.` + (who ? (r.notified ? ` ${who} recibió el aviso por Telegram.` : ` Asignado a ${who} (sin Telegram conectado).`) : ""),
+      });
+      setF(EMPTY);
+      setDup(false);
+      router.refresh();
+    });
+
+  const input = "w-full rounded-xl border border-[#7cc4ff40] bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#7cc4ff] placeholder:text-white/35";
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        save(false);
+      }}
+      className="mt-6 rounded-2xl border border-emerald-400/40 p-5"
+      style={{ background: "rgba(16,185,129,0.08)" }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display font-bold text-xl flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-emerald-300" /> Nuevo lead de WhatsApp
+        </h2>
+        <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-sky-text/70" title="Cerrar">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-xs text-sky-text/65 mt-1">Para las personas que escriben a tu WhatsApp desde el anuncio. Copia su nombre, número y mensaje.</p>
+      <div className="mt-4 grid sm:grid-cols-2 gap-3">
+        <label className="text-xs text-sky-text/75">
+          Número de WhatsApp *
+          <input required value={f.phone} onChange={set("phone")} placeholder="+505 8888 8888" inputMode="tel" className={input + " mt-1"} />
+        </label>
+        <label className="text-xs text-sky-text/75">
+          Nombre
+          <input value={f.name} onChange={set("name")} placeholder="Nombre y apellido" className={input + " mt-1"} />
+        </label>
+        <label className="text-xs text-sky-text/75">
+          Negocio
+          <input value={f.business} onChange={set("business")} placeholder="Nombre del negocio" className={input + " mt-1"} />
+        </label>
+        <label className="text-xs text-sky-text/75">
+          Ciudad
+          <input value={f.city} onChange={set("city")} placeholder="Managua" className={input + " mt-1"} />
+        </label>
+        <label className="text-xs text-sky-text/75 sm:col-span-2">
+          Mensaje que envió
+          <textarea value={f.message} onChange={set("message")} rows={2} placeholder="Pega aquí lo que escribió" className={input + " mt-1 resize-y"} />
+        </label>
+        <label className="text-xs text-sky-text/75">
+          Asignar a
+          <select value={f.assignTo} onChange={set("assignTo")} className={input + " mt-1 bg-[#0B2B5E]"}>
+            <option value="">Sin asignar (lo asigno después)</option>
+            {team.map((t) => (
+              <option key={t.u} value={t.u}>
+                {t.name}
+                {t.role === "admin" ? " (admin)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-end gap-2">
+          <button disabled={pending} className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold disabled:opacity-60">
+            <Plus className="w-4 h-4" /> {pending ? "Guardando…" : "Guardar lead"}
+          </button>
+          {dup && (
+            <button type="button" disabled={pending} onClick={() => save(true)} className="px-4 py-2 rounded-full border border-amber-400/50 text-amber-100 text-sm hover:bg-amber-500/15">
+              Guardar de todos modos
+            </button>
+          )}
+        </div>
+      </div>
+      {msg && <p className={"mt-3 text-sm " + (msg.ok ? "text-emerald-300" : "text-red-200")}>{msg.text}</p>}
+    </form>
+  );
+}
+
 // ─── Lead card ───────────────────────────────────────────────────────────────
 
 function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: TeamUser[] }) {
@@ -210,6 +313,7 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="font-mono font-bold text-[#7cc4ff]">{l.code}</span>
         <span className={"px-2.5 py-0.5 rounded-full border text-xs font-semibold " + STATUS[status].cls}>{STATUS[status].label}</span>
+        <span className="px-2 py-0.5 rounded-full bg-white/10 text-[11px] text-sky-text/75">{l.source === "whatsapp" ? "💬 WhatsApp" : "📋 Formulario"}</span>
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">{l.name || "(sin nombre)"}</span>
         <span className="text-xs text-sky-text/60">{l.when}</span>
       </div>
@@ -354,6 +458,7 @@ export default function PosLeadsView({
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | PosStatus>("all");
   const [agent, setAgent] = useState(""); // "" = everyone, UNASSIGNED, or a lowercase username
+  const [adding, setAdding] = useState(false);
   const byAgent = leads.filter((l) => !agent || (agent === UNASSIGNED ? !l.assignedTo : l.assignedTo?.u.toLowerCase() === agent));
   const counts = Object.fromEntries(ORDER.map((s) => [s, byAgent.filter((l) => l.status === s).length])) as Record<PosStatus, number>;
   const shown = byAgent.filter(
@@ -367,10 +472,21 @@ export default function PosLeadsView({
       {!isAdmin && <AgentNav />}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-white">
         <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Sistemas de facturación · Nicaragua</p>
-        <h1 className="font-display font-black text-3xl md:text-4xl mt-1">{isAdmin ? "Facturación" : "Mis leads"}</h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h1 className="font-display font-black text-3xl md:text-4xl mt-1">{isAdmin ? "Facturación" : "Mis leads"}</h1>
+          {isAdmin && !adding && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
+            >
+              <Plus className="w-4 h-4" /> Nuevo lead
+            </button>
+          )}
+        </div>
         <p className="text-sm text-sky-text/70 mt-1">
           {isAdmin
-            ? "Leads de los formularios de Meta de la página Pro-DG. Asígnalos a tu equipo; se atienden por WhatsApp o llamada."
+            ? "Leads de los formularios de Meta de la página Pro-DG y de los chats de WhatsApp que agregues. Asígnalos a tu equipo; se atienden por WhatsApp o llamada."
             : `Hola ${userName.split(" ")[0]}: estos son los leads que te asignaron. Escríbeles por WhatsApp y actualiza su estado.`}
         </p>
 
@@ -379,6 +495,8 @@ export default function PosLeadsView({
             <AlertTriangle className="w-4 h-4" /> {error}
           </p>
         )}
+
+        {isAdmin && adding && <NewLeadForm team={team} onClose={() => setAdding(false)} />}
 
         {isAdmin && <TeamSummary leads={leads} team={team} picked={agent} onPick={setAgent} />}
 

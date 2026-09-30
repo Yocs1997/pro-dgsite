@@ -23,6 +23,7 @@ export type PosLead = {
   email: string;
   extra: string[]; // other answers, "Question: answer"
   metaLeadId?: string;
+  source?: "form" | "whatsapp"; // missing = Meta form; "whatsapp" = added by hand from a WhatsApp chat
   quoteCode?: string; // set when a quote is created from this lead
   assignedTo?: { u: string; name: string };
   assignedAt?: number;
@@ -98,12 +99,14 @@ export function waNumber(phone: string): string {
 }
 
 /** Greeting used for the WhatsApp link. */
-export function waText(l: Pick<PosLead, "name" | "business">): string {
+export function waText(l: Pick<PosLead, "name" | "business" | "source">): string {
   const first = l.name.trim().split(/\s+/)[0] ?? "";
   const hi = first ? `Hola ${first}` : "Hola";
   const biz = l.business ? ` para ${l.business}` : "";
-  return `${hi}, le saluda Pro-DG. Vimos su interés en un sistema de facturación${biz}. ¿Le puedo ayudar con una cotización?`;
+  return l.source === "whatsapp"
+    ? `${hi}, le saluda Pro-DG. Gracias por escribirnos sobre el sistema de facturación${biz}. ¿Le puedo ayudar con una cotización?`
+    : `${hi}, le saluda Pro-DG. Vimos su interés en un sistema de facturación${biz}. ¿Le puedo ayudar con una cotización?`;
 }
 
-export const waLink = (l: Pick<PosLead, "name" | "business" | "phone">) =>
+export const waLink = (l: Pick<PosLead, "name" | "business" | "phone" | "source">) =>
   l.phone && waNumber(l.phone) ? `https://wa.me/${waNumber(l.phone)}?text=${encodeURIComponent(waText(l))}` : "";
