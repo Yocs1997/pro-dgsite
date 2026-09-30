@@ -1495,6 +1495,11 @@ export default function InsuranceQuote({
               </>
             )}
           </p>
+          <p className="text-xs text-sky-text/65">
+            <a href={lang === "es" ? "/privacy#es" : "/privacy"} className="underline-offset-2 hover:underline hover:text-white">
+              {lang === "es" ? "Política de privacidad" : "Privacy Policy"}
+            </a>
+          </p>
           <p className="text-xs font-mono text-[#7cc4ff99]">© {new Date().getFullYear()} Car Tag &amp; Registration Services · Pro-DG</p>
         </footer>
       </div>

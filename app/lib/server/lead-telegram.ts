@@ -18,11 +18,18 @@ export function leadTelegram(l: Omit<InsuranceLead, "id" | "number"> & { code: s
     d.email ? `✉️ ${tg(d.email)}` : null,
     d.state ? `📍 ${tg([d.city, d.state].filter(Boolean).join(", "))}` : null,
     cars ? `🚙 ${tg(cars)}` : null,
+    d.licenseStatus ? `🪪 ${tg(L("licenseStatus", d.licenseStatus))}` : null,
+    d.accidents || d.tickets
+      ? `⚠️ Accidentes: ${tg(L("count", d.accidents) || "—")} · Multas: ${tg(L("count", d.tickets) || "—")}${d.sr22 === "yes" ? " · Necesita SR-22" : ""}`
+      : d.sr22 === "yes"
+        ? "⚠️ Necesita SR-22"
+        : null,
     l.coverage.insured ? `🛡 ${tg(L("insured", l.coverage.insured))}` : null,
     l.coverage.level ? `📋 ${tg(L("level", l.coverage.level))}` : null,
     `🗣 ${l.lang === "es" ? "Español" : "Inglés"} · Contacto: ${tg(L("contactPref", l.coverage.contactPref) || "—")}`,
     l.coverage.notes ? `📝 ${tg(l.coverage.notes.slice(0, 300))}` : null,
   ].filter((x): x is string => Boolean(x));
-  return [`🚗 <b>Nueva solicitud de seguro</b> · ${tg(l.code)}`, details.join("\n"), portalLink("/seguros", "Ver en el portal")].join("\n\n");
+  const origin = l.source === "meta" ? " · <b>Meta</b>" : "";
+  return [`🚗 <b>Nueva solicitud de seguro</b> · ${tg(l.code)}${origin}`, details.join("\n"), portalLink("/seguros", "Ver en el portal")].join("\n\n");
 }
 

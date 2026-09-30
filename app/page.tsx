@@ -838,7 +838,7 @@ function Footer({ t }: { t: typeof translations["en"]["footer"] }) {
 
           {/* Links */}
           <div className="flex items-center gap-6 text-xs text-muted-dim">
-            <a href="#" className="hover:text-electric transition-colors">
+            <a href="/privacy" className="hover:text-electric transition-colors">
               {t.links.privacy}
             </a>
             <a href="#" className="hover:text-electric transition-colors">

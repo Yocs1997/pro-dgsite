@@ -14,6 +14,8 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licens
   status: InsStatus;
   consentAt: number;
   licensePhotos?: number; // how many license photos are stored (0–2)
+  source?: "web" | "meta"; // missing = the /seguros form
+  metaLeadId?: string; // Meta lead ads: the leadgen id
 };
 
 const KEY = (id: string) => `pdg:ins:${id}`;

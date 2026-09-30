@@ -4,6 +4,7 @@ import { dbReady } from "@/app/lib/server/redis";
 import { listLeads, type InsuranceLead } from "@/app/lib/server/insurance";
 import AdminNav from "../AdminNav";
 import LeadsInbox from "./LeadsInbox";
+import { emptyCoverage, emptyDriver } from "@/app/seguros/model";
 
 function when(ts: number) {
   return new Date(ts).toLocaleString("es-NI", {
@@ -26,7 +27,15 @@ export default async function SegurosAdminPage() {
       error = "No se pudieron cargar las solicitudes. Recarga en un momento.";
     }
   }
-  const rows = leads.map((l) => ({ ...l, when: when(l.createdAt) }));
+  // Fill any missing field with its empty value so one incomplete record can't break the page.
+  const rows = leads.map((l) => ({
+    ...l,
+    driver: { ...emptyDriver(), ...l.driver },
+    extraDrivers: l.extraDrivers ?? [],
+    vehicles: l.vehicles ?? [],
+    coverage: { ...emptyCoverage(), ...l.coverage },
+    when: when(l.createdAt),
+  }));
   return (
     <>
       <AdminNav active="/agentes/seguros" />

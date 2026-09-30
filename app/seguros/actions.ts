@@ -2,14 +2,11 @@
 
 import { headers } from "next/headers";
 import { allow, dbReady } from "@/app/lib/server/redis";
-import { resendReady, sendEmail, emailLayout, esc } from "@/app/lib/server/resend";
-import { upsertContact } from "@/app/lib/server/contacts";
+import { resendReady } from "@/app/lib/server/resend";
 import { saveLead, saveLicensePhotos, type InsuranceLead } from "@/app/lib/server/insurance";
-import { enroll, formSequence, sendNowFor, varsFromLead } from "@/app/lib/server/sequences";
-import { notifyTelegram, telegramReady } from "@/app/lib/server/telegram";
-import { leadTelegram } from "@/app/lib/server/lead-telegram";
+import { afterNewLead } from "@/app/lib/server/lead-intake";
 import { missingRequired, sanitizeInsurance, sanitizePhotos } from "@/app/lib/server/insurance-sanitize";
-import { label, type InsuranceInput, type Lang, type OptionGroup } from "./model";
+import type { InsuranceInput, Lang } from "./model";
 
 export type InsuranceResult = { ok: true; code: string; email: string } | { ok: false; error: string };
 
@@ -60,115 +57,10 @@ export async function submitInsuranceQuote(input: InsuranceInput): Promise<Insur
   }
   const code = lead?.code ?? `SEG-${now.toString(36).toUpperCase()}`;
 
-  let notified = false;
-  const telegram = telegramReady() ? notifyTelegram(leadTelegram({ ...base, code })) : Promise.resolve(false);
-  if (resendReady()) {
-    const tasks: Promise<unknown>[] = [];
-    const notify = process.env.NOTIFY_EMAIL;
-    if (notify) {
-      tasks.push(
-        sendEmail({
-          to: notify,
-          replyTo: driver.email,
-          subject: `Nueva solicitud de seguro ${code} — ${[driver.firstName, driver.lastName].filter(Boolean).join(" ") || driver.email}`,
-          html: emailLayout(adminSummary({ ...base, code })),
-          category: "notify",
-        }).then(() => (notified = true))
-      );
-    }
-    // Exactly one email to the customer: Email 1 of the follow-up sequence when one is set
-    // to take form leads, otherwise the plain confirmation.
-    tasks.push(
-      startSequence(lead, driver.email).then((sent) =>
-        sent ? undefined : sendEmail({ to: driver.email, subject: confirmationSubject(lang, code), html: emailLayout(confirmationBody(lang, code, driver.firstName)), category: "confirmation" })
-      )
-    );
-    tasks.push(upsertContact({ email: driver.email, firstName: driver.firstName, lastName: driver.lastName }, "Seguros"));
-    const results = await Promise.allSettled(tasks);
-    results.forEach((r) => r.status === "rejected" && console.error("[seguros] email step failed", r.reason));
-  }
-  if (await telegram) notified = true;
+  const notified = await afterNewLead(lead, { ...base, code }, { list: "Seguros", source: "Formulario" });
 
   if (!lead && !notified) {
     return { ok: false, error: t(lang, "No pudimos enviar tu solicitud. Inténtalo de nuevo o llámanos al (240) 256-6360.", "We couldn't send your request. Please try again or call us at (240) 256-6360.") };
   }
   return { ok: true, code, email: driver.email };
-}
-
-/** Enrolls the lead in the form sequence and sends its first email. True if that email went out. */
-async function startSequence(lead: InsuranceLead | null, email: string): Promise<boolean> {
-  if (!lead || !dbReady()) return false;
-  try {
-    const seq = await formSequence();
-    if (!seq) return false;
-    const v = varsFromLead(lead);
-    const { added } = await enroll(seq, [{ email, firstName: v.firstName, lang: v.lang, vehicle: v.vehicle, state: v.state, insured: v.insured, source: "Formulario" }]);
-    return added > 0 && (await sendNowFor(seq, email));
-  } catch (e) {
-    console.error("[seguros] sequence start failed", e);
-    return false;
-  }
-}
-
-// ─── Emails ──────────────────────────────────────────────────────────────────
-
-function confirmationSubject(lang: Lang, code: string) {
-  return t(lang, `Recibimos tu solicitud de seguro de auto (${code})`, `We received your car insurance request (${code})`);
-}
-
-function confirmationBody(lang: Lang, code: string, name: string) {
-  const p = (x: string) => `<p style="margin:0 0 16px;line-height:1.6">${x}</p>`;
-  return lang === "es"
-    ? p(`Hola${name ? " " + esc(name) : ""},`) +
-        p(`Recibimos tu solicitud de cotización de seguro de auto <strong>${code}</strong>. Estamos comparando opciones y <strong>te enviaremos tu cotización por este mismo correo</strong>.`) +
-        p(`Recuerda: la cotización es gratis. Si decides <strong>comprar la póliza</strong> a través de nosotros, se aplica un <strong>cargo de servicio de US$150</strong>.`) +
-        p(`Si necesitas corregir algún dato, simplemente responde a este correo.`) +
-        p(`— El equipo de Pro-DG`)
-    : p(`Hi${name ? " " + esc(name) : ""},`) +
-        p(`We received your car insurance quote request <strong>${code}</strong>. We're comparing options and <strong>will email your quote to this address</strong>.`) +
-        p(`Please note: the quote is free. If you choose to <strong>purchase the policy</strong> through us, a <strong>US$150 service fee</strong> applies.`) +
-        p(`If anything needs correcting, just reply to this email.`) +
-        p(`— The Pro-DG team`);
-}
-
-function adminSummary(l: Omit<InsuranceLead, "id" | "number"> & { code: string }) {
-  const row = (k: string, v: string) =>
-    v ? `<tr><td style="padding:4px 12px 4px 0;color:#5b6b82;white-space:nowrap;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>` : "";
-  const table = (rows: string) => `<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;margin:0 0 18px">${rows}</table>`;
-  const h = (x: string) => `<h3 style="margin:18px 0 8px;font-size:15px;color:#0B2B5E">${x}</h3>`;
-  const L = (g: OptionGroup, v: string) => label(g, v, "es");
-  const d = l.driver;
-  let html = `<p style="margin:0 0 6px;font-size:18px;font-weight:700">Solicitud ${l.code}</p>
-<p style="margin:0 0 14px;color:#5b6b82">Idioma del cliente: ${l.lang === "es" ? "Español" : "Inglés"} · Responde a este correo para escribirle.</p>`;
-  if (l.licensePhotos) {
-    html += `<p style="margin:0 0 14px;padding:10px 12px;background:#fff7e0;border-radius:8px">📎 El cliente subió ${l.licensePhotos === 1 ? "una foto" : "fotos"} de su licencia de conducir. Por seguridad no se adjuntan al correo: ábrelas en el portal → Seguros.</p>`;
-  }
-  html += h("Conductor principal") + table(
-    row("Nombre", `${d.firstName} ${d.lastName}`) + row("Nacimiento", d.dob) + row("Género", L("gender", d.gender)) +
-    row("Estado civil", L("marital", d.marital)) + row("Correo", d.email) + row("Teléfono", d.phone) +
-    row("Dirección", [d.street, d.city, `${d.state} ${d.zip}`].filter(Boolean).join(", ")) +
-    row("Licencia", L("licenseStatus", d.licenseStatus)) + row("Estado de licencia", d.licenseState) +
-    row("No. de licencia", d.licenseNumber) + row("Años con licencia", d.yearsLicensed) +
-    row("Accidentes (3 años)", L("count", d.accidents)) + row("Multas (3 años)", L("count", d.tickets)) +
-    row("Necesita SR-22", L("yesno", d.sr22))
-  );
-  l.extraDrivers.forEach((x, i) => {
-    html += h(`Conductor adicional ${i + 1}`) + table(
-      row("Nombre", `${x.firstName} ${x.lastName}`) + row("Nacimiento", x.dob) +
-      row("Relación", L("relationship", x.relationship)) + row("Licencia", L("licenseStatus", x.licenseStatus))
-    );
-  });
-  l.vehicles.forEach((v, i) => {
-    html += h(`Vehículo ${i + 1}`) + table(
-      row("Vehículo", `${v.year} ${v.make} ${v.model}`) + row("VIN", v.vin) + row("Propiedad", L("ownership", v.ownership)) +
-      row("Uso", L("use", v.use)) + row("Millas al año", L("miles", v.miles))
-    );
-  });
-  const c = l.coverage;
-  html += h("Cobertura") + table(
-    row("Seguro actual", L("insured", c.insured)) + row("Aseguradora actual", c.currentCarrier) +
-    row("Cobertura deseada", L("level", c.level)) + row("Deducible", L("deductible", c.deductible)) +
-    row("Fecha de inicio", c.startDate) + row("Contacto preferido", L("contactPref", c.contactPref)) + row("Notas", c.notes)
-  );
-  return html;
 }

@@ -95,6 +95,11 @@ function LeadCard({
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex flex-wrap items-center gap-x-4 gap-y-2 p-5 text-left hover:bg-white/5">
         <span className="font-mono font-bold text-[#7cc4ff]">{l.code}</span>
         <span className={"px-2.5 py-0.5 rounded-full border text-xs font-semibold " + STATUS[l.status].cls}>{STATUS[l.status].label}</span>
+        {l.source === "meta" && (
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#1877F2]/25 text-[#9cc2ff]" title="Formulario instantáneo de Meta">
+            Meta
+          </span>
+        )}
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">
           {[d.firstName, d.lastName].join(" ").trim() || d.email}
         </span>
