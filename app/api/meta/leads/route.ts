@@ -16,10 +16,10 @@ import { mapAnswers, type FieldData } from "@/app/lib/server/meta-leads";
 //   META_APP_SECRET     App → Settings → Basic → App secret (verifies Meta's signature)
 //   META_VERIFY_TOKEN   any random text; the same text goes in the webhook setup in Meta
 //   META_PAGE_TOKEN     Page access token with leads_retrieval (reads the lead's answers)
-//   META_GRAPH_VERSION  optional, e.g. v23.0
+//   META_GRAPH_VERSION  optional, e.g. v26.0
 
 // META_GRAPH_BASE only overrides the host for local testing.
-const GRAPH = () => `${process.env.META_GRAPH_BASE || "https://graph.facebook.com"}/${process.env.META_GRAPH_VERSION || "v23.0"}`;
+const GRAPH = () => `${process.env.META_GRAPH_BASE || "https://graph.facebook.com"}/${process.env.META_GRAPH_VERSION || "v26.0"}`;
 const SEEN = (id: string) => `pdg:meta:lead:${id}`;
 const WARNED = (id: string) => `pdg:meta:warned:${id}`;
 
