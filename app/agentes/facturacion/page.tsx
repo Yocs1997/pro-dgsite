@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { getSession } from "../_lib/auth";
+import { dbUsers, envUsers, getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
-import { listPosLeads, waNumber, type PosLead } from "@/app/lib/server/pos-leads";
+import { listPosLeads, waLink, waNumber, type PosLead } from "@/app/lib/server/pos-leads";
 import AdminNav from "../AdminNav";
-import PosLeadsView, { type PosRow } from "./PosLeadsView";
+import PosLeadsView, { type PosRow, type TeamUser } from "./PosLeadsView";
 
 export const metadata = { title: "Facturación | Pro-DG" };
 
@@ -13,10 +13,11 @@ function when(ts: number) {
   });
 }
 
+// Admins: every lead, assignment and the team summary. Agents: only their assigned leads.
 export default async function FacturacionPage() {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
-  if (user.role !== "admin") redirect("/agentes");
+  const isAdmin = user.role === "admin";
 
   let leads: PosLead[] = [];
   let error: string | null = null;
@@ -28,11 +29,31 @@ export default async function FacturacionPage() {
       error = "No se pudieron cargar los leads. Recarga en un momento.";
     }
   }
-  const rows: PosRow[] = leads.map((l) => ({ ...l, extra: l.extra ?? [], wa: l.phone ? waNumber(l.phone) : "", when: when(l.createdAt) }));
+  if (!isAdmin) leads = leads.filter((l) => l.assignedTo?.u.toLowerCase() === user.u.toLowerCase());
+
+  let team: TeamUser[] = [];
+  if (isAdmin) {
+    const all = [...envUsers(), ...(await dbUsers().catch(() => []))];
+    const seen = new Set<string>();
+    team = all
+      .filter((u) => (seen.has(u.u.toLowerCase()) ? false : (seen.add(u.u.toLowerCase()), true)))
+      .map((u) => ({ u: u.u, name: u.name, role: u.role }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const rows: PosRow[] = leads.map((l) => ({
+    ...l,
+    extra: l.extra ?? [],
+    wa: waLink(l),
+    tel: l.phone && waNumber(l.phone) ? `+${waNumber(l.phone)}` : "",
+    when: when(l.createdAt),
+    assignedWhen: l.assignedAt ? when(l.assignedAt) : "",
+  }));
+
   return (
     <>
-      <AdminNav active="/agentes/facturacion" />
-      <PosLeadsView leads={rows} error={error} />
+      {isAdmin && <AdminNav active="/agentes/facturacion" />}
+      <PosLeadsView leads={rows} error={error} isAdmin={isAdmin} team={team} userName={user.name} />
     </>
   );
 }

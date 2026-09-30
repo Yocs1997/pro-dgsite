@@ -3,7 +3,7 @@ import { db, dbReady } from "@/app/lib/server/redis";
 import { saveLead, type InsuranceLead } from "@/app/lib/server/insurance";
 import { afterNewLead } from "@/app/lib/server/lead-intake";
 import { notifyTelegram, portalLink, posChats, tg } from "@/app/lib/server/telegram";
-import { savePosLead, waNumber } from "@/app/lib/server/pos-leads";
+import { savePosLead, waLink } from "@/app/lib/server/pos-leads";
 import { emptyCoverage } from "@/app/seguros/model";
 import { mapAnswers, mapPosAnswers, type FieldData } from "@/app/lib/server/meta-leads";
 
@@ -119,7 +119,7 @@ async function handlePosLead(leadgenId: string): Promise<"saved" | "duplicate"> 
     extra: [...(data.is_organic ? ["Orgánico (no vino de un anuncio)"] : []), ...a.extra].slice(0, 20),
     metaLeadId: leadgenId,
   });
-  const wa = a.phone ? waNumber(a.phone) : "";
+  const wa = waLink(lead);
   await notifyTelegram(
     [
       `🧾 <b>Nuevo lead de facturación</b> · ${tg(lead.code)} · Nicaragua`,
@@ -133,7 +133,7 @@ async function handlePosLead(leadgenId: string): Promise<"saved" | "duplicate"> 
       ]
         .filter(Boolean)
         .join("\n"),
-      [wa ? `<a href="https://wa.me/${wa}">Escribir por WhatsApp</a>` : null, portalLink("/facturacion", "Ver en el portal")].filter(Boolean).join(" · "),
+      [wa ? `<a href="${wa}">Escribir por WhatsApp</a>` : null, portalLink("/facturacion", "Ver en el portal")].filter(Boolean).join(" · "),
     ].join("\n\n"),
     posChats()
   );

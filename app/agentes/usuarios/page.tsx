@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { dbUsers, envUsers, getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import AdminNav from "../AdminNav";
+import { connectedUsers } from "@/app/lib/server/telegram-links";
 import UsersView, { type UserRow } from "./UsersView";
 
 export const metadata = { title: "Usuarios | Pro-DG" };
@@ -25,6 +26,12 @@ export default async function UsuariosPage() {
     error = "No se pudo leer la lista de usuarios del portal.";
   }
   const fromEnv: UserRow[] = envUsers().map((u) => ({ u: u.u, name: u.name, role: u.role, source: "vercel" as const, added: "" }));
+  let connected = new Set<string>();
+  try {
+    if (dbReady()) connected = await connectedUsers();
+  } catch {
+    /* no Telegram info: everyone shows as not connected */
+  }
   // A portal entry with the same username as a Vercel one is ignored at login.
   const envKeys = new Set(fromEnv.map((u) => u.u.toLowerCase()));
 
@@ -32,7 +39,7 @@ export default async function UsuariosPage() {
     <>
       <AdminNav active="/agentes/usuarios" />
       <UsersView
-        users={[...fromEnv, ...portal.filter((u) => !envKeys.has(u.u.toLowerCase()))]}
+        users={[...fromEnv, ...portal.filter((u) => !envKeys.has(u.u.toLowerCase()))].map((u) => ({ ...u, telegram: connected.has(u.u.toLowerCase()) }))}
         me={me.u}
         ready={dbReady()}
         error={error}

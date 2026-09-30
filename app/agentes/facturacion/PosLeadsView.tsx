@@ -1,12 +1,30 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Calculator, MapPin, MessageCircle, Phone, Receipt, Search, Store, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calculator,
+  Inbox,
+  LogOut,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Receipt,
+  Search,
+  Store,
+  Trash2,
+  UserCheck,
+  Users,
+  Zap,
+} from "lucide-react";
 import type { PosLead, PosStatus } from "@/app/lib/server/pos-leads";
-import { removePosLead, setPosStatus } from "../pos-actions";
+import { assignPosLead, removePosLead, setPosStatus } from "../pos-actions";
+import { logout } from "../actions";
 
-export type PosRow = PosLead & { wa: string; when: string };
+export type PosRow = PosLead & { wa: string; tel: string; when: string; assignedWhen: string };
+export type TeamUser = { u: string; name: string; role: "admin" | "agent" };
 
 const STATUS: Record<PosStatus, { label: string; cls: string }> = {
   nueva: { label: "Nueva", cls: "border-emerald-400/50 text-emerald-300 bg-emerald-500/10" },
@@ -16,38 +34,173 @@ const STATUS: Record<PosStatus, { label: string; cls: string }> = {
   perdida: { label: "Perdida", cls: "border-white/20 text-sky-text/70 bg-white/5" },
 };
 const ORDER: PosStatus[] = ["nueva", "contactada", "cotizada", "cerrada", "perdida"];
+const UNASSIGNED = "__none__";
 
-const first = (name: string) => name.trim().split(/\s+/)[0] ?? "";
-
-function waText(l: PosRow) {
-  const hi = first(l.name) ? `Hola ${first(l.name)}` : "Hola";
-  const biz = l.business ? ` para ${l.business}` : "";
-  return `${hi}, le saluda Pro-DG. Vimos su interés en un sistema de facturación${biz}. ¿Le puedo ayudar con una cotización?`;
+function duration(ms: number) {
+  const m = Math.round(ms / 60000);
+  if (m < 60) return `${m} min`;
+  const h = m / 60;
+  if (h < 48) return `${Math.round(h * 10) / 10} h`;
+  return `${Math.round(h / 24)} días`;
 }
 
-function LeadCard({ l }: { l: PosRow }) {
+/** Time from assignment to the first move out of "nueva" (contact, quote, sale or lost). */
+function firstContactMs(l: PosRow): number | null {
+  if (!l.assignedAt) return null;
+  const times = (["contactada", "cotizada", "cerrada", "perdida"] as const)
+    .map((s) => l.statusAt?.[s])
+    .filter((t): t is number => typeof t === "number" && t >= l.assignedAt!);
+  return times.length ? Math.min(...times) - l.assignedAt : null;
+}
+
+// ─── Team summary (admins) ───────────────────────────────────────────────────
+
+function TeamSummary({ leads, team, onPick, picked }: { leads: PosRow[]; team: TeamUser[]; onPick: (u: string) => void; picked: string }) {
+  const [days, setDays] = useState<number>(30);
+  const since = days ? Date.now() - days * 86400000 : 0;
+  const inPeriod = leads.filter((l) => (l.assignedAt ?? l.createdAt) >= since);
+
+  const rows = useMemo(() => {
+    const by = new Map<string, PosRow[]>();
+    for (const l of inPeriod) {
+      const k = l.assignedTo?.u.toLowerCase() ?? UNASSIGNED;
+      by.set(k, [...(by.get(k) ?? []), l]);
+    }
+    // Every agent appears, even with 0 leads in the period.
+    for (const t of team) if (t.role === "agent" && !by.has(t.u.toLowerCase())) by.set(t.u.toLowerCase(), []);
+    const nameOf = (k: string) =>
+      k === UNASSIGNED ? "Sin asignar" : team.find((t) => t.u.toLowerCase() === k)?.name ?? inPeriod.find((l) => l.assignedTo?.u.toLowerCase() === k)?.assignedTo?.name ?? k;
+    return [...by.entries()]
+      .map(([k, list]) => {
+        const count = (s: PosStatus) => list.filter((l) => l.status === s).length;
+        const contacts = list.map(firstContactMs).filter((x): x is number => x !== null);
+        const stale = list.filter((l) => l.status === "nueva" && l.assignedAt && Date.now() - l.assignedAt > 86400000).length;
+        return {
+          k,
+          name: nameOf(k),
+          total: list.length,
+          counts: Object.fromEntries(ORDER.map((s) => [s, count(s)])) as Record<PosStatus, number>,
+          closeRate: list.length ? Math.round((count("cerrada") / list.length) * 100) : null,
+          avgContact: contacts.length ? contacts.reduce((a, b) => a + b, 0) / contacts.length : null,
+          stale,
+        };
+      })
+      .sort((a, b) => (a.k === UNASSIGNED ? 1 : b.k === UNASSIGNED ? -1 : b.total - a.total));
+  }, [inPeriod, team]);
+
+  const th = "px-3 py-2 text-left font-medium text-sky-text/70 whitespace-nowrap";
+  const td = "px-3 py-2.5 whitespace-nowrap";
+  return (
+    <section className="mt-6 rounded-2xl border border-[#7cc4ff33] p-5" style={{ background: "rgba(255,255,255,0.05)" }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h2 className="font-display font-bold text-xl flex items-center gap-2">
+          <Users className="w-5 h-5 text-[#7cc4ff]" /> Resumen del equipo
+        </h2>
+        <div className="flex gap-1.5">
+          {[7, 30, 90, 0].map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDays(d)}
+              className={"px-3 py-1.5 rounded-full text-xs font-medium " + (days === d ? "bg-electric" : "border border-[#7cc4ff40] text-sky-text/80 hover:text-white")}
+            >
+              {d ? `${d} días` : "Todo"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full text-sm">
+          <thead className="border-b border-white/10">
+            <tr>
+              <th className={th}>Agente</th>
+              <th className={th}>Asignados</th>
+              <th className={th}>Nuevos</th>
+              <th className={th}>Contactados</th>
+              <th className={th}>Cotizados</th>
+              <th className={th}>Cerrados</th>
+              <th className={th}>Perdidos</th>
+              <th className={th}>% cierre</th>
+              <th className={th} title="Tiempo promedio desde que se asigna hasta el primer contacto">1er contacto</th>
+              <th className={th} title="Asignados hace más de 24 horas y todavía en Nueva">Sin contactar +24 h</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {rows.map((r) => (
+              <tr
+                key={r.k}
+                onClick={() => onPick(picked === r.k ? "" : r.k)}
+                className={"cursor-pointer hover:bg-white/5 " + (picked === r.k ? "bg-white/10" : "")}
+                title="Ver solo sus leads"
+              >
+                <td className={td + " font-semibold"}>{r.name}</td>
+                <td className={td}>{r.total}</td>
+                <td className={td}>{r.counts.nueva}</td>
+                <td className={td}>{r.counts.contactada}</td>
+                <td className={td}>{r.counts.cotizada}</td>
+                <td className={td + " text-amber-200"}>{r.counts.cerrada}</td>
+                <td className={td + " text-sky-text/70"}>{r.counts.perdida}</td>
+                <td className={td}>{r.k === UNASSIGNED || r.closeRate === null ? "—" : `${r.closeRate}%`}</td>
+                <td className={td}>{r.k === UNASSIGNED || r.avgContact === null ? "—" : duration(r.avgContact)}</td>
+                <td className={td + (r.stale ? " text-red-200 font-semibold" : " text-sky-text/60")}>{r.k === UNASSIGNED ? "—" : r.stale}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={10} className="py-6 text-center text-sky-text/60">
+                  No hay leads en este periodo.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-sky-text/55 mt-2">
+        Cuenta los leads asignados en el periodo (o recibidos, si están sin asignar), según su estado actual. Toca una fila para ver solo esos leads.
+      </p>
+    </section>
+  );
+}
+
+// ─── Lead card ───────────────────────────────────────────────────────────────
+
+function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: TeamUser[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [status, setStatus] = useState<PosStatus>(l.status);
 
   const changeStatus = (s: PosStatus) =>
     start(async () => {
-      setErr(null);
+      setMsg(null);
       const prev = status;
       setStatus(s);
       const r = await setPosStatus(l.id, s);
       if (!r.ok) {
         setStatus(prev);
-        setErr(r.error);
+        setMsg({ ok: false, text: r.error });
       } else router.refresh();
+    });
+
+  const assign = (u: string) =>
+    start(async () => {
+      setMsg(null);
+      const r = await assignPosLead(l.id, u);
+      if (!r.ok) return setMsg({ ok: false, text: r.error });
+      const who = team.find((t) => t.u === u)?.name;
+      setMsg(
+        u
+          ? { ok: true, text: r.notified ? `Asignado a ${who}; le llegó un aviso por Telegram.` : `Asignado a ${who}. (No tiene Telegram conectado: lo verá en el portal.)` }
+          : { ok: true, text: "Sin asignar." }
+      );
+      router.refresh();
     });
 
   const remove = () => {
     if (!window.confirm(`¿Eliminar el lead ${l.code} de ${l.name || l.business || "(sin nombre)"}? No se puede deshacer.`)) return;
     start(async () => {
       const r = await removePosLead(l.id);
-      if (!r.ok) setErr(r.error);
+      if (!r.ok) setMsg({ ok: false, text: r.error });
       else router.refresh();
     });
   };
@@ -82,10 +235,32 @@ function LeadCard({ l }: { l: PosRow }) {
         </p>
       )}
 
+      {isAdmin ? (
+        <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <UserCheck className="w-4 h-4 text-[#7cc4ff]" />
+          <span className="text-sky-text/75">Asignar a</span>
+          <select
+            value={l.assignedTo?.u ?? ""}
+            disabled={pending}
+            onChange={(e) => assign(e.target.value)}
+            className="rounded-full border border-[#7cc4ff40] bg-[#0B2B5E] px-3 py-1.5 text-sm"
+          >
+            <option value="">Sin asignar</option>
+            {team.map((t) => (
+              <option key={t.u} value={t.u}>
+                {t.name}
+                {t.role === "admin" ? " (admin)" : ""}
+              </option>
+            ))}
+          </select>
+          {l.assignedWhen && <span className="text-xs text-sky-text/55">desde {l.assignedWhen}</span>}
+        </label>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {l.wa ? (
           <a
-            href={`https://wa.me/${l.wa}?text=${encodeURIComponent(waText(l))}`}
+            href={l.wa}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => status === "nueva" && changeStatus("contactada")}
@@ -94,8 +269,8 @@ function LeadCard({ l }: { l: PosRow }) {
             <MessageCircle className="w-4 h-4" /> WhatsApp
           </a>
         ) : null}
-        {l.phone && (
-          <a href={`tel:+${l.wa}`} className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#7cc4ff55] hover:bg-white/10 text-sm">
+        {l.tel && (
+          <a href={`tel:${l.tel}`} className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#7cc4ff55] hover:bg-white/10 text-sm">
             <Phone className="w-4 h-4" /> Llamar
           </a>
         )}
@@ -118,66 +293,143 @@ function LeadCard({ l }: { l: PosRow }) {
             </option>
           ))}
         </select>
-        <button type="button" onClick={remove} disabled={pending} className="p-2 rounded-full hover:bg-red-500/20 text-sky-text/70 hover:text-red-200" title="Eliminar lead">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {isAdmin && (
+          <button type="button" onClick={remove} disabled={pending} className="p-2 rounded-full hover:bg-red-500/20 text-sky-text/70 hover:text-red-200" title="Eliminar lead">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
-      {err && <p className="mt-2 text-xs text-red-200">{err}</p>}
+      {msg && <p className={"mt-2 text-xs " + (msg.ok ? "text-emerald-300" : "text-red-200")}>{msg.text}</p>}
     </article>
   );
 }
 
-export default function PosLeadsView({ leads, error }: { leads: PosRow[]; error: string | null }) {
+// ─── Agent menu (agents don't get the admin menu) ────────────────────────────
+
+function AgentNav() {
+  return (
+    <nav className="sticky top-0 z-50 border-b border-[#7cc4ff20] backdrop-blur-xl" style={{ background: "rgba(11,43,94,0.85)" }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <a href="/agentes" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-electric flex items-center justify-center glow-electric-sm">
+            <Zap className="w-4 h-4 text-white" fill="white" />
+          </div>
+          <span className="font-display font-bold text-xl tracking-tight">
+            Pro<span className="text-electric-light">-DG</span>
+          </span>
+        </a>
+        <div className="flex items-center gap-1">
+          <a href="/agentes" className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10">
+            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Calculadora</span>
+          </a>
+          <a href="/agentes/cotizaciones" className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10">
+            <Inbox className="w-4 h-4" /> <span className="hidden sm:inline">Mis cotizaciones</span>
+          </a>
+          <form action={logout}>
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10" title="Salir">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+export default function PosLeadsView({
+  leads,
+  error,
+  isAdmin,
+  team,
+  userName,
+}: {
+  leads: PosRow[];
+  error: string | null;
+  isAdmin: boolean;
+  team: TeamUser[];
+  userName: string;
+}) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | PosStatus>("all");
-  const counts = Object.fromEntries(ORDER.map((s) => [s, leads.filter((l) => l.status === s).length])) as Record<PosStatus, number>;
-  const shown = leads.filter(
+  const [agent, setAgent] = useState(""); // "" = everyone, UNASSIGNED, or a lowercase username
+  const byAgent = leads.filter((l) => !agent || (agent === UNASSIGNED ? !l.assignedTo : l.assignedTo?.u.toLowerCase() === agent));
+  const counts = Object.fromEntries(ORDER.map((s) => [s, byAgent.filter((l) => l.status === s).length])) as Record<PosStatus, number>;
+  const shown = byAgent.filter(
     (l) =>
       (filter === "all" || l.status === filter) &&
       (!q.trim() || `${l.code} ${l.name} ${l.business} ${l.city} ${l.phone} ${l.email}`.toLowerCase().includes(q.toLowerCase()))
   );
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-white">
-      <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Sistemas de facturación · Nicaragua</p>
-      <h1 className="font-display font-black text-3xl md:text-4xl mt-1">Facturación</h1>
-      <p className="text-sm text-sky-text/70 mt-1">Leads de los formularios de Meta de la página Pro-DG. Se atienden por WhatsApp o llamada; no reciben correos.</p>
-
-      {error && (
-        <p className="mt-5 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-amber-100">
-          <AlertTriangle className="w-4 h-4" /> {error}
+    <>
+      {!isAdmin && <AgentNav />}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-white">
+        <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Sistemas de facturación · Nicaragua</p>
+        <h1 className="font-display font-black text-3xl md:text-4xl mt-1">{isAdmin ? "Facturación" : "Mis leads"}</h1>
+        <p className="text-sm text-sky-text/70 mt-1">
+          {isAdmin
+            ? "Leads de los formularios de Meta de la página Pro-DG. Asígnalos a tu equipo; se atienden por WhatsApp o llamada."
+            : `Hola ${userName.split(" ")[0]}: estos son los leads que te asignaron. Escríbeles por WhatsApp y actualiza su estado.`}
         </p>
-      )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        {(["all", ...ORDER] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setFilter(s)}
-            className={
-              "px-3.5 py-1.5 rounded-full text-xs font-medium " + (filter === s ? "bg-electric" : "border border-[#7cc4ff40] text-sky-text/80 hover:text-white")
-            }
-          >
-            {s === "all" ? `Todos (${leads.length})` : `${STATUS[s].label} (${counts[s]})`}
-          </button>
-        ))}
-        <label className="ml-auto flex items-center gap-2 rounded-full border border-[#7cc4ff40] bg-white/5 px-4 min-w-56">
-          <Search className="w-4 h-4 text-[#7cc4ff]" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/35" />
-        </label>
-      </div>
-
-      <div className="mt-5 flex flex-col gap-3">
-        {shown.map((l) => (
-          <LeadCard key={l.id} l={l} />
-        ))}
-        {shown.length === 0 && (
-          <p className="py-14 text-center text-sm text-sky-text/60">
-            {leads.length === 0 ? "Aún no hay leads de facturación. Llegarán aquí desde los formularios de la página Pro-DG." : "Nadie en este filtro."}
+        {error && (
+          <p className="mt-5 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-500/15 px-4 py-3 text-amber-100">
+            <AlertTriangle className="w-4 h-4" /> {error}
           </p>
         )}
-      </div>
-    </main>
+
+        {isAdmin && <TeamSummary leads={leads} team={team} picked={agent} onPick={setAgent} />}
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {(["all", ...ORDER] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setFilter(s)}
+              className={"px-3.5 py-1.5 rounded-full text-xs font-medium " + (filter === s ? "bg-electric" : "border border-[#7cc4ff40] text-sky-text/80 hover:text-white")}
+            >
+              {s === "all" ? `Todos (${byAgent.length})` : `${STATUS[s].label} (${counts[s]})`}
+            </button>
+          ))}
+          {isAdmin && (
+            <select
+              value={agent}
+              onChange={(e) => setAgent(e.target.value)}
+              className="rounded-full border border-[#7cc4ff40] bg-[#0B2B5E] px-3 py-1.5 text-xs"
+              aria-label="Agente"
+            >
+              <option value="">Todo el equipo</option>
+              <option value={UNASSIGNED}>Sin asignar</option>
+              {team.map((t) => (
+                <option key={t.u} value={t.u.toLowerCase()}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className="ml-auto flex items-center gap-2 rounded-full border border-[#7cc4ff40] bg-white/5 px-4 min-w-56">
+            <Search className="w-4 h-4 text-[#7cc4ff]" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar" className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-white/35" />
+          </label>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3">
+          {shown.map((l) => (
+            <LeadCard key={l.id} l={l} isAdmin={isAdmin} team={team} />
+          ))}
+          {shown.length === 0 && (
+            <p className="py-14 text-center text-sm text-sky-text/60">
+              {leads.length === 0
+                ? isAdmin
+                  ? "Aún no hay leads de facturación. Llegarán aquí desde los formularios de la página Pro-DG."
+                  : "Todavía no tienes leads asignados."
+                : "Nadie en este filtro."}
+            </p>
+          )}
+        </div>
+      </main>
+    </>
   );
 }

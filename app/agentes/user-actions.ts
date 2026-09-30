@@ -2,6 +2,7 @@
 
 import { dbReady } from "@/app/lib/server/redis";
 import { dbUsers, deleteDbUser, envUsers, getSession, hashPassword, saveDbUser, type DbUser, type Role } from "./_lib/auth";
+import { createLink, disconnect } from "@/app/lib/server/telegram-links";
 
 // Manage portal users from the portal (admins only). Users from the Vercel
 // variable PORTAL_USERS are shown but can't be changed here.
@@ -85,6 +86,36 @@ export async function removeUser(username: string) {
     if (user.u.toLowerCase() === me.u.toLowerCase()) return { ok: false as const, error: "No puedes eliminarte a ti mismo." };
     if (user.role === "admin" && (await adminCountExcluding(user.u)) === 0) return { ok: false as const, error: "Debe quedar al menos un administrador." };
     await deleteDbUser(user.u);
+    return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+const knownUser = async (username: string) => {
+  const key = clean(username, 30).toLowerCase();
+  return [...envUsers(), ...(await dbUsers())].find((x) => x.u.toLowerCase() === key);
+};
+
+/** One-time t.me link that connects this user's personal Telegram (for assigned-lead alerts). */
+export async function telegramLink(username: string) {
+  try {
+    await requireAdmin();
+    if (!dbReady()) return { ok: false as const, error: "La base de datos no está configurada." };
+    const user = await knownUser(username);
+    if (!user) return { ok: false as const, error: "Usuario no encontrado." };
+    return { ok: true as const, link: await createLink(user.u) };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export async function telegramDisconnect(username: string) {
+  try {
+    await requireAdmin();
+    const user = await knownUser(username);
+    if (!user) return { ok: false as const, error: "Usuario no encontrado." };
+    await disconnect(user.u);
     return { ok: true as const };
   } catch (e) {
     return failure(e);

@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, KeyRound, Loader2, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from "lucide-react";
-import { addUser, removeUser, setUserPassword, setUserRole } from "../user-actions";
+import { AlertTriangle, CheckCircle2, Copy, KeyRound, Loader2, Send, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from "lucide-react";
+import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink } from "../user-actions";
 
-export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string };
+export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
 const input =
@@ -51,6 +51,78 @@ function PasswordField({ value, onChange, id }: { value: string; onChange: (v: s
       <button type="button" onClick={() => onChange(generatePassword())} className={btn + " border border-[#7cc4ff40] text-sky-text/85 hover:text-white shrink-0"} title="Generar una contraseña segura">
         <Wand2 className="w-4 h-4" /> Generar
       </button>
+    </div>
+  );
+}
+
+/** Personal Telegram for this user: connect with a one-time link, or disconnect. */
+function TelegramRow({ user }: { user: UserRow }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState("");
+
+  const makeLink = () =>
+    start(async () => {
+      setErr("");
+      const r = await telegramLink(user.u);
+      if (r.ok) setLink(r.link);
+      else setErr(r.error);
+    });
+  const unlink = () =>
+    window.confirm(`¿Desconectar el Telegram de ${user.name}? Dejará de recibir los leads asignados por Telegram.`) &&
+    start(async () => {
+      const r = await telegramDisconnect(user.u);
+      if (!r.ok) setErr(r.error);
+      else router.refresh();
+    });
+
+  return (
+    <div className="flex flex-col gap-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        {user.telegram ? (
+          <>
+            <span className="rounded-full bg-sky-500/20 text-sky-200 px-2.5 py-1">Telegram conectado ✅</span>
+            <button type="button" onClick={unlink} disabled={pending} className="text-sky-text/60 hover:text-red-200 underline-offset-2 hover:underline">
+              Desconectar
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={makeLink}
+            disabled={pending}
+            className="flex items-center gap-1.5 rounded-full border border-[#7cc4ff40] px-3 py-1.5 text-sky-text/85 hover:text-white disabled:opacity-50"
+          >
+            {pending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />} Conectar Telegram
+          </button>
+        )}
+      </div>
+      {link && (
+        <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-3 flex flex-col gap-2">
+          <p className="text-sky-100">
+            Envíale este enlace a {user.name} (por ejemplo por WhatsApp). Al abrirlo y tocar <b>Start / Iniciar</b>, su Telegram queda conectado. Sirve una
+            sola vez y vence en 7 días.
+          </p>
+          <div className="flex gap-2">
+            <input readOnly value={link} className="flex-1 rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-3 py-2 font-mono text-[11px]" />
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(link).then(() => setCopied(true));
+              }}
+              className="flex items-center gap-1 rounded-lg border border-[#7cc4ff40] px-3 hover:bg-white/10"
+            >
+              <Copy className="w-3.5 h-3.5" /> {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+          <button type="button" onClick={() => router.refresh()} className="self-start text-sky-text/70 underline-offset-2 hover:underline">
+            Ya lo abrió — actualizar
+          </button>
+        </div>
+      )}
+      {err && <p className="text-red-200">{err}</p>}
     </div>
   );
 }
@@ -121,6 +193,7 @@ function UserCard({ user, me }: { user: UserRow; me: string }) {
           )}
         </div>
       </div>
+      <TelegramRow user={user} />
       {showPw && editable && (
         <div className="flex flex-col gap-2">
           <PasswordField id={`pw-${user.u}`} value={pw} onChange={setPw} />

@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
-import { updatePosLead } from "@/app/lib/server/pos-leads";
+import { canWork, getPosLead, updatePosLead } from "@/app/lib/server/pos-leads";
 import { CATALOG, loadPrices } from "./_lib/products";
 import {
   quoteCode,
@@ -93,8 +93,13 @@ export async function submitQuote(input: SubmitInput): Promise<SubmitResult> {
     const code = quoteCode(q.number);
     // Quote made from a Facturación lead: mark that lead as quoted.
     const leadId = String(input?.leadId ?? "");
-    if (user.role === "admin" && /^[a-z0-9_-]{1,64}$/i.test(leadId)) {
-      await updatePosLead(leadId, { status: "cotizada", quoteCode: code }).catch((e) => console.error("[quotes] could not update lead", e));
+    if (/^[a-z0-9_-]{1,64}$/i.test(leadId)) {
+      try {
+        const lead = await getPosLead(leadId);
+        if (lead && canWork(lead, user)) await updatePosLead(leadId, { status: "cotizada", quoteCode: code });
+      } catch (e) {
+        console.error("[quotes] could not update lead", e);
+      }
     }
     return { ok: true, code };
   } catch {
