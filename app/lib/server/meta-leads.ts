@@ -55,3 +55,25 @@ export function mapAnswers(fields: FieldData) {
   return { driver, extra };
 }
 
+/** Billing-system forms (Pro-DG page): name, business, city, plus Meta's contact fields. */
+export function mapPosAnswers(fields: FieldData) {
+  const out = { name: "", first: "", last: "", business: "", city: "", phone: "", email: "" };
+  const extra: string[] = [];
+  for (const f of fields) {
+    const key = f.name.toLowerCase();
+    const value = (f.values ?? []).join(", ").trim();
+    if (!value) continue;
+    // Business first: "nombre_del_negocio" also contains "nombre".
+    if (/negocio|business|empresa|company|comercio/.test(key)) out.business = value;
+    else if (/ciudad|city|municipio/.test(key)) out.city = value;
+    else if (/e.?mail|correo/.test(key)) out.email = value.toLowerCase();
+    else if (/phone|tel[eé]fono|celular|whats/.test(key)) out.phone = value;
+    else if (/full.?name|nombre.*apellido|nombre_completo|^name$|^nombre$/.test(key)) out.name = value;
+    else if (/first.?name/.test(key)) out.first = value;
+    else if (/last.?name|apellido/.test(key)) out.last = value;
+    else extra.push(`${f.name.replace(/_/g, " ").replace(/[?:]+$/, "")}: ${value}`);
+  }
+  const name = out.name || [out.first, out.last].filter(Boolean).join(" ");
+  return { name, business: out.business, city: out.city, phone: out.phone, email: out.email, extra };
+}
+

@@ -1,4 +1,4 @@
-import { Zap, Calculator, Inbox, Car, Mail, Repeat, BarChart3, UserCog, LogOut } from "lucide-react";
+import { Zap, Calculator, Inbox, Car, Receipt, Mail, Repeat, BarChart3, UserCog, LogOut } from "lucide-react";
 import { logout } from "./actions";
 import { adminBadges } from "./_lib/badges";
 
@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/agentes", label: "Calculadora", icon: Calculator },
   { href: "/agentes/cotizaciones", label: "Cotizaciones", icon: Inbox },
   { href: "/agentes/seguros", label: "Seguros", icon: Car },
+  { href: "/agentes/facturacion", label: "Facturación", icon: Receipt },
   { href: "/agentes/correo", label: "Correo", icon: Mail },
   { href: "/agentes/secuencias", label: "Secuencias", icon: Repeat },
   { href: "/agentes/rendimiento", label: "Rendimiento", icon: BarChart3 },
@@ -18,6 +19,7 @@ export default async function AdminNav({ active }: { active: string }) {
   const badges: Record<string, number> = {
     "/agentes/cotizaciones": counts.cotizaciones,
     "/agentes/seguros": counts.seguros,
+    "/agentes/facturacion": counts.facturacion,
     "/agentes/correo": counts.correo,
   };
   return (

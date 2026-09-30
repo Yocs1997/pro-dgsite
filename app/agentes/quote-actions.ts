@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
+import { updatePosLead } from "@/app/lib/server/pos-leads";
 import { CATALOG, loadPrices } from "./_lib/products";
 import {
   quoteCode,
@@ -16,6 +17,7 @@ import {
 export type SubmitInput = {
   client: { name: string; phone: string; notes: string };
   lines: { id: string; qty: number; sale: number }[];
+  leadId?: string; // Facturación lead this quote was made for (admins)
 };
 
 export type SubmitResult = { ok: true; code: string } | { ok: false; error: string };
@@ -88,7 +90,13 @@ export async function submitQuote(input: SubmitInput): Promise<SubmitResult> {
       totals: oneTime,
       ...(monthlyItems.length ? { monthly: sum(monthlyItems) } : {}),
     });
-    return { ok: true, code: quoteCode(q.number) };
+    const code = quoteCode(q.number);
+    // Quote made from a Facturación lead: mark that lead as quoted.
+    const leadId = String(input?.leadId ?? "");
+    if (user.role === "admin" && /^[a-z0-9_-]{1,64}$/i.test(leadId)) {
+      await updatePosLead(leadId, { status: "cotizada", quoteCode: code }).catch((e) => console.error("[quotes] could not update lead", e));
+    }
+    return { ok: true, code };
   } catch {
     return { ok: false, error: "No se pudo enviar. Inténtalo de nuevo en un momento." };
   }

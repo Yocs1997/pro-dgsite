@@ -237,12 +237,14 @@ export default function Portal({
   quotesEnabled,
   newCount,
   hideNav = false,
+  prefill,
 }: {
   user: { name: string; role: "admin" | "agent" };
   items: PortalItem[];
   quotesEnabled: boolean;
   newCount: number;
   hideNav?: boolean; // admins get the full admin menu from the page instead
+  prefill?: { leadId: string; code: string; name: string; phone: string; notes: string }; // from a Facturación lead
 }) {
   const isAdmin = user.role === "admin";
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -379,6 +381,15 @@ export default function Portal({
       </nav>
       )}
 
+      {prefill && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <p className="rounded-xl border border-indigo-400/40 bg-indigo-500/15 px-4 py-3 text-sm text-indigo-100">
+            Cotizando para el lead <b>{prefill.code}</b> · {prefill.name}
+            {prefill.phone ? ` · ${prefill.phone}` : ""}. Elige los productos y usa “Enviar cotización” para guardarla; el lead quedará como
+            “Cotizada”.
+          </p>
+        </div>
+      )}
       <header className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-8">
         <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">
           {isAdmin ? "Panel de administración" : "Portal de agentes"}
@@ -523,8 +534,9 @@ export default function Portal({
               )}
             </div>
 
-            {!isAdmin && (
+            {(!isAdmin || prefill) && (
               <SendQuote
+                initial={prefill}
                 lines={selected.map(({ item, qty, sale }) => ({ id: item.id, name: item.name, qty, sale, monthly: item.monthly }))}
                 money={money}
                 enabled={quotesEnabled}

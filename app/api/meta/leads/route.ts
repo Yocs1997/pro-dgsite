@@ -2,9 +2,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { db, dbReady } from "@/app/lib/server/redis";
 import { saveLead, type InsuranceLead } from "@/app/lib/server/insurance";
 import { afterNewLead } from "@/app/lib/server/lead-intake";
-import { notifyTelegram, tg } from "@/app/lib/server/telegram";
+import { notifyTelegram, portalLink, posChats, tg } from "@/app/lib/server/telegram";
+import { savePosLead, waNumber } from "@/app/lib/server/pos-leads";
 import { emptyCoverage } from "@/app/seguros/model";
-import { mapAnswers, type FieldData } from "@/app/lib/server/meta-leads";
+import { mapAnswers, mapPosAnswers, type FieldData } from "@/app/lib/server/meta-leads";
 
 // Meta (Facebook/Instagram) lead ads → portal.
 //
@@ -16,6 +17,9 @@ import { mapAnswers, type FieldData } from "@/app/lib/server/meta-leads";
 //   META_APP_SECRET     App → Settings → Basic → App secret (verifies Meta's signature)
 //   META_VERIFY_TOKEN   any random text; the same text goes in the webhook setup in Meta
 //   META_PAGE_TOKEN     Page access token with leads_retrieval (reads the lead's answers)
+//   META_POS_PAGE_ID    Facebook Page id of Pro-DG (billing systems, Nicaragua): its leads
+//                       go to /agentes/facturacion instead of insurance
+//   META_POS_PAGE_TOKEN Page access token for that page
 //   META_GRAPH_VERSION  optional, e.g. v26.0
 
 // META_GRAPH_BASE only overrides the host for local testing.
@@ -47,9 +51,11 @@ function validSignature(body: string, header: string | null): boolean {
 type LeadgenChange = { field?: string; value?: { leadgen_id?: string; form_id?: string; page_id?: string; ad_id?: string; created_time?: number } };
 type Payload = { object?: string; entry?: { id?: string; changes?: LeadgenChange[] }[] };
 
-async function fetchLead(id: string): Promise<{ field_data: FieldData; created_time?: string; form_id?: string; is_organic?: boolean }> {
-  const token = process.env.META_PAGE_TOKEN;
-  if (!token) throw new Error("META_PAGE_TOKEN is not set");
+const isPosPage = (pageId: string) => Boolean(pageId && process.env.META_POS_PAGE_ID && pageId === process.env.META_POS_PAGE_ID);
+
+async function fetchLead(id: string, pos: boolean): Promise<{ field_data: FieldData; created_time?: string; form_id?: string; is_organic?: boolean }> {
+  const token = pos ? process.env.META_POS_PAGE_TOKEN : process.env.META_PAGE_TOKEN;
+  if (!token) throw new Error(`${pos ? "META_POS_PAGE_TOKEN" : "META_PAGE_TOKEN"} is not set`);
   const url = `${GRAPH()}/${encodeURIComponent(id)}?fields=field_data,created_time,form_id,is_organic&access_token=${encodeURIComponent(token)}`;
   const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
   const json = await res.json().catch(() => ({}));
@@ -61,7 +67,7 @@ async function handleLead(leadgenId: string): Promise<"saved" | "duplicate"> {
   const [already] = (await db([["EXISTS", SEEN(leadgenId)]])) as [number];
   if (Number(already) === 1) return "duplicate";
 
-  const data = await fetchLead(leadgenId);
+  const data = await fetchLead(leadgenId, false);
   const { driver, extra } = mapAnswers(data.field_data ?? []);
   const now = Date.now();
   const created = Date.parse(data.created_time ?? "") || now;
@@ -91,6 +97,49 @@ async function handleLead(leadgenId: string): Promise<"saved" | "duplicate"> {
   return "saved";
 }
 
+/** Billing-system lead (Pro-DG page): own inbox, own Telegram group, no emails. */
+async function handlePosLead(leadgenId: string): Promise<"saved" | "duplicate"> {
+  const [already] = (await db([["EXISTS", SEEN(leadgenId)]])) as [number];
+  if (Number(already) === 1) return "duplicate";
+  const data = await fetchLead(leadgenId, true);
+  const a = mapPosAnswers(data.field_data ?? []);
+  const now = Date.now();
+  const created = Date.parse(data.created_time ?? "") || now;
+  const [claimed] = (await db([["SET", SEEN(leadgenId), "1", "NX", "EX", 60 * 24 * 3600]])) as [string | null];
+  if (claimed !== "OK") return "duplicate";
+  const lead = await savePosLead({
+    createdAt: created,
+    updatedAt: now,
+    status: "nueva",
+    name: a.name,
+    business: a.business,
+    city: a.city,
+    phone: a.phone,
+    email: a.email,
+    extra: [...(data.is_organic ? ["Orgánico (no vino de un anuncio)"] : []), ...a.extra].slice(0, 20),
+    metaLeadId: leadgenId,
+  });
+  const wa = a.phone ? waNumber(a.phone) : "";
+  await notifyTelegram(
+    [
+      `🧾 <b>Nuevo lead de facturación</b> · ${tg(lead.code)} · Nicaragua`,
+      [
+        `<b>${tg(a.name || "(sin nombre)")}</b>`,
+        a.business ? `🏪 ${tg(a.business)}` : null,
+        a.city ? `📍 ${tg(a.city)}` : null,
+        a.phone ? `📞 ${tg(a.phone)}` : null,
+        a.email ? `✉️ ${tg(a.email)}` : null,
+        ...a.extra.map((x) => `📝 ${tg(x)}`),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      [wa ? `<a href="https://wa.me/${wa}">Escribir por WhatsApp</a>` : null, portalLink("/facturacion", "Ver en el portal")].filter(Boolean).join(" · "),
+    ].join("\n\n"),
+    posChats()
+  );
+  return "saved";
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   if (!validSignature(body, req.headers.get("x-hub-signature-256"))) return new Response("invalid signature", { status: 401 });
@@ -103,22 +152,27 @@ export async function POST(req: Request) {
     return new Response("bad json", { status: 400 });
   }
 
-  const ids = (payload.entry ?? [])
-    .flatMap((e) => e.changes ?? [])
-    .filter((c) => c.field === "leadgen" && c.value?.leadgen_id)
-    .map((c) => String(c.value!.leadgen_id));
+  const leads = (payload.entry ?? []).flatMap((e) =>
+    (e.changes ?? [])
+      .filter((c) => c.field === "leadgen" && c.value?.leadgen_id)
+      .map((c) => ({ id: String(c.value!.leadgen_id), pos: isPosPage(String(c.value!.page_id ?? e.id ?? "")) }))
+  );
 
   let failed = false;
-  for (const id of ids) {
+  for (const { id, pos } of leads) {
     try {
-      await handleLead(id);
+      if (pos) await handlePosLead(id);
+      else await handleLead(id);
     } catch (e) {
       failed = true;
       console.error("[meta] lead failed", id, e);
       // Tell the team once per lead; Meta will retry the webhook.
       const [first] = (await db([["SET", WARNED(id), "1", "NX", "EX", 7 * 24 * 3600]]).catch(() => [null])) as [string | null];
       if (first === "OK")
-        await notifyTelegram(`⚠️ <b>Llegó un lead de Meta pero no se pudo leer</b>\nID ${tg(id)}\n${tg(e instanceof Error ? e.message : String(e)).slice(0, 300)}\nRevisa META_PAGE_TOKEN en Vercel. Meta lo reintentará.`);
+        await notifyTelegram(
+          `⚠️ <b>Llegó un lead de Meta pero no se pudo leer</b>\nID ${tg(id)}\n${tg(e instanceof Error ? e.message : String(e)).slice(0, 300)}\nRevisa ${pos ? "META_POS_PAGE_TOKEN" : "META_PAGE_TOKEN"} en Vercel. Meta lo reintentará.`,
+          pos ? posChats() : undefined
+        );
     }
   }
   // A non-200 makes Meta retry later (useful if the token or Graph API had a hiccup).

@@ -16,16 +16,18 @@ export default function SendQuote({
   money,
   enabled,
   onSent,
+  initial,
 }: {
+  initial?: { leadId: string; name: string; phone: string; notes: string };
   lines: Line[];
   money: (n: number) => string;
   enabled: boolean;
   onSent: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sentCode, setSentCode] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -42,6 +44,7 @@ export default function SendQuote({
       const res = await submitQuote({
         client: { name, phone, notes },
         lines: lines.map((l) => ({ id: l.id, qty: l.qty, sale: l.sale })),
+        ...(initial?.leadId ? { leadId: initial.leadId } : {}),
       });
       if (res.ok) {
         setSentCode(res.code);

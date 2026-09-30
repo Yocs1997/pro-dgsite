@@ -6,6 +6,8 @@ import "server-only";
 //   TELEGRAM_BOT_TOKEN   from @BotFather, e.g. 123456789:AA...
 //   TELEGRAM_CHAT_ID     who receives the messages: your chat id, or a group id
 //                        (starts with -). Several ids can be separated by commas.
+//   TELEGRAM_POS_CHAT_ID group for billing-system (Nicaragua) leads; falls back to
+//                        TELEGRAM_CHAT_ID when not set.
 //
 // Without them nothing is sent. A Telegram problem never breaks the caller.
 
@@ -19,10 +21,13 @@ export const tg = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace
 const PORTAL = "https://www.pro-dg.com/agentes";
 export const portalLink = (path = "", label = "Abrir en el portal") => `<a href="${PORTAL}${path}">${tg(label)}</a>`;
 
+/** Chat(s) for billing-system leads. */
+export const posChats = () => process.env.TELEGRAM_POS_CHAT_ID || process.env.TELEGRAM_CHAT_ID || "";
+
 /** Sends one message (HTML allowed; escape user data with tg()). Returns true if every chat got it. */
-export async function notifyTelegram(html: string): Promise<boolean> {
+export async function notifyTelegram(html: string, chatIds?: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chats = (process.env.TELEGRAM_CHAT_ID ?? "")
+  const chats = (chatIds ?? process.env.TELEGRAM_CHAT_ID ?? "")
     .split(",")
     .map((c) => c.trim())
     .filter(Boolean);
