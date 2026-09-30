@@ -246,7 +246,7 @@ export default function Portal({
   newCount: number;
   hideNav?: boolean; // admins get the full admin menu from the page instead
   prefill?: { leadId: string; code: string; name: string; phone: string; notes: string }; // from a Facturación lead
-  myLeads?: { total: number; fresh: number }; // agents with assigned billing-system leads
+  myLeads?: { total: number; fresh: number }; // agents: their billing-system leads (link always shown)
 }) {
   const isAdmin = user.role === "admin";
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -360,7 +360,7 @@ export default function Portal({
                 className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Mis leads</span>
+                <span className="whitespace-nowrap">Mis leads</span>
                 {myLeads.fresh > 0 && (
                   <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[11px] font-bold flex items-center justify-center">{myLeads.fresh}</span>
                 )}

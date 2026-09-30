@@ -27,11 +27,12 @@ export default async function AgentesPage({ searchParams }: { searchParams: Prom
   const quotesEnabled = quotesReady();
 
   // Agents: how many assigned billing-system leads are still new (badge on "Mis leads").
-  let myLeads: { total: number; fresh: number } | undefined;
+  // Every agent gets the link, even before their first lead.
+  let myLeads: { total: number; fresh: number } | undefined = isAdmin ? undefined : { total: 0, fresh: 0 };
   if (!isAdmin) {
     try {
       const mine = (await listPosLeads()).filter((l) => l.assignedTo?.u.toLowerCase() === user.u.toLowerCase());
-      if (mine.length) myLeads = { total: mine.length, fresh: mine.filter((l) => l.status === "nueva").length };
+      myLeads = { total: mine.length, fresh: mine.filter((l) => l.status === "nueva").length };
     } catch {
       /* no badge */
     }
