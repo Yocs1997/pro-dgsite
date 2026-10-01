@@ -25,6 +25,7 @@ import type { PosLead, PosStatus } from "@/app/lib/server/pos-leads";
 import { addPosLead, assignPosLead, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
 import { logout } from "../actions";
 import Phone2Button from "../Phone2Button";
+import EmailButton from "../EmailButton";
 
 export type PosRow = PosLead & { wa: string; tel: string; when: string; assignedWhen: string };
 export type TeamUser = { u: string; name: string; role: "admin" | "agent" };
@@ -380,6 +381,7 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
           </a>
         )}
         {isAdmin && l.tel && <Phone2Button phone={l.tel} />}
+        {isAdmin && <EmailButton to={l.email} label="Correo" />}
         <a
           href={`/agentes?lead=${encodeURIComponent(l.id)}`}
           className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-electric hover:bg-electric-light text-sm font-semibold"

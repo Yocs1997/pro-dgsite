@@ -5,6 +5,7 @@ import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTria
 import { removeLead, updateLeadStatus } from "../admin-actions";
 import LeadEditor from "./LeadEditor";
 import Phone2Button from "../Phone2Button";
+import EmailButton, { composeHref } from "../EmailButton";
 import { label, type OptionGroup } from "@/app/seguros/model";
 import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
 
@@ -191,7 +192,7 @@ function LeadCard({
               </div>
             ) : null}
             <div className="rounded-xl bg-black/20 p-4 flex flex-col gap-2 text-sm">
-              <a href={`mailto:${d.email}`} className="flex items-center gap-2 text-[#7cc4ff] hover:underline break-all">
+              <a href={composeHref(d.email)} title="Escribirle desde el portal" className="flex items-center gap-2 text-[#7cc4ff] hover:underline break-all">
                 <Mail className="w-4 h-4 shrink-0" /> {d.email}
               </a>
               <a href={`tel:${phone}`} className="flex items-center gap-2 text-[#7cc4ff] hover:underline">
@@ -219,6 +220,7 @@ function LeadCard({
             <a href={replyHref} className="flex items-center justify-center gap-1.5 rounded-full bg-electric hover:bg-electric-light py-2.5 text-sm font-semibold">
               <Reply className="w-4 h-4" /> Enviar cotización por correo
             </a>
+            <EmailButton to={d.email} label="Enviar otro correo" className="flex items-center justify-center gap-1.5 rounded-full border border-[#7cc4ff55] hover:bg-white/10 py-2.5 text-sm" />
             <button
               type="button"
               onClick={async () => {

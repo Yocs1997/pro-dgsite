@@ -18,6 +18,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import EmailButton from "../EmailButton";
 import type { Audience, Lang, Sequence, Step } from "@/app/lib/server/sequences";
 import type { CampaignStats } from "@/app/lib/server/mail-tracking";
 import {
@@ -626,7 +627,8 @@ function SequenceCard({ item, segments, startOpen }: { item: SequenceItem; segme
                       </td>
                       <td className="px-3 py-2.5">{e.sent}</td>
                       <td className="px-3 py-2.5 whitespace-nowrap text-sky-text/80">{e.next || "—"}</td>
-                      <td className="px-3 py-2.5 text-right">
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        <EmailButton to={e.email} icon />
                         {e.status === "active" && (
                           <button type="button" onClick={() => stop(e.email)} className="inline-flex items-center gap-1 text-xs text-sky-text/70 hover:text-red-300">
                             <Square className="w-3 h-3" /> Detener

@@ -39,6 +39,7 @@ import {
   type OpenedMail,
 } from "../admin-actions";
 import { Pencil, Save, X as XIcon } from "lucide-react";
+import EmailButton from "../EmailButton";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
@@ -527,6 +528,7 @@ function ContactRow({ c, onChange, onRemove }: { c: LocalContact; onChange: (c: 
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-[11px] text-sky-text/60 mr-1 hidden sm:inline">{c.segments.join(", ")}</span>
+            <EmailButton to={c.email} icon />
             <button type="button" title="Editar" onClick={() => setEditing(true)} className="p-1.5 rounded-full hover:bg-white/10 text-sky-text/70">
               <Pencil className="w-3.5 h-3.5" />
             </button>

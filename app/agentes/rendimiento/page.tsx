@@ -4,6 +4,7 @@ import { dbReady } from "@/app/lib/server/redis";
 import { listCampaigns } from "@/app/lib/server/mail";
 import { campaignStats, listTrackedEmails, webhookHealth, type CampaignStats, type TrackedEmail } from "@/app/lib/server/mail-tracking";
 import AdminNav from "../AdminNav";
+import { composeHref } from "../EmailButton";
 
 export const metadata = { title: "Rendimiento de correos | Pro-DG" };
 
@@ -304,8 +305,10 @@ export default async function RendimientoPage({ searchParams }: { searchParams: 
                   return (
                     <tr key={e.id}>
                       <td className={td}>{when(e.sentAt)}</td>
-                      <td className={td + " max-w-[14rem] truncate"} title={e.to}>
-                        {e.to}
+                      <td className={td + " max-w-[14rem] truncate"}>
+                        <a href={composeHref(e.to)} title={`Escribirle a ${e.to} desde el portal`} className="hover:underline hover:text-[#7cc4ff]">
+                          {e.to}
+                        </a>
                       </td>
                       <td className={td + " max-w-[18rem] truncate"} title={e.subject}>
                         {e.subject}
