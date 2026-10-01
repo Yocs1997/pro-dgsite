@@ -40,6 +40,7 @@ import {
 } from "../admin-actions";
 import { Pencil, Save, X as XIcon } from "lucide-react";
 import EmailButton from "../EmailButton";
+import { MAIL_TEMPLATES, fillTemplate, type TemplateLang } from "./templates";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
@@ -127,15 +128,35 @@ function Composer({
   onSent,
   onCancel,
   title,
+  templates,
 }: {
   initial: { to: string; subject: string; body?: string; inReplyTo?: string };
   onSent: (m: { to: string; subject: string; body: string }) => void;
   onCancel?: () => void;
   title: string;
+  templates?: { contacts: LocalContact[]; agentName: string }; // new emails only: ready-made subject + message
 }) {
   const [to, setTo] = useState(initial.to);
   const [subject, setSubject] = useState(initial.subject);
   const [body, setBody] = useState(initial.body ?? "");
+  const [tplId, setTplId] = useState("");
+  const [tplLang, setTplLang] = useState<TemplateLang | null>(null); // null = follow the contact's language
+  const [filled, setFilled] = useState(""); // last message a template wrote, to notice hand edits
+
+  // The contact behind a single "Para" address gives the first name and language.
+  const contact = templates?.contacts.find((c) => c.email.toLowerCase() === to.trim().toLowerCase());
+  const lang: TemplateLang = tplLang ?? contact?.lang ?? "en";
+
+  const applyTemplate = (id: string, l: TemplateLang) => {
+    const tpl = MAIL_TEMPLATES.find((t) => t.id === id);
+    if (!tpl || !templates) return;
+    if (body.trim() && body !== filled && !window.confirm("Esto reemplaza el asunto y el mensaje que escribiste. ¿Continuar?")) return;
+    const r = fillTemplate(tpl[l], { name: contact?.firstName, agent: templates.agentName });
+    setTplId(id);
+    setSubject(r.subject);
+    setBody(r.body);
+    setFilled(r.body);
+  };
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [pending, start] = useTransition();
 
@@ -147,6 +168,7 @@ function Composer({
         setMsg({ kind: "ok", text: "Correo enviado." });
         onSent({ to, subject, body });
         setBody("");
+        setTplId("");
         if (!initial.inReplyTo) {
           setTo("");
           setSubject("");
@@ -168,6 +190,46 @@ function Composer({
         <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Para</span>
         <input value={to} onChange={(e) => setTo(e.target.value)} className={input} placeholder="cliente@correo.com (varios separados por coma)" inputMode="email" />
       </label>
+      {templates && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Plantilla</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={tplId}
+              onChange={(e) => (e.target.value ? applyTemplate(e.target.value, lang) : setTplId(""))}
+              className={input + " flex-1 min-w-56 bg-[#0F3470]"}
+              aria-label="Plantilla"
+            >
+              <option value="">Sin plantilla (escribir desde cero)</option>
+              {MAIL_TEMPLATES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-1">
+              {(["en", "es"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => {
+                    setTplLang(l);
+                    if (tplId) applyTemplate(tplId, l);
+                  }}
+                  className={"px-3 py-2 rounded-full text-xs font-medium " + (lang === l ? "bg-electric" : "border border-[#7cc4ff40] text-sky-text/80 hover:text-white")}
+                >
+                  {l === "en" ? "Inglés" : "Español"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="text-[11px] text-sky-text/55">
+            {contact?.firstName
+              ? `Se llena con el nombre de ${contact.firstName}. Puedes editar todo antes de enviar.`
+              : "Escribe primero el correo en \"Para\" para que salga con su nombre. Puedes editar todo antes de enviar."}
+          </span>
+        </div>
+      )}
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Asunto</span>
         <input value={subject} onChange={(e) => setSubject(e.target.value)} className={input} />
@@ -1210,7 +1272,7 @@ export default function MailCenter({
       {tab === "inbox" && <InboxView items={inbox} setItems={setInbox} onSent={addSent} />}
       {tab === "compose" && (
         <div className="max-w-3xl">
-          <Composer title="Nuevo correo" initial={{ to: compose.to, subject: compose.subject }} onSent={addSent} />
+          <Composer title="Nuevo correo" initial={{ to: compose.to, subject: compose.subject }} onSent={addSent} templates={{ contacts, agentName: adminName }} />
         </div>
       )}
       {tab === "campaigns" && (
