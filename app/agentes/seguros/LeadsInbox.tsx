@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Contact as IdCard } from "lucide-react";
 import { removeLead, updateLeadStatus } from "../admin-actions";
 import LeadEditor from "./LeadEditor";
+import Phone2Button from "../Phone2Button";
 import { label, type OptionGroup } from "@/app/seguros/model";
 import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
 
@@ -196,6 +197,7 @@ function LeadCard({
               <a href={`tel:${phone}`} className="flex items-center gap-2 text-[#7cc4ff] hover:underline">
                 <Phone className="w-4 h-4 shrink-0" /> {d.phone}
               </a>
+              <Phone2Button phone={d.phone} className="flex items-center gap-2 text-left text-[#7cc4ff] hover:underline" />
               <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-emerald-300 hover:underline">
                 <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp
               </a>
