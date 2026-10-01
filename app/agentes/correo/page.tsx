@@ -6,7 +6,7 @@ import { telegramReady } from "@/app/lib/server/telegram";
 import { listCampaigns, listInMail, listOutMail } from "@/app/lib/server/mail";
 import { listLocalContacts } from "@/app/lib/server/contacts";
 import { listLeads } from "@/app/lib/server/insurance";
-import { serviceFromNotes } from "./templates";
+import { leadService } from "@/app/lib/lead-service";
 import AdminNav from "../AdminNav";
 import MailCenter from "./MailCenter";
 
@@ -50,7 +50,7 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
   const services: Record<string, string> = {};
   for (const l of [...leads].sort((a, b) => a.createdAt - b.createdAt)) {
     const email = l.driver?.email?.trim().toLowerCase();
-    const service = serviceFromNotes(l.coverage?.notes ?? "");
+    const service = leadService(l);
     if (email && service) services[email] = service;
   }
 

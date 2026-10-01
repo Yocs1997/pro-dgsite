@@ -6,6 +6,7 @@ import { notifyTelegram, portalLink, posChats, tg } from "@/app/lib/server/teleg
 import { savePosLead, waLink } from "@/app/lib/server/pos-leads";
 import { emptyCoverage } from "@/app/seguros/model";
 import { mapAnswers, mapPosAnswers, type FieldData } from "@/app/lib/server/meta-leads";
+import { serviceFromNotes } from "@/app/lib/lead-service";
 
 // Meta (Facebook/Instagram) lead ads → portal.
 //
@@ -88,6 +89,7 @@ async function handleLead(leadgenId: string): Promise<"saved" | "duplicate"> {
     licensePhotos: 0,
     source: "meta",
     metaLeadId: leadgenId,
+    service: serviceFromNotes(extra.join(" · ")),
   };
   // Claim the id first so a Meta retry can't create the lead twice.
   const [claimed] = (await db([["SET", SEEN(leadgenId), "1", "NX", "EX", 60 * 24 * 3600]])) as [string | null];

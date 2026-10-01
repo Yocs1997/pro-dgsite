@@ -6,7 +6,7 @@ import { removeLead, updateLeadStatus } from "../admin-actions";
 import LeadEditor from "./LeadEditor";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
-import { productLabel, serviceFromNotes } from "../correo/templates";
+import { leadService, productLabel } from "@/app/lib/lead-service";
 import { label, type OptionGroup } from "@/app/seguros/model";
 import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
 
@@ -87,7 +87,7 @@ function LeadCard({
     else setErr(r.error);
   };
   const d = l.driver;
-  const service = serviceFromNotes(l.coverage.notes ?? "");
+  const service = leadService(l);
   const phone =d.phone.replace(/[^\d+]/g, "");
   const wa = phone.replace(/^\+/, "").length === 10 ? `1${phone.replace(/^\+/, "")}` : phone.replace(/^\+/, "");
   const replyHref = `/agentes/correo?to=${encodeURIComponent(d.email)}&subject=${encodeURIComponent(

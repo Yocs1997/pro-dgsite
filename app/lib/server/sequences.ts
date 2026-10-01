@@ -1,4 +1,4 @@
-import { DEFAULT_PRODUCT, productLabel, serviceFromNotes } from "@/app/lib/lead-service";
+import { DEFAULT_PRODUCT, leadService, productLabel } from "@/app/lib/lead-service";
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { db, listRecords } from "./redis";
@@ -287,7 +287,7 @@ function varsFromLead(l: InsuranceLead) {
     insured: l.coverage?.insured ?? "",
     firstName: l.driver?.firstName ?? "",
     lang: l.lang,
-    product: serviceFromNotes(l.coverage?.notes ?? ""),
+    product: leadService(l),
   };
 }
 
