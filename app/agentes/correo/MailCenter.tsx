@@ -40,7 +40,7 @@ import {
 } from "../admin-actions";
 import { Pencil, Save, X as XIcon } from "lucide-react";
 import EmailButton from "../EmailButton";
-import { MAIL_TEMPLATES, fillTemplate, type TemplateLang } from "./templates";
+import { MAIL_TEMPLATES, NAME_TOKEN, fillTemplate, personalize, type TemplateLang } from "./templates";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
@@ -143,15 +143,17 @@ function Composer({
   const [tplLang, setTplLang] = useState<TemplateLang | null>(null); // null = follow the contact's language
   const [filled, setFilled] = useState(""); // last message a template wrote, to notice hand edits
 
-  // The contact behind a single "Para" address gives the first name and language.
-  const contact = templates?.contacts.find((c) => c.email.toLowerCase() === to.trim().toLowerCase());
+  // Each address gets its own email. The first recipient's contact sets the default language.
+  const recipients = Array.from(new Set(to.split(/[,;\s]+/).map((e) => e.trim().toLowerCase()).filter(Boolean)));
+  const contact = templates?.contacts.find((c) => c.email.toLowerCase() === recipients[0]);
   const lang: TemplateLang = tplLang ?? contact?.lang ?? "en";
+  const usesName = (subject + body).toLowerCase().includes(NAME_TOKEN);
 
   const applyTemplate = (id: string, l: TemplateLang) => {
     const tpl = MAIL_TEMPLATES.find((t) => t.id === id);
     if (!tpl || !templates) return;
     if (body.trim() && body !== filled && !window.confirm("Esto reemplaza el asunto y el mensaje que escribiste. ¿Continuar?")) return;
-    const r = fillTemplate(tpl[l], { name: contact?.firstName, agent: templates.agentName });
+    const r = fillTemplate(tpl[l], { agent: templates.agentName });
     setTplId(id);
     setSubject(r.subject);
     setBody(r.body);
@@ -165,8 +167,14 @@ function Composer({
       setMsg(null);
       const r = await sendMessage({ to, subject, body, inReplyTo: initial.inReplyTo });
       if (r.ok) {
-        setMsg({ kind: "ok", text: "Correo enviado." });
-        onSent({ to, subject, body });
+        r.sent.forEach(onSent);
+        if (r.failed.length) {
+          // Keep the message so the ones that failed can be retried.
+          setMsg({ kind: "err", text: `Enviado a ${r.sent.length}. No se pudo enviar a: ${r.failed.join(", ")}. Quedaron en "Para" para reintentar.` });
+          setTo(r.failed.join(", "));
+          return;
+        }
+        setMsg({ kind: "ok", text: r.sent.length > 1 ? `Enviado a ${r.sent.length} personas, un correo por separado para cada una.` : "Correo enviado." });
         setBody("");
         setTplId("");
         if (!initial.inReplyTo) {
@@ -188,7 +196,7 @@ function Composer({
       </div>
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Para</span>
-        <input value={to} onChange={(e) => setTo(e.target.value)} className={input} placeholder="cliente@correo.com (varios separados por coma)" inputMode="email" />
+        <input value={to} onChange={(e) => setTo(e.target.value)} className={input} placeholder="cliente@correo.com (varios separados por coma: cada uno recibe su propio correo)" inputMode="email" />
       </label>
       {templates && (
         <div className="flex flex-col gap-1.5">
@@ -223,11 +231,7 @@ function Composer({
               ))}
             </div>
           </div>
-          <span className="text-[11px] text-sky-text/55">
-            {contact?.firstName
-              ? `Se llena con el nombre de ${contact.firstName}. Puedes editar todo antes de enviar.`
-              : "Escribe primero el correo en \"Para\" para que salga con su nombre. Puedes editar todo antes de enviar."}
-          </span>
+          <span className="text-[11px] text-sky-text/55">Puedes editar todo antes de enviar.</span>
         </div>
       )}
       <label className="flex flex-col gap-1.5">
@@ -238,6 +242,15 @@ function Composer({
         <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Mensaje</span>
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={10} className={input + " resize-y min-h-40"} placeholder="Escribe tu mensaje. Deja una línea en blanco entre párrafos." />
       </label>
+      {(recipients.length > 1 || usesName) && (
+        <p className="text-xs text-sky-text/70">
+          {recipients.length > 1 && `Se envían ${recipients.length} correos por separado: nadie ve las otras direcciones. `}
+          {usesName &&
+            (recipients.length === 1 && templates
+              ? `${NAME_TOKEN} saldrá con su nombre${contact?.firstName ? `: ${contact.firstName}` : " (no lo tenemos: el saludo sale sin nombre)"}.`
+              : `${NAME_TOKEN} se cambia por el nombre de cada persona (si no lo tenemos, se omite).`)}
+        </p>
+      )}
       {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
       <div className="flex justify-end">
         <button

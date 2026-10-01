@@ -7,11 +7,12 @@ import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
 import { deleteQuote, updateQuoteData } from "./_lib/quotes";
 import type { InsuranceInput } from "@/app/seguros/model";
 import { resend, resendReady, sendEmail, emailLayout, textToHtml, mailFrom, mailReplyTo, esc } from "@/app/lib/server/resend";
-import { upsertContact, segmentId, listLocalContacts, updateContact, deleteContact, removeFromSegment, type ContactDetails } from "@/app/lib/server/contacts";
+import { upsertContact, segmentId, listLocalContacts, getLocalContacts, updateContact, deleteContact, removeFromSegment, type ContactDetails } from "@/app/lib/server/contacts";
 import { normalizeInsured, normalizeLang, normalizeState, stateFromPhone } from "@/app/lib/contact-details";
 import { notifyTelegram, telegramReady, tg } from "@/app/lib/server/telegram";
 import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
 import { isEmail } from "@/app/seguros/model";
+import { personalize } from "./correo/templates";
 
 async function requireAdmin() {
   const u = await getSession();
@@ -117,25 +118,56 @@ export async function sendMessage(input: { to: string; subject: string; body: st
   try {
     await requireAdmin();
     if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
-    const to = clean(input.to, 500)
-      .split(/[,;\s]+/)
-      .filter(Boolean);
+    const to = Array.from(
+      new Map(
+        clean(input.to, 500)
+          .split(/[,;\s]+/)
+          .filter(Boolean)
+          .map((e) => [e.toLowerCase(), e])
+      ).values()
+    );
     if (!to.length || to.length > 20 || !to.every(isEmail)) return { ok: false as const, error: "Revisa los destinatarios (máximo 20, separados por coma)." };
     const subject = clean(input.subject, 200);
     const body = clean(input.body, 20000);
     if (!subject || !body) return { ok: false as const, error: "Escribe un asunto y un mensaje." };
     const inReplyTo = clean(input.inReplyTo, 300);
     const references = clean(input.references, 2000);
-    const r = await sendEmail({
-      to,
-      subject,
-      html: emailLayout(textToHtml(body)),
-      text: body,
-      category: inReplyTo ? "reply" : "email",
-      ...(inReplyTo ? { headers: { "In-Reply-To": inReplyTo, References: references || inReplyTo } } : {}),
-    });
-    await saveOutMail({ id: r.id || uid(), to, subject, body, createdAt: Date.now(), kind: inReplyTo ? "reply" : "email", ...(inReplyTo ? { inReplyTo } : {}) }).catch(() => {});
-    return { ok: true as const };
+
+    // One email per person: nobody sees the other addresses, and {nombre} becomes
+    // each contact's first name.
+    const contacts = await getLocalContacts(to).catch(() => to.map(() => null));
+    const sent: { to: string; subject: string; body: string }[] = [];
+    const failed: string[] = [];
+    for (let i = 0; i < to.length; i++) {
+      const name = contacts[i]?.firstName;
+      const mine = { to: to[i], subject: personalize(subject, name), body: personalize(body, name) };
+      try {
+        const r = await sendEmail({
+          to: [mine.to],
+          subject: mine.subject,
+          html: emailLayout(textToHtml(mine.body)),
+          text: mine.body,
+          category: inReplyTo ? "reply" : "email",
+          ...(inReplyTo ? { headers: { "In-Reply-To": inReplyTo, References: references || inReplyTo } } : {}),
+        });
+        await saveOutMail({
+          id: r.id || uid(),
+          to: [mine.to],
+          subject: mine.subject,
+          body: mine.body,
+          createdAt: Date.now(),
+          kind: inReplyTo ? "reply" : "email",
+          ...(inReplyTo ? { inReplyTo } : {}),
+        }).catch(() => {});
+        sent.push(mine);
+      } catch (e) {
+        console.error("[mail] send failed", mine.to, e);
+        failed.push(mine.to);
+        if (to.length === 1) throw e;
+      }
+    }
+    if (!sent.length) return { ok: false as const, error: "No se pudo enviar a ningún destinatario. Intenta de nuevo." };
+    return { ok: true as const, sent, failed };
   } catch (e) {
     return failure(e);
   }

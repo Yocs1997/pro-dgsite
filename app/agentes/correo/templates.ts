@@ -1,6 +1,7 @@
 // Ready-made one-to-one emails for Correo → Redactar. Pick one and the subject and
 // message are filled in; everything stays editable before sending.
-//   {name}  → the contact's first name (dropped if unknown)
+//   {name}  → becomes {nombre} in the composer; when the email is sent, each recipient
+//             gets their own first name there (dropped if unknown)
 //   {agent} → the person sending (portal user)
 
 export type TemplateLang = "en" | "es";
@@ -137,9 +138,17 @@ ${COMPANY}`,
   },
 ];
 
-/** Fills {name} and {agent}; with no name the greeting becomes "Hi," / "Hola,". */
-export function fillTemplate(t: Text, v: { name?: string; agent: string }): Text {
-  const name = (v.name ?? "").trim();
-  const fill = (s: string) => s.replace(/ ?\{name\}/g, name ? ` ${name}` : "").replace(/\{agent\}/g, v.agent.trim());
+/** The token left in the composer for the recipient's first name. */
+export const NAME_TOKEN = "{nombre}";
+
+/** Fills {agent} and leaves {nombre} for the moment of sending. */
+export function fillTemplate(t: Text, v: { agent: string }): Text {
+  const fill = (s: string) => s.replace(/\{name\}/g, NAME_TOKEN).replace(/\{agent\}/g, v.agent.trim());
   return { subject: fill(t.subject), body: fill(t.body) };
+}
+
+/** Puts one person's first name where {nombre} is; with no name "Hi {nombre}," becomes "Hi,". */
+export function personalize(text: string, firstName?: string): string {
+  const name = (firstName ?? "").trim();
+  return text.replace(/ ?\{nombre\}/gi, name ? ` ${name}` : "");
 }

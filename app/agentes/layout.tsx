@@ -11,6 +11,10 @@ export default function AgentesLayout({ children }: { children: React.ReactNode 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
         html, body { background-color: #0B2B5E !important; }
+        /* Dropdown lists: dark background with white text everywhere in the portal
+           (the browser's default white list made the options unreadable). */
+        select { color-scheme: dark; }
+        select option, select optgroup { background-color: #0F3470; color: #fff; }
       `}</style>
       <div
         className="min-h-screen relative overflow-x-hidden text-white"
