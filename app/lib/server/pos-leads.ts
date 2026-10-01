@@ -1,5 +1,6 @@
 import "server-only";
 import { db, listRecords } from "./redis";
+import { appendNote, type LeadNote } from "@/app/lib/lead-notes";
 
 // Leads for billing systems in Nicaragua (Meta Instant Forms on the Pro-DG page).
 // Kept apart from insurance: own inbox (/agentes/facturacion), own Telegram group,
@@ -28,6 +29,7 @@ export type PosLead = {
   assignedTo?: { u: string; name: string };
   assignedAt?: number;
   statusAt?: Partial<Record<PosStatus, number>>; // first time each status was reached
+  log?: LeadNote[]; // call log / notes, oldest first
 };
 
 const KEY = (id: string) => `pdg:pos:${id}`;
@@ -77,6 +79,14 @@ export async function updatePosLead(id: string, patch: Patch): Promise<PosLead |
       delete next.assignedAt;
     }
   }
+  await db([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}
+
+export async function addPosLeadNote(id: string, note: LeadNote): Promise<PosLead | null> {
+  const lead = await getPosLead(id);
+  if (!lead) return null;
+  const next: PosLead = { ...lead, log: appendNote(lead.log, note), updatedAt: Date.now() };
   await db([["SET", KEY(id), JSON.stringify(next)]]);
   return next;
 }

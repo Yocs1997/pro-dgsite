@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Contact as IdCard } from "lucide-react";
-import { removeLead, updateLeadStatus } from "../admin-actions";
+import { addInsuranceNote, removeLead, updateLeadStatus } from "../admin-actions";
+import LeadNotes, { Linkify } from "../LeadNotes";
 import LeadEditor from "./LeadEditor";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
@@ -27,7 +28,9 @@ function Info({ k, v }: { k: string; v?: string }) {
   return (
     <div className="flex justify-between gap-4 py-1 text-sm border-b border-white/5 last:border-0">
       <span className="text-sky-text/60 shrink-0">{k}</span>
-      <span className="text-right break-words min-w-0">{v}</span>
+      <span className="text-right break-words min-w-0">
+        <Linkify text={v} />
+      </span>
     </div>
   );
 }
@@ -77,6 +80,7 @@ function LeadCard({
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [log, setLog] = useState(l.log ?? []); // kept here so it survives closing the card
 
   const del = async () => {
     if (!confirm(`¿Eliminar la solicitud ${l.code} de ${[l.driver.firstName, l.driver.lastName].join(" ").trim() || l.driver.email}? Esto también borra las fotos de licencia y no se puede deshacer.`)) return;
@@ -112,6 +116,11 @@ function LeadCard({
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">
           {[d.firstName, d.lastName].join(" ").trim() || d.email}
         </span>
+        {log.length ? (
+          <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-sky-text/80" title="Notas y llamadas registradas">
+            📝 {log.length}
+          </span>
+        ) : null}
         {l.licensePhotos ? (
           <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-400/20 text-amber-100">
             <IdCard className="w-3.5 h-3.5" /> Licencia
@@ -262,6 +271,16 @@ function LeadCard({
               </button>
             </div>
             {err && <p className="text-xs text-red-200">{err}</p>}
+          </div>
+          <div className="lg:col-span-2">
+            <LeadNotes
+              initial={log}
+              add={async (outcome, text) => {
+                const r = await addInsuranceNote(l.id, outcome, text);
+                if (r.ok) setLog((x) => [...x, r.note]);
+                return r;
+              }}
+            />
           </div>
         </div>
       )}

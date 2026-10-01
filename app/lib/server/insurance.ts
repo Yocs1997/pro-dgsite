@@ -1,4 +1,5 @@
 import { leadService } from "@/app/lib/lead-service";
+import { appendNote, type LeadNote } from "@/app/lib/lead-notes";
 import "server-only";
 import { db, listRecords } from "./redis";
 import type { InsuranceInput } from "@/app/seguros/model";
@@ -17,6 +18,7 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licens
   licensePhotos?: number; // how many license photos are stored (0–2)
   source?: "web" | "meta"; // missing = the /seguros form
   metaLeadId?: string; // Meta lead ads: the leadgen id
+  log?: LeadNote[]; // call log / notes, oldest first
   service?: string; // Meta form "which service" answer ("placas de virginia"); kept apart from the editable notes
 };
 
@@ -62,6 +64,14 @@ export async function updateLead(id: string, patch: Partial<Pick<InsuranceLead, 
   const next: InsuranceLead = { ...lead, ...patch, updatedAt: Date.now() };
   // Older leads only have the service inside their notes: keep it before the notes change.
   if (lead.service === undefined) next.service = leadService(lead);
+  await db([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}
+
+export async function addLeadNote(id: string, note: LeadNote) {
+  const lead = await getLead(id);
+  if (!lead) return null;
+  const next: InsuranceLead = { ...lead, log: appendNote(lead.log, note), updatedAt: Date.now() };
   await db([["SET", KEY(id), JSON.stringify(next)]]);
   return next;
 }

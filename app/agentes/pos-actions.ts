@@ -3,6 +3,7 @@
 import { dbUsers, envUsers, getSession } from "./_lib/auth";
 import {
   POS_STATUSES,
+  addPosLeadNote,
   canWork,
   deletePosLead,
   getPosLead,
@@ -16,6 +17,7 @@ import {
 } from "@/app/lib/server/pos-leads";
 import { notifyTelegram, portalLink, posChats, tg } from "@/app/lib/server/telegram";
 import { chatFor } from "@/app/lib/server/telegram-links";
+import { newNote } from "@/app/lib/lead-notes";
 
 // Billing-system leads (Facturación). Admins see and assign everything; agents only
 // work the leads assigned to them.
@@ -73,6 +75,21 @@ export async function setPosStatus(id: string, status: PosStatus) {
     if (!lead || !canWork(lead, user)) return { ok: false as const, error: "El lead ya no existe o no está asignado a ti." };
     await updatePosLead(lead.id, { status });
     return { ok: true as const };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Adds a call-log entry / note; agents only on their own leads. */
+export async function addPosNote(id: string, outcome: string, text: string) {
+  try {
+    const user = await requireUser();
+    const lead = await getPosLead(safeId(id));
+    if (!lead || !canWork(lead, user)) return { ok: false as const, error: "El lead ya no existe o no está asignado a ti." };
+    const note = newNote({ outcome, text }, user.name);
+    if (!note) return { ok: false as const, error: "Escribe una nota." };
+    await addPosLeadNote(lead.id, note);
+    return { ok: true as const, note };
   } catch (e) {
     return failure(e);
   }

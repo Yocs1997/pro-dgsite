@@ -22,7 +22,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { PosLead, PosStatus } from "@/app/lib/server/pos-leads";
-import { addPosLead, assignPosLead, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
+import { addPosLead, addPosNote, assignPosLead, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
+import LeadNotes, { Linkify } from "../LeadNotes";
 import { logout } from "../actions";
 import Phone2Button from "../Phone2Button";
 import EmailButton from "../EmailButton";
@@ -331,7 +332,11 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
           <Phone className="w-4 h-4 text-[#7cc4ff] shrink-0" /> <span className="truncate">{l.phone || l.email || "—"}</span>
         </p>
       </div>
-      {l.extra.length > 0 && <p className="mt-2 text-xs text-sky-text/65">{l.extra.join(" · ")}</p>}
+      {l.extra.length > 0 && (
+        <p className="mt-2 text-xs text-sky-text/65 break-words">
+          <Linkify text={l.extra.join(" · ")} />
+        </p>
+      )}
       {l.quoteCode && (
         <p className="mt-2 text-xs text-indigo-200 flex items-center gap-1.5">
           <Receipt className="w-3.5 h-3.5" /> Cotización {l.quoteCode} ·{" "}
@@ -408,6 +413,9 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
         )}
       </div>
       {msg && <p className={"mt-2 text-xs " + (msg.ok ? "text-emerald-300" : "text-red-200")}>{msg.text}</p>}
+      <div className="mt-4">
+        <LeadNotes initial={l.log ?? []} add={(outcome, text) => addPosNote(l.id, outcome, text)} />
+      </div>
     </article>
   );
 }
