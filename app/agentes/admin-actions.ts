@@ -114,7 +114,14 @@ export async function removeMessage(id: string) {
 
 // ─── Compose / reply ─────────────────────────────────────────────────────────
 
-export async function sendMessage(input: { to: string; subject: string; body: string; inReplyTo?: string; references?: string }) {
+export async function sendMessage(input: {
+  to: string;
+  subject: string;
+  body: string;
+  inReplyTo?: string;
+  references?: string;
+  products?: Record<string, string>; // lowercase email -> what {producto} becomes for that person
+}) {
   try {
     await requireAdmin();
     if (!resendReady()) return { ok: false as const, error: "Falta configurar RESEND_API_KEY y MAIL_FROM." };
@@ -133,14 +140,15 @@ export async function sendMessage(input: { to: string; subject: string; body: st
     const inReplyTo = clean(input.inReplyTo, 300);
     const references = clean(input.references, 2000);
 
-    // One email per person: nobody sees the other addresses, and {nombre} becomes
-    // each contact's first name.
+    // One email per person: nobody sees the other addresses, {nombre} becomes each
+    // contact's first name and {producto} the service that person asked for.
     const contacts = await getLocalContacts(to).catch(() => to.map(() => null));
     const sent: { to: string; subject: string; body: string }[] = [];
     const failed: string[] = [];
     for (let i = 0; i < to.length; i++) {
       const name = contacts[i]?.firstName;
-      const mine = { to: to[i], subject: personalize(subject, name), body: personalize(body, name) };
+      const product = clean(input.products?.[to[i].toLowerCase()], 80);
+      const mine = { to: to[i], subject: personalize(subject, { name, product }), body: personalize(body, { name, product }) };
       try {
         const r = await sendEmail({
           to: [mine.to],

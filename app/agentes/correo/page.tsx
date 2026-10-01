@@ -5,6 +5,8 @@ import { resendReady, mailFrom, mailReplyTo } from "@/app/lib/server/resend";
 import { telegramReady } from "@/app/lib/server/telegram";
 import { listCampaigns, listInMail, listOutMail } from "@/app/lib/server/mail";
 import { listLocalContacts } from "@/app/lib/server/contacts";
+import { listLeads } from "@/app/lib/server/insurance";
+import { serviceFromNotes } from "./templates";
 import AdminNav from "../AdminNav";
 import MailCenter from "./MailCenter";
 
@@ -39,9 +41,18 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
       return fallback;
     }
   };
-  const [inbox, sent, campaigns, contacts] = setup.db
-    ? await Promise.all([safe(listInMail(), []), safe(listOutMail(), []), safe(listCampaigns(), []), safe(listLocalContacts(), [])])
-    : [[], [], [], []];
+  const [inbox, sent, campaigns, contacts, leads] = setup.db
+    ? await Promise.all([safe(listInMail(), []), safe(listOutMail(), []), safe(listCampaigns(), []), safe(listLocalContacts(), []), safe(listLeads(), [])])
+    : [[], [], [], [], []];
+
+  // What each lead asked for (the form's "which service" answer), by email, so email
+  // templates talk about that service. The most recent lead wins.
+  const services: Record<string, string> = {};
+  for (const l of [...leads].sort((a, b) => a.createdAt - b.createdAt)) {
+    const email = l.driver?.email?.trim().toLowerCase();
+    const service = serviceFromNotes(l.coverage?.notes ?? "");
+    if (email && service) services[email] = service;
+  }
 
   return (
     <>
@@ -53,6 +64,7 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
         campaigns={campaigns.map((c) => ({ ...c, when: when(c.createdAt) }))}
         contacts={contacts}
         compose={{ to: one(sp.to), subject: one(sp.subject) }}
+        services={services}
         adminName={user.name}
       />
     </>

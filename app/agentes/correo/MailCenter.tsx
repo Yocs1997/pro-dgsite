@@ -40,7 +40,7 @@ import {
 } from "../admin-actions";
 import { Pencil, Save, X as XIcon } from "lucide-react";
 import EmailButton from "../EmailButton";
-import { MAIL_TEMPLATES, NAME_TOKEN, fillTemplate, personalize, type TemplateLang } from "./templates";
+import { MAIL_TEMPLATES, NAME_TOKEN, PRODUCT_TOKEN, fillTemplate, productLabel, type TemplateLang } from "./templates";
 import type { Campaign, InMail, OutMail } from "@/app/lib/server/mail";
 import type { LocalContact } from "@/app/lib/server/contacts";
 import { INSURED_LABEL, normalizeInsured, normalizeLang, normalizeState, stateFromPhone, stateLabel } from "@/app/lib/contact-details";
@@ -134,7 +134,7 @@ function Composer({
   onSent: (m: { to: string; subject: string; body: string }) => void;
   onCancel?: () => void;
   title: string;
-  templates?: { contacts: LocalContact[]; agentName: string }; // new emails only: ready-made subject + message
+  templates?: { contacts: LocalContact[]; agentName: string; services: Record<string, string> }; // new emails only: ready-made subject + message
 }) {
   const [to, setTo] = useState(initial.to);
   const [subject, setSubject] = useState(initial.subject);
@@ -148,6 +148,10 @@ function Composer({
   const contact = templates?.contacts.find((c) => c.email.toLowerCase() === recipients[0]);
   const lang: TemplateLang = tplLang ?? contact?.lang ?? "en";
   const usesName = (subject + body).toLowerCase().includes(NAME_TOKEN);
+  const usesProduct = (subject + body).toLowerCase().includes(PRODUCT_TOKEN);
+  // What {producto} becomes for each person: the service on their lead, unless typed here.
+  const [productEdits, setProductEdits] = useState<Record<string, string>>({});
+  const productFor = (email: string) => productEdits[email] ?? productLabel(templates?.services[email] ?? "", lang);
 
   const applyTemplate = (id: string, l: TemplateLang) => {
     const tpl = MAIL_TEMPLATES.find((t) => t.id === id);
@@ -165,7 +169,8 @@ function Composer({
   const send = () =>
     start(async () => {
       setMsg(null);
-      const r = await sendMessage({ to, subject, body, inReplyTo: initial.inReplyTo });
+      const products = usesProduct ? Object.fromEntries(recipients.map((e) => [e, productFor(e)])) : undefined;
+      const r = await sendMessage({ to, subject, body, inReplyTo: initial.inReplyTo, products });
       if (r.ok) {
         r.sent.forEach(onSent);
         if (r.failed.length) {
@@ -177,6 +182,7 @@ function Composer({
         setMsg({ kind: "ok", text: r.sent.length > 1 ? `Enviado a ${r.sent.length} personas, un correo por separado para cada una.` : "Correo enviado." });
         setBody("");
         setTplId("");
+        setProductEdits({});
         if (!initial.inReplyTo) {
           setTo("");
           setSubject("");
@@ -222,6 +228,7 @@ function Composer({
                   type="button"
                   onClick={() => {
                     setTplLang(l);
+                    setProductEdits({});
                     if (tplId) applyTemplate(tplId, l);
                   }}
                   className={"px-3 py-2 rounded-full text-xs font-medium " + (lang === l ? "bg-electric" : "border border-[#7cc4ff40] text-sky-text/80 hover:text-white")}
@@ -242,6 +249,24 @@ function Composer({
         <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Mensaje</span>
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={10} className={input + " resize-y min-h-40"} placeholder="Escribe tu mensaje. Deja una línea en blanco entre párrafos." />
       </label>
+      {usesProduct && recipients.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Producto o servicio ({PRODUCT_TOKEN})</span>
+          {recipients.map((e) => (
+            <label key={e} className="flex flex-wrap items-center gap-2 text-sm">
+              {recipients.length > 1 && <span className="w-56 truncate text-sky-text/75">{e}</span>}
+              <input
+                value={productFor(e)}
+                onChange={(ev) => setProductEdits((p) => ({ ...p, [e]: ev.target.value }))}
+                className={input + " flex-1 min-w-48 !py-2"}
+                aria-label={`Producto para ${e}`}
+              />
+              <span className="text-[11px] text-sky-text/55">{templates?.services[e] ? "Tomado de su lead" : "No sabemos qué pidió: revísalo"}</span>
+            </label>
+          ))}
+          <span className="text-[11px] text-sky-text/55">Así saldrá en el asunto y el mensaje en lugar de {PRODUCT_TOKEN}. Puedes corregirlo.</span>
+        </div>
+      )}
       {(recipients.length > 1 || usesName) && (
         <p className="text-xs text-sky-text/70">
           {recipients.length > 1 && `Se envían ${recipients.length} correos por separado: nadie ve las otras direcciones. `}
@@ -256,7 +281,7 @@ function Composer({
         <button
           type="button"
           onClick={send}
-          disabled={pending || !to.trim() || !subject.trim() || !body.trim()}
+          disabled={pending || !to.trim() || !subject.trim() || !body.trim() || (usesProduct && recipients.some((e) => !productFor(e).trim()))}
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-electric hover:bg-electric-light disabled:opacity-50 font-bold"
         >
           {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -1199,6 +1224,7 @@ export default function MailCenter({
   campaigns: camps0,
   contacts: contacts0,
   compose,
+  services,
   adminName,
 }: {
   setup: Setup;
@@ -1207,6 +1233,7 @@ export default function MailCenter({
   campaigns: (Campaign & { when: string })[];
   contacts: LocalContact[];
   compose: { to: string; subject: string };
+  services: Record<string, string>; // lowercase email -> the service that lead asked for
   adminName: string;
 }) {
   const [tab, setTab] = useState<Tab>(compose.to ? "compose" : "inbox");
@@ -1285,7 +1312,7 @@ export default function MailCenter({
       {tab === "inbox" && <InboxView items={inbox} setItems={setInbox} onSent={addSent} />}
       {tab === "compose" && (
         <div className="max-w-3xl">
-          <Composer title="Nuevo correo" initial={{ to: compose.to, subject: compose.subject }} onSent={addSent} templates={{ contacts, agentName: adminName }} />
+          <Composer title="Nuevo correo" initial={{ to: compose.to, subject: compose.subject }} onSent={addSent} templates={{ contacts, agentName: adminName, services }} />
         </div>
       )}
       {tab === "campaigns" && (

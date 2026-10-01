@@ -6,6 +6,7 @@ import { removeLead, updateLeadStatus } from "../admin-actions";
 import LeadEditor from "./LeadEditor";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
+import { productLabel, serviceFromNotes } from "../correo/templates";
 import { label, type OptionGroup } from "@/app/seguros/model";
 import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
 
@@ -86,7 +87,8 @@ function LeadCard({
     else setErr(r.error);
   };
   const d = l.driver;
-  const phone = d.phone.replace(/[^\d+]/g, "");
+  const service = serviceFromNotes(l.coverage.notes ?? "");
+  const phone =d.phone.replace(/[^\d+]/g, "");
   const wa = phone.replace(/^\+/, "").length === 10 ? `1${phone.replace(/^\+/, "")}` : phone.replace(/^\+/, "");
   const replyHref = `/agentes/correo?to=${encodeURIComponent(d.email)}&subject=${encodeURIComponent(
     l.lang === "es" ? `Tu cotización de seguro de auto (${l.code})` : `Your car insurance quote (${l.code})`
@@ -100,6 +102,11 @@ function LeadCard({
         {l.source === "meta" && (
           <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#1877F2]/25 text-[#9cc2ff]" title="Formulario instantáneo de Meta">
             Meta
+          </span>
+        )}
+        {service && (
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-400/20 text-amber-100" title="Servicio que pidió en el formulario">
+            {productLabel(service, "es")}
           </span>
         )}
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">
