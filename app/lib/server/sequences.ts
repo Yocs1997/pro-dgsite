@@ -1,3 +1,4 @@
+import { DEFAULT_PRODUCT, productLabel, serviceFromNotes } from "@/app/lib/lead-service";
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { db, listRecords } from "./redis";
@@ -52,6 +53,7 @@ export type Enrollment = {
   vehicle: string;
   state: string;
   insured: string; // yes | lapsed | no | ""
+  product?: string; // service picked on the Meta form ("placas de virginia"); "" = unknown, undefined = not looked up yet
   source: string; // "Formulario" or list name
   enrolledAt: number;
   sent: { stepId: string; at: number; emailId: string }[];
@@ -140,10 +142,11 @@ const FALLBACK: Record<string, Bi> = {
   name: { es: "", en: "there" },
   vehicle: { es: "tu auto", en: "your car" },
   state: { es: "tu estado", en: "your state" },
+  product: DEFAULT_PRODUCT,
 };
-const ALIAS: Record<string, string> = { nombre: "name", vehiculo: "vehicle", "vehículo": "vehicle", estado: "state", agente: "agent", telefono: "phone", "teléfono": "phone" };
+const ALIAS: Record<string, string> = { nombre: "name", vehiculo: "vehicle", "vehículo": "vehicle", estado: "state", agente: "agent", telefono: "phone", "teléfono": "phone", producto: "product", servicio: "product", service: "product" };
 
-type Vars = { name: string; vehicle: string; state: string; agent: string; phone: string };
+type Vars = { name: string; vehicle: string; state: string; agent: string; phone: string; product: string };
 
 function fill(text: string, v: Vars, lang: Lang, html: boolean): string {
   return text.replace(/\{\{\s*([\p{L}]+)\s*(?:\|([^}]*))?\}\}/gu, (_m, raw: string, fb?: string) => {
@@ -163,9 +166,11 @@ const BUTTON_MARK = /^\[(boton|botón|button)\]$/i;
 /** Greeting fix-up: "Hola ," → "Hola,". */
 const tidy = (s: string) => s.replace(/ +([,!?.])/g, "$1").replace(/ {2,}/g, " ");
 
-export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "firstName" | "lang" | "vehicle" | "state">, unsubUrl: string) {
+export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "firstName" | "lang" | "vehicle" | "state" | "product">, unsubUrl: string) {
   const lang = e.lang;
-  const v: Vars = { name: e.firstName, vehicle: e.vehicle, state: e.state, agent: seq.agentName, phone: seq.phone };
+  // {{product}}: the service the lead picked, said in the email's language ("Virginia tags").
+  const product = e.product ? productLabel(e.product, lang) : "";
+  const v: Vars = { name: e.firstName, vehicle: e.vehicle, state: e.state, agent: seq.agentName, phone: seq.phone, product };
   const subject = tidy(fill(step.subject[lang], v, lang, false)).trim();
   const preview = tidy(fill(step.preview[lang], v, lang, false)).trim();
   const paras = step.body[lang].trim().split(/\n{2,}/);
@@ -271,12 +276,19 @@ export async function syncResendUnsubscribes(maxPages = 50): Promise<number> {
 
 // ─── Enrollment ──────────────────────────────────────────────────────────────
 
-export type EnrollInput = { email: string; firstName?: string; lang?: Lang; vehicle?: string; state?: string; insured?: string; source: string };
+export type EnrollInput = { email: string; firstName?: string; lang?: Lang; vehicle?: string; state?: string; insured?: string; product?: string; source: string };
 
 function varsFromLead(l: InsuranceLead) {
   const v = l.vehicles?.[0];
   const vehicle = v ? [v.year, v.make, v.model].filter(Boolean).join(" ") : "";
-  return { vehicle, state: stateName(l.driver?.state ?? ""), insured: l.coverage?.insured ?? "", firstName: l.driver?.firstName ?? "", lang: l.lang };
+  return {
+    vehicle,
+    state: stateName(l.driver?.state ?? ""),
+    insured: l.coverage?.insured ?? "",
+    firstName: l.driver?.firstName ?? "",
+    lang: l.lang,
+    product: serviceFromNotes(l.coverage?.notes ?? ""),
+  };
 }
 
 const stateName = (s: string) => (s ? stateLabel(normalizeState(s) || s) : "");
@@ -318,6 +330,7 @@ export async function enroll(seq: Sequence, people: EnrollInput[]) {
       vehicle: p.vehicle ?? "",
       state: p.state ?? "",
       insured: p.insured ?? "",
+      product: p.product ?? "",
       source: p.source,
       enrolledAt: now,
       sent: [],
@@ -411,9 +424,18 @@ async function fillFromContacts(jobs: Job[]) {
   });
 }
 
+/** People enrolled before {{product}} existed: look up once what their lead asked for. */
+async function fillProductFromLeads(jobs: Job[]) {
+  const need = jobs.filter(({ enr }) => enr.product === undefined);
+  if (!need.length) return;
+  const leads = await leadVarsByEmail();
+  need.forEach(({ enr }) => (enr.product = leads.get(enr.email)?.product ?? ""));
+}
+
 async function sendJobs(jobs: Job[]): Promise<(string | null)[]> {
   // Nice to have: never let it block sending.
   await fillFromContacts(jobs).catch((e) => console.error("[sequences] could not read contact details", e));
+  await fillProductFromLeads(jobs).catch((e) => console.error("[sequences] could not read the leads' service", e));
   const out: (string | null)[] = [];
   for (let i = 0; i < jobs.length; i += 100) {
     const chunk = jobs.slice(i, i + 100);
@@ -529,7 +551,7 @@ export async function sendNowFor(seq: Sequence, email: string): Promise<boolean>
 
 /** Sends one step to a test address (not recorded; marked [PRUEBA]). */
 export async function sendTest(seq: Sequence, step: Step, to: string, lang: Lang) {
-  const sample = { firstName: "Maria", lang, vehicle: "2019 Honda Civic", state: "New York" };
+  const sample = { firstName: "Maria", lang, vehicle: "2019 Honda Civic", state: "New York", product: "placas de virginia" };
   const r = renderStep(seq, step, sample, `${siteUrl()}/api/unsubscribe?t=test`);
   return resend<{ id: string }>("/emails", {
     body: {

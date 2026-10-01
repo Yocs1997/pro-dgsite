@@ -6,7 +6,10 @@
 //               (from their lead), e.g. "Virginia tags"
 //   {agent}   → the person sending (portal user)
 
-export type TemplateLang = "en" | "es";
+import type { ServiceLang } from "@/app/lib/lead-service";
+export { DEFAULT_PRODUCT, productLabel, serviceFromNotes } from "@/app/lib/lead-service";
+
+export type TemplateLang = ServiceLang;
 type Text = { subject: string; body: string };
 export type MailTemplate = { id: string; label: string; en: Text; es: Text };
 
@@ -144,9 +147,6 @@ ${COMPANY}`,
 export const NAME_TOKEN = "{nombre}";
 export const PRODUCT_TOKEN = "{producto}";
 
-/** Used when a recipient has no lead that says what they asked for. */
-export const DEFAULT_PRODUCT: Record<TemplateLang, string> = { en: "car insurance", es: "seguro de auto" };
-
 /** Fills {agent} and leaves {nombre} / {producto} for the moment of sending. */
 export function fillTemplate(t: Text, v: { agent: string }): Text {
   const fill = (s: string) => s.replace(/\{name\}/g, NAME_TOKEN).replace(/\{product\}/g, PRODUCT_TOKEN).replace(/\{agent\}/g, v.agent.trim());
@@ -157,32 +157,4 @@ export function fillTemplate(t: Text, v: { agent: string }): Text {
 export function personalize(text: string, v: { name?: string; product?: string }): string {
   const name = (v.name ?? "").trim();
   return text.replace(/ ?\{nombre\}/gi, name ? ` ${name}` : "").replace(/\{producto\}/gi, (v.product ?? "").trim());
-}
-
-// ─── The service a lead asked for ────────────────────────────────────────────
-
-/** Reads the answer to the form's "which service" question out of a lead's notes
- *  ("… · por favor seleccione el servicio que le interesa: placas_de_virginia · …"). */
-export function serviceFromNotes(notes: string): string {
-  const m = notes.match(/(?:servicio|service|producto|product)[^:·]*:\s*([^·]+)/i);
-  return m ? m[1].replace(/_/g, " ").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 80) : "";
-}
-
-const PLACES = /\b(virginia|maryland|washington|texas|florida|georgia|pennsylvania|delaware|carolina|york|jersey|north|south|new|west|dc)\b/g;
-const cap = (s: string) => s.replace(PLACES, (w) => (w === "dc" ? "DC" : w[0].toUpperCase() + w.slice(1)));
-
-/** How a service reads inside a sentence: "placas de virginia" → "placas de Virginia" / "Virginia tags". */
-export function productLabel(service: string, lang: TemplateLang): string {
-  const s = service.trim().toLowerCase();
-  if (!s) return DEFAULT_PRODUCT[lang];
-  if (lang === "es") return cap(s);
-  const place = (rest?: string) => (rest ? `${cap(rest.trim())} ` : "");
-  let m: RegExpMatchArray | null;
-  if ((m = s.match(/^placas? temporales?(?: de (.+))?$/))) return `${place(m[1])}temporary tags`;
-  if ((m = s.match(/^placas?(?: de (.+))?$/))) return `${place(m[1])}tags`;
-  if ((m = s.match(/^(?:registraci[oó]n|registro)(?: de (.+))?$/))) return `${place(m[1])}vehicle registration`;
-  if ((m = s.match(/^t[ií]tulos?(?: de (.+))?$/))) return `${place(m[1])}vehicle title`;
-  if (/^seguros?( de)? (auto|autos|carro|carros|veh[ií]culos?)$/.test(s)) return "car insurance";
-  if (/^seguros?$/.test(s)) return "insurance";
-  return cap(s); // unknown option: keep the form's own wording
 }

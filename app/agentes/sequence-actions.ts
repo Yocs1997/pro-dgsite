@@ -164,6 +164,7 @@ export async function enrollLists(id: string, segments: string[], lang: Lang) {
           vehicle: c.vehicle || l?.vehicle || "",
           state: c.state ? stateLabel(c.state) : l?.state || "",
           insured: c.insured || l?.insured || "",
+          product: l?.product || "",
           source: c.segments.filter((s) => chosen.has(s)).join(", "),
         };
       })

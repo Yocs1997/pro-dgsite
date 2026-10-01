@@ -499,8 +499,9 @@ function SequenceCard({ item, segments, startOpen }: { item: SequenceItem; segme
               </label>
               <p className="sm:col-span-2 text-xs text-sky-text/60 leading-relaxed">
                 El correo sale como “{seq.agentName || "Agente"} at {seq.company}”. Campos en los textos: {"{{name}}"}, {"{{vehicle}}"}, {"{{state}}"},{" "}
-                {"{{agent}}"}, {"{{phone}}"}. Si falta un dato se usa un texto neutro (“tu auto”); o pon el tuyo así: {"{{name|Hola}}"}. Un párrafo que
-                diga solo [button] marca dónde va el botón.
+                {"{{agent}}"}, {"{{phone}}"}, {"{{product}}"}. Si falta un dato se usa un texto neutro (“tu auto”); o pon el tuyo así: {"{{name|Hola}}"}. Un
+                párrafo que diga solo [button] marca dónde va el botón. {"{{product}}"} es el servicio que la persona eligió en el formulario de Meta
+                (“Virginia tags”, “placas de Virginia”); si no eligió, sale “car insurance” / “seguro de auto”.
               </p>
             </div>
           </Section>

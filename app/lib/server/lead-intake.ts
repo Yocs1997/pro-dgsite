@@ -73,7 +73,7 @@ async function startSequence(lead: InsuranceLead | null, email: string, source: 
     const seq = await formSequence();
     if (!seq) return false;
     const v = varsFromLead(lead);
-    const { added } = await enroll(seq, [{ email, firstName: v.firstName, lang: v.lang, vehicle: v.vehicle, state: v.state, insured: v.insured, source }]);
+    const { added } = await enroll(seq, [{ email, firstName: v.firstName, lang: v.lang, vehicle: v.vehicle, state: v.state, insured: v.insured, product: v.product, source }]);
     return added > 0 && (await sendNowFor(seq, email));
   } catch (e) {
     console.error("[leads] sequence start failed", e);
