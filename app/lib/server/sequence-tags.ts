@@ -5,6 +5,8 @@ import type { Sequence, Step } from "./sequences";
 // comes from the office: to start we need a photo of the title (front and back) and of
 // the ID; next steps come once we confirm the title can be used; nothing is paid up
 // front (they pay when they get their tags); the office is in Baltimore.
+// Voice: plain and neighborly, short sentences, everyday words (the way the office's
+// customers talk), nothing formal.
 // {{product}} is what the lead picked ("Virginia tags" / "placas de Virginia").
 
 const step = (id: string, day: number, s: Omit<Step, "id" | "day" | "audience">): Step => ({ id, day, audience: "all", ...s });
@@ -24,130 +26,140 @@ export function defaultTagsSequence(now = Date.now()): Sequence {
     updatedAt: now,
     steps: [
       step("t1", 0, {
-        subject: { en: "Got your {{product}} request, {{name|there}}", es: "Recibimos tu solicitud de {{product}}, {{name|hola}}" },
-        preview: { en: "Two photos and we can get started", es: "Dos fotos y podemos empezar" },
+        subject: { en: "{{name|Hey}}, got your {{product}} request", es: "{{name|Hola}}, ya vi tu solicitud de {{product}}" },
+        preview: { en: "Send me 2 photos and we get started", es: "Mándame 2 fotos y empezamos" },
         body: {
           en: `Hi {{name}},
 
-This is {{agent}} from Car Tag & Registration Services in Baltimore. I got your request for {{product}}. Thank you for reaching out.
+It's {{agent}} from Car Tag & Registration Services, here in Baltimore. I saw you need {{product}}. I can help you with that.
 
-To get started, I only need two things:
-1. A photo of your vehicle title, front and back.
-2. A photo of your ID.
+To start, just send me 2 photos:
+1. Your title, front and back.
+2. Your ID.
 
-You can reply to this email with the photos, or text them to {{phone}}.
+Send them here (just reply to this email) or text them to {{phone}}.
 
-Once we confirm we can work with your title, I'll tell you the next steps. There is no payment up front: you pay when you get your tags.
+I'll check your title and let you know if it works and what's next. You don't pay anything now. You pay when you have your tags in hand.
 
-Talk soon,
-{{agent}}, Car Tag & Registration Services · Hablamos español.`,
+Any questions, call or text me.
+
+{{agent}}
+Car Tag & Registration Services · Hablamos español.`,
           es: `Hola {{name}},
 
-Soy {{agent}}, de Car Tag & Registration Services en Baltimore. Recibí tu solicitud de {{product}}. Gracias por escribirnos.
+Soy {{agent}}, de Car Tag & Registration Services, aquí en Baltimore. Ya vi que necesitas {{product}}. Yo te ayudo con eso.
 
-Para empezar solo necesito dos cosas:
-1. Una foto del título de tu vehículo, por delante y por detrás.
-2. Una foto de tu identificación.
+Para empezar solo mándame 2 fotos:
+1. Tu título, por delante y por detrás.
+2. Tu ID.
 
-Puedes responder a este correo con las fotos, o enviarlas por mensaje al {{phone}}.
+Mándalas por aquí (solo responde este correo) o por mensaje de texto al {{phone}}.
 
-En cuanto confirmemos que podemos trabajar con tu título, te digo los siguientes pasos. No se paga nada por adelantado: pagas cuando recibes tus placas.
+Yo reviso tu título y te aviso si sirve y qué sigue. No pagas nada ahorita. Pagas hasta que tengas tus placas en la mano.
 
-Hablamos pronto,
-{{agent}}, Car Tag & Registration Services · We speak English too.`,
+Cualquier duda, llámame o escríbeme.
+
+{{agent}}
+Car Tag & Registration Services · We speak English too.`,
         },
         button: { en: "", es: "" },
       }),
       step("t2", 2, {
-        subject: { en: "{{name|Quick question}}, do you have your title handy?", es: "{{name|Una pregunta}}, ¿tienes tu título a la mano?" },
-        preview: { en: "It's the one thing we need to start", es: "Es lo único que necesitamos para empezar" },
+        subject: { en: "{{name|Hey}}, got your title handy?", es: "{{name|Oye}}, ¿tienes tu título a la mano?" },
+        preview: { en: "2 photos and we get started", es: "Con 2 fotos empezamos" },
         body: {
           en: `Hi {{name}},
 
-I'm following up on your request for {{product}}.
+I wrote you a couple days ago about {{product}}.
 
-The only thing we need to start is two photos: your vehicle title (front and back) and your ID. You can take them with your phone and reply to this email, or text them to {{phone}}.
+I only need 2 photos to get started: your title (front and back) and your ID. Take them with your phone and send them here or text them to {{phone}}.
 
-If you don't have the title with you, or you're not sure it's the right document, reply and tell me what you have. I'll let you know if we can work with it.
+Don't have the title, or not sure it's the right paper? Don't worry. Send me a photo of what you have and I'll tell you if it works.
 
-{{agent}}, Car Tag & Registration Services · {{phone}}`,
+{{agent}}
+Car Tag & Registration Services · {{phone}}`,
           es: `Hola {{name}},
 
-Te escribo para dar seguimiento a tu solicitud de {{product}}.
+Te escribí hace unos días por lo de {{product}}.
 
-Lo único que necesitamos para empezar son dos fotos: el título de tu vehículo (por delante y por detrás) y tu identificación. Puedes tomarlas con tu teléfono y responder a este correo, o enviarlas por mensaje al {{phone}}.
+Solo me faltan 2 fotos para empezar: tu título (por delante y por detrás) y tu ID. Tómalas con tu teléfono y mándamelas por aquí o por texto al {{phone}}.
 
-Si no tienes el título contigo, o no estás seguro de que sea el documento correcto, respóndeme y cuéntame qué tienes. Yo te digo si podemos trabajar con eso.
+¿No tienes el título, o no sabes si es el papel correcto? No te preocupes. Mándame foto de lo que tengas y yo te digo si sirve.
 
-{{agent}}, Car Tag & Registration Services · {{phone}}`,
+{{agent}}
+Car Tag & Registration Services · {{phone}}`,
         },
         button: { en: "", es: "" },
       }),
       step("t3", 5, {
-        subject: { en: "No payment until you have your tags", es: "No pagas nada hasta tener tus placas" },
-        preview: { en: "How it works, step by step", es: "Cómo funciona, paso a paso" },
+        subject: { en: "You don't pay until you have your tags", es: "No pagas nada hasta tener tus placas" },
+        preview: { en: "Here's how easy it is", es: "Así de fácil funciona" },
         body: {
           en: `Hi {{name}},
 
-In case it helps, this is how your request for {{product}} works with us:
+Real quick, here's how it works for {{product}}:
 
-1. You send a photo of your title (front and back) and of your ID.
-2. We confirm that we can work with your title.
-3. We tell you the next steps.
-4. You pay when you get your tags. Nothing up front.
+1. You send me a photo of your title (both sides) and your ID.
+2. I check that the title works.
+3. I tell you what's next.
+4. You pay when you have your tags. Not before.
 
-We're in Baltimore and we help in English and Spanish.
+We're in Baltimore and we speak English and Spanish.
 
-To start, reply to this email with the photos or text them to {{phone}}.
+To start, send me the photos here or text them to {{phone}}.
 
-{{agent}}, Car Tag & Registration Services`,
+{{agent}}
+Car Tag & Registration Services`,
           es: `Hola {{name}},
 
-Por si te ayuda, así funciona tu solicitud de {{product}} con nosotros:
+Te explico rápido cómo funciona lo de {{product}}:
 
-1. Nos envías una foto de tu título (por delante y por detrás) y de tu identificación.
-2. Confirmamos que podemos trabajar con tu título.
-3. Te decimos los siguientes pasos.
-4. Pagas cuando recibes tus placas. Nada por adelantado.
+1. Me mandas foto de tu título (los dos lados) y de tu ID.
+2. Yo reviso que el título sirva.
+3. Te digo qué sigue.
+4. Pagas cuando ya tengas tus placas. Antes no.
 
-Estamos en Baltimore y atendemos en español e inglés.
+Estamos en Baltimore y hablamos español.
 
-Para empezar, responde a este correo con las fotos o envíalas por mensaje al {{phone}}.
+Para empezar, mándame las fotos por aquí o por texto al {{phone}}.
 
-{{agent}}, Car Tag & Registration Services`,
+{{agent}}
+Car Tag & Registration Services`,
         },
         button: { en: "", es: "" },
       }),
       step("t4", 9, {
-        subject: { en: "Should I close your request?", es: "¿Cierro tu solicitud?" },
-        preview: { en: "No problem either way", es: "Sin problema, decidas lo que decidas" },
+        subject: { en: "{{name|Hey}}, still interested?", es: "{{name|Oye}}, ¿todavía te interesa?" },
+        preview: { en: "Just answer with a number", es: "Solo respóndeme con un número" },
         body: {
           en: `Hi {{name}},
 
-I haven't heard back, so I'm guessing the timing isn't right, or you already took care of it. No problem.
+I haven't heard from you. Maybe you already took care of it, or it's not a good time. That's okay.
 
-Before I close your request for {{product}}, could you reply with just a number?
+Just answer me with a number:
 
 1 — Yes, I still want it. Call me.
-2 — Not now, check back in a few months.
-3 — I'm all set, close my request.
+2 — Not now. Write me later.
+3 — I don't need it anymore.
 
-Whatever you decide, thank you for considering us.
+Thanks for thinking of us.
 
-{{agent}}, Car Tag & Registration Services · {{phone}}`,
+{{agent}}
+Car Tag & Registration Services · {{phone}}`,
           es: `Hola {{name}},
 
-No he sabido de ti, así que supongo que no es el momento, o ya lo resolviste. No hay problema.
+No he sabido de ti. A lo mejor ya lo resolviste o no es buen momento. No pasa nada.
 
-Antes de cerrar tu solicitud de {{product}}, ¿me respondes solo con un número?
+Solo respóndeme con un número:
 
-1 — Sí, todavía lo quiero. Llámame.
-2 — Ahora no, escríbeme en unos meses.
-3 — Ya estoy listo, cierra mi solicitud.
+1 — Sí lo quiero. Llámame.
+2 — Ahora no. Escríbeme más adelante.
+3 — Ya no lo necesito.
 
-Decidas lo que decidas, gracias por tenernos en cuenta.
+Gracias por tomarnos en cuenta.
 
-{{agent}}, Car Tag & Registration Services · {{phone}}`,
+{{agent}}
+Car Tag & Registration Services · {{phone}}`,
         },
         button: { en: "", es: "" },
       }),
