@@ -415,13 +415,41 @@ function InboxView({ items, setItems, onSent }: { items: (InMail & { when: strin
               </div>
             </div>
             {mail.attachments.length > 0 && (
-              <p className="text-xs text-sky-text/70 flex flex-wrap gap-2">
-                {mail.attachments.map((a) => (
-                  <span key={a.filename} className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1">
-                    <Paperclip className="w-3 h-3" /> {a.filename}
-                  </span>
-                ))}
-              </p>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-sky-text/70 flex flex-wrap gap-2">
+                  {mail.attachments.map((a, i) =>
+                    a.url ? (
+                      <a
+                        key={i}
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Abrir o descargar"
+                        className="flex items-center gap-1 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 text-[#7cc4ff]"
+                      >
+                        <Paperclip className="w-3 h-3" /> {a.filename}
+                        {a.size ? <span className="text-sky-text/55">· {a.size > 1048576 ? `${(a.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(a.size / 1024))} KB`}</span> : null}
+                      </a>
+                    ) : (
+                      <span key={i} className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1" title="No se pudo obtener el archivo. Cierra y abre el correo de nuevo.">
+                        <Paperclip className="w-3 h-3" /> {a.filename}
+                      </span>
+                    )
+                  )}
+                </p>
+                {mail.attachments.some((a) => a.url && a.contentType.startsWith("image/")) && (
+                  <div className="flex flex-wrap gap-2">
+                    {mail.attachments
+                      .filter((a) => a.url && a.contentType.startsWith("image/"))
+                      .map((a, i) => (
+                        <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" title={`${a.filename} (abrir completa)`} className="block rounded-lg overflow-hidden bg-black/30 hover:ring-2 ring-[#33aaff]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={a.url} alt={a.filename} className="h-32 w-auto max-w-[16rem] object-cover" />
+                        </a>
+                      ))}
+                  </div>
+                )}
+              </div>
             )}
             {mail.html ? (
               // Sandboxed: the email's own scripts can't run and it can't touch the portal.

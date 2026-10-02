@@ -77,8 +77,11 @@ export type OpenedMail = {
   createdAt: string;
   messageId: string;
   replyTo: string[];
-  attachments: { filename: string; size?: number }[];
+  // `url` is a temporary signed link from Resend (missing if the files could not be listed).
+  attachments: { filename: string; size?: number; contentType: string; url?: string }[];
 };
+
+type ReceivedAttachment = { id: string; filename: string; size?: number; content_type?: string; content_id?: string | null; download_url?: string };
 
 export async function openMessage(id: string) {
   try {
@@ -88,18 +91,40 @@ export async function openMessage(id: string) {
       created_at: string; message_id: string; reply_to?: string[]; attachments?: { filename: string; size?: number }[];
     }>(`/emails/receiving/${encodeURIComponent(clean(id, 64))}`);
     await markRead(id).catch(() => {});
+
+    // The files themselves: Resend hands out a temporary download link for each one.
+    let files: ReceivedAttachment[] = [];
+    if (m.attachments?.length) {
+      try {
+        const list = await resend<{ data?: ReceivedAttachment[] }>(`/emails/receiving/${encodeURIComponent(m.id)}/attachments`);
+        files = (list.data ?? []).filter((f) => /^https:\/\//.test(f.download_url ?? ""));
+      } catch (e) {
+        console.error("[mail] could not list attachments", e);
+      }
+    }
+    // Photos pasted inside the message point at "cid:…": swap in their download links.
+    let html = m.html;
+    if (html) {
+      for (const f of files) {
+        const cid = (f.content_id ?? "").replace(/^<|>$/g, "");
+        if (cid) html = html.split(`cid:${cid}`).join(esc(f.download_url!));
+      }
+    }
+    const byName = new Map(files.map((f) => [f.filename, f]));
     const out: OpenedMail = {
       id: m.id,
       from: m.from,
       to: m.to ?? [],
       cc: m.cc ?? [],
       subject: m.subject ?? "",
-      html: m.html,
+      html,
       text: m.text,
       createdAt: m.created_at,
       messageId: m.message_id,
       replyTo: m.reply_to ?? [],
-      attachments: (m.attachments ?? []).map((a) => ({ filename: a.filename, size: a.size })),
+      attachments: files.length
+        ? files.map((f) => ({ filename: f.filename || "archivo", size: f.size, contentType: f.content_type ?? "", url: f.download_url }))
+        : (m.attachments ?? []).map((a) => ({ filename: a.filename, size: a.size, contentType: "", url: byName.get(a.filename)?.download_url })),
     };
     return { ok: true as const, mail: out };
   } catch (e) {
