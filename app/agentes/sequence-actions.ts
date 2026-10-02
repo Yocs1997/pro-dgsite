@@ -6,6 +6,7 @@ import { stateLabel } from "@/app/lib/contact-details";
 import { listLocalContacts } from "@/app/lib/server/contacts";
 import { resendReady } from "@/app/lib/server/resend";
 import { defaultInsuranceSequence } from "@/app/lib/server/sequence-default";
+import { defaultTagsSequence } from "@/app/lib/server/sequence-tags";
 import {
   deleteSequence,
   enroll,
@@ -59,6 +60,7 @@ function sanitize(input: Sequence, prev: Sequence): Sequence {
     phone: clean(input.phone, 30),
     buttonUrl: /^https:\/\//.test(url) ? url : prev.buttonUrl,
     autoEnrollForm: Boolean(input.autoEnrollForm),
+    formFor: (["insurance", "tags", "other"] as const).find((k) => k === input.formFor) ?? "all",
     active: Boolean(input.active),
     steps,
     updatedAt: Date.now(),
@@ -77,13 +79,14 @@ export async function createInsuranceSequence() {
 }
 
 /** New sequence: "blank" (one empty email), "copy" (duplicate of `fromId`, paused, no one enrolled) or "insurance" (template). */
-export async function newSequence(kind: "blank" | "copy" | "insurance", fromId?: string) {
+export async function newSequence(kind: "blank" | "copy" | "insurance" | "tags", fromId?: string) {
   try {
     await requireAdmin();
     const now = Date.now();
     const id = `seq-${now.toString(36)}`;
     let seq: Sequence;
     if (kind === "insurance") seq = { ...defaultInsuranceSequence(now), id };
+    else if (kind === "tags") seq = { ...defaultTagsSequence(now), id };
     else if (kind === "copy") {
       const src = await getSequence(safeId(fromId));
       if (!src) return { ok: false as const, error: "La secuencia original ya no existe." };

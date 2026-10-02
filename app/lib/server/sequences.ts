@@ -1,4 +1,4 @@
-import { DEFAULT_PRODUCT, leadService, productLabel } from "@/app/lib/lead-service";
+import { DEFAULT_PRODUCT, leadService, productLabel, type FormGroup } from "@/app/lib/lead-service";
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { db, listRecords } from "./redis";
@@ -36,6 +36,7 @@ export type Sequence = {
   name: string;
   active: boolean;
   autoEnrollForm: boolean; // new /seguros leads join automatically (Email 1 replaces the confirmation)
+  formFor?: "all" | FormGroup; // which form leads it takes, by the service they picked (missing = all)
   company: string; // shown in the From name and footer
   agentName: string; // {{agent}}
   phone: string; // {{phone}}
@@ -103,10 +104,11 @@ export async function saveSequence(s: Sequence) {
     ["ZADD", DEF_INDEX, s.createdAt, s.id],
   ];
   await db(cmds);
-  // Only one sequence may take the form leads.
+  // Only one sequence may take each kind of form lead (all / insurance / tags / other).
   if (s.autoEnrollForm) {
+    const kind = s.formFor ?? "all";
     for (const o of await listSequences()) {
-      if (o.id !== s.id && o.autoEnrollForm) await db([["SET", DEF_KEY(o.id), JSON.stringify({ ...o, autoEnrollForm: false })]]);
+      if (o.id !== s.id && o.autoEnrollForm && (o.formFor ?? "all") === kind) await db([["SET", DEF_KEY(o.id), JSON.stringify({ ...o, autoEnrollForm: false })]]);
     }
   }
 }
@@ -566,6 +568,8 @@ export async function sendTest(seq: Sequence, step: Step, to: string, lang: Lang
   });
 }
 
-export async function formSequence(): Promise<Sequence | null> {
-  return (await listSequences()).find((s) => s.active && s.autoEnrollForm) ?? null;
+/** The sequence a new form lead joins: the one for its kind of service, else the one that takes all. */
+export async function formSequence(group: FormGroup = "insurance"): Promise<Sequence | null> {
+  const taking = (await listSequences()).filter((s) => s.active && s.autoEnrollForm);
+  return taking.find((s) => s.formFor === group) ?? taking.find((s) => (s.formFor ?? "all") === "all") ?? null;
 }

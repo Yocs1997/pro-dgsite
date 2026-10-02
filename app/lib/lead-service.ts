@@ -56,6 +56,21 @@ function one(s: string, lang: ServiceLang): string {
   return cap(s); // unknown option: keep the form's own wording
 }
 
+/** Which follow-up a form lead belongs to: "tags" if they picked any placas option (even
+ *  together with insurance), "insurance" for car insurance or no pick at all (the website
+ *  form), "other" for inspections, "Otro" and anything else. */
+export type FormGroup = "insurance" | "tags" | "other";
+export function serviceGroup(service: string): FormGroup {
+  const parts = service
+    .toLowerCase()
+    .split(/\s*,\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!parts.length) return "insurance";
+  if (parts.some((p) => /^placas?\b/.test(p))) return "tags";
+  return parts.every(isCarInsurance) ? "insurance" : "other";
+}
+
 /** How the service reads inside a sentence: "placas de virginia" → "placas de Virginia" /
  *  "Virginia tags"; several picks are joined ("Virginia tags and car insurance"). */
 export function productLabel(service: string, lang: ServiceLang): string {

@@ -113,6 +113,14 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+// Which form leads a sequence takes, by the service picked on the Meta form.
+const FORM_FOR = {
+  all: { label: "Todos", pill: "" },
+  insurance: { label: "Solo seguro de auto (y el formulario web)", pill: ": seguros" },
+  tags: { label: "Solo placas (tags)", pill: ": placas" },
+  other: { label: "Otros servicios (inspecciones, otro)", pill: ": otros servicios" },
+} as const;
+
 function Toggle({ on, onChange, label, hint, disabled }: { on: boolean; onChange: (v: boolean) => void; label: string; hint: string; disabled?: boolean }) {
   return (
     <button type="button" disabled={disabled} onClick={() => onChange(!on)} className="flex items-start gap-3 text-left disabled:opacity-60">
@@ -413,7 +421,7 @@ function SequenceCard({ item, segments, startOpen }: { item: SequenceItem; segme
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-display font-bold text-lg truncate">{seq.name}</h2>
               {seq.active ? <Pill tone="green">Activa</Pill> : <Pill tone="gray">Pausada</Pill>}
-              {seq.autoEnrollForm && <Pill tone="blue">Leads del formulario</Pill>}
+              {seq.autoEnrollForm && <Pill tone="blue">Leads del formulario{FORM_FOR[seq.formFor ?? "all"].pill}</Pill>}
               {problems.length > 0 && <Pill tone="amber">Falta completar</Pill>}
               {dirty && <Pill tone="amber">Sin guardar</Pill>}
             </div>
@@ -461,9 +469,29 @@ function SequenceCard({ item, segments, startOpen }: { item: SequenceItem; segme
             <Toggle
               on={seq.autoEnrollForm}
               onChange={(v) => update({ autoEnrollForm: v })}
-              label="Recibe los leads del formulario /seguros"
+              label="Recibe los leads de los formularios (web y Meta)"
               hint="Su correo 1 reemplaza el correo de confirmación. Recuerda guardar."
             />
+            {seq.autoEnrollForm && (
+              <label className="sm:col-span-2 flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-sky-text/80">¿Cuáles leads del formulario?</span>
+                <select
+                  value={seq.formFor ?? "all"}
+                  onChange={(e) => update({ formFor: e.target.value as NonNullable<Sequence["formFor"]> })}
+                  className="rounded-xl border border-[#7cc4ff40] bg-[#0F3470] px-3 py-2 text-sm"
+                  aria-label="Cuáles leads del formulario"
+                >
+                  {(Object.keys(FORM_FOR) as (keyof typeof FORM_FOR)[]).map((k) => (
+                    <option key={k} value={k}>
+                      {FORM_FOR[k].label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-sky-text/55 basis-full">
+                  Según el servicio que la persona eligió en el formulario de Meta. Si hay una secuencia para ese servicio, entra a esa; si no, a la de “Todos”. Recuerda guardar.
+                </span>
+              </label>
+            )}
             <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-sky-text/55 max-w-xl">
                 Envío diario a las 10 a. m. (hora del Este), máximo un correo por persona cada 12 horas. Alguien sale si responde, se da de baja,
@@ -693,7 +721,7 @@ export default function SequencesView({ items, openId, segments, setup }: { item
     !setup.replyTo && "MAIL_REPLY_TO (para detectar respuestas)",
   ].filter(Boolean);
 
-  const create = (kind: "blank" | "insurance") =>
+  const create = (kind: "blank" | "insurance" | "tags") =>
     start(async () => {
       setMsg(null);
       const r = await newSequence(kind);
@@ -722,6 +750,7 @@ export default function SequencesView({ items, openId, segments, setup }: { item
               {(
                 [
                   ["insurance", "Plantilla de seguro de auto", "La secuencia de seguimiento de cotización, en español e inglés."],
+                  ["tags", "Plantilla de placas (tags)", "4 correos para quien pidió placas: fotos del título y la identificación, sin pago por adelantado."],
                   ["blank", "En blanco", "Un solo correo vacío para escribir desde cero."],
                 ] as const
               ).map(([kind, title, hint]) => (

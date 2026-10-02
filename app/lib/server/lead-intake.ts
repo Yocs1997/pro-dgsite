@@ -8,6 +8,7 @@ import { notifyTelegram, telegramReady } from "./telegram";
 import { leadTelegram } from "./lead-telegram";
 import { normalizeState } from "@/app/lib/contact-details";
 import { label, type Lang, type OptionGroup } from "@/app/seguros/model";
+import { leadService, productLabel, serviceGroup } from "@/app/lib/lead-service";
 
 // Everything that happens after a new insurance request is saved, shared by the
 // /seguros form and Meta lead ads: Telegram + email heads-up, exactly one email to
@@ -21,6 +22,7 @@ const t = (lang: Lang, es: string, en: string) => (lang === "es" ? es : en);
 /** Runs the follow-up steps. Returns true if we (the team) were notified by email or Telegram. */
 export async function afterNewLead(saved: InsuranceLead | null, l: NewLead, opts: { list: string; source: string }): Promise<boolean> {
   const d = l.driver;
+  const service = saved ? leadService(saved) : "";
   let notified = false;
   const telegram = telegramReady() ? notifyTelegram(leadTelegram(l)) : Promise.resolve(false);
   if (resendReady() && d.email) {
@@ -41,7 +43,7 @@ export async function afterNewLead(saved: InsuranceLead | null, l: NewLead, opts
       startSequence(saved, d.email, opts.source).then((sent) =>
         sent
           ? undefined
-          : sendEmail({ to: d.email, subject: confirmationSubject(l.lang, l.code), html: emailLayout(confirmationBody(l.lang, l.code, d.firstName)), category: "confirmation" })
+          : sendEmail({ to: d.email, subject: confirmationSubject(l.lang, l.code, service), html: emailLayout(confirmationBody(l.lang, l.code, d.firstName, service)), category: "confirmation" })
       )
     );
     const state = normalizeState(d.state);
@@ -70,7 +72,7 @@ export async function afterNewLead(saved: InsuranceLead | null, l: NewLead, opts
 async function startSequence(lead: InsuranceLead | null, email: string, source: string): Promise<boolean> {
   if (!lead || !dbReady()) return false;
   try {
-    const seq = await formSequence();
+    const seq = await formSequence(serviceGroup(leadService(lead)));
     if (!seq) return false;
     const v = varsFromLead(lead);
     const { added } = await enroll(seq, [{ email, firstName: v.firstName, lang: v.lang, vehicle: v.vehicle, state: v.state, insured: v.insured, product: v.product, source }]);
@@ -83,12 +85,29 @@ async function startSequence(lead: InsuranceLead | null, email: string, source: 
 
 // ─── Emails ──────────────────────────────────────────────────────────────────
 
-function confirmationSubject(lang: Lang, code: string) {
+function confirmationSubject(lang: Lang, code: string, service = "") {
+  if (serviceGroup(service) !== "insurance") {
+    const product = productLabel(service, lang);
+    return t(lang, `Recibimos tu solicitud de ${product} (${code})`, `We received your request for ${product} (${code})`);
+  }
   return t(lang, `Recibimos tu solicitud de seguro de auto (${code})`, `We received your car insurance request (${code})`);
 }
 
-function confirmationBody(lang: Lang, code: string, name: string) {
+function confirmationBody(lang: Lang, code: string, name: string, service = "") {
   const p = (x: string) => `<p style="margin:0 0 16px;line-height:1.6">${x}</p>`;
+  // Tags, inspections and other services: no insurance wording.
+  if (serviceGroup(service) !== "insurance") {
+    const product = esc(productLabel(service, lang));
+    return lang === "es"
+      ? p(`Hola${name ? " " + esc(name) : ""},`) +
+          p(`Recibimos tu solicitud de <strong>${product}</strong> (${code}). Te vamos a contactar pronto para decirte los siguientes pasos.`) +
+          p(`Si prefieres adelantar, responde a este correo o llámanos al (240) 256-6360.`) +
+          p(`— Car Tag &amp; Registration Services`)
+      : p(`Hi${name ? " " + esc(name) : ""},`) +
+          p(`We received your request for <strong>${product}</strong> (${code}). We'll contact you shortly with the next steps.`) +
+          p(`If you'd like to move faster, reply to this email or call us at (240) 256-6360.`) +
+          p(`— Car Tag &amp; Registration Services`);
+  }
   return lang === "es"
     ? p(`Hola${name ? " " + esc(name) : ""},`) +
         p(`Recibimos tu solicitud de cotización de seguro de auto <strong>${code}</strong>. Estamos comparando opciones y <strong>te enviaremos tu cotización por este mismo correo</strong>.`) +
