@@ -5,6 +5,7 @@ import {
   POS_STATUSES,
   addPosLeadNote,
   canWork,
+  clearPosFollowUp,
   deletePosLead,
   getPosLead,
   listPosLeads,
@@ -81,15 +82,28 @@ export async function setPosStatus(id: string, status: PosStatus) {
 }
 
 /** Adds a call-log entry / note; agents only on their own leads. */
-export async function addPosNote(id: string, outcome: string, text: string) {
+export async function addPosNote(id: string, outcome: string, text: string, due?: string) {
   try {
     const user = await requireUser();
     const lead = await getPosLead(safeId(id));
     if (!lead || !canWork(lead, user)) return { ok: false as const, error: "El lead ya no existe o no está asignado a ti." };
-    const note = newNote({ outcome, text }, user.name);
+    const note = newNote({ outcome, text, due }, user.name);
     if (!note) return { ok: false as const, error: "Escribe una nota." };
-    await addPosLeadNote(lead.id, note);
-    return { ok: true as const, note };
+    const next = await addPosLeadNote(lead.id, note);
+    return { ok: true as const, note, followUp: next?.followUp ?? null };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Marks a lead's "volver a llamar" as done (no more reminders). */
+export async function donePosFollowUp(id: string) {
+  try {
+    const user = await requireUser();
+    const lead = await getPosLead(safeId(id));
+    if (!lead || !canWork(lead, user)) return { ok: false as const, error: "El lead ya no existe o no está asignado a ti." };
+    await clearPosFollowUp(lead.id);
+    return { ok: true as const };
   } catch (e) {
     return failure(e);
   }

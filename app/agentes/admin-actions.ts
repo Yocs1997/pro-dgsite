@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
-import { INS_STATUSES, addLeadNote, deleteLead, getLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
+import { INS_STATUSES, addLeadNote, clearLeadFollowUp, deleteLead, getLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
 import { newNote } from "@/app/lib/lead-notes";
 import { stopFor } from "@/app/lib/server/sequences";
 import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
@@ -51,14 +51,25 @@ export async function updateLeadStatus(id: string, status: InsStatus) {
 }
 
 /** Adds a call-log entry / note to an insurance lead. */
-export async function addInsuranceNote(id: string, outcome: string, text: string) {
+export async function addInsuranceNote(id: string, outcome: string, text: string, due?: string) {
   try {
     const user = await requireAdmin();
-    const note = newNote({ outcome, text }, user.name);
+    const note = newNote({ outcome, text, due }, user.name);
     if (!note) return { ok: false as const, error: "Escribe una nota." };
     const lead = await addLeadNote(clean(id, 64), note);
     if (!lead) return { ok: false as const, error: "El lead ya no existe." };
-    return { ok: true as const, note };
+    return { ok: true as const, note, followUp: lead.followUp ?? null };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Marks a lead's "volver a llamar" as done (no more reminders). */
+export async function doneInsuranceFollowUp(id: string) {
+  try {
+    await requireAdmin();
+    if (!(await clearLeadFollowUp(clean(id, 64)))) return { ok: false as const, error: "El lead ya no existe." };
+    return { ok: true as const };
   } catch (e) {
     return failure(e);
   }

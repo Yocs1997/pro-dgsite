@@ -3,8 +3,10 @@ import { dbReady } from "@/app/lib/server/redis";
 import { resendReady } from "@/app/lib/server/resend";
 import { processDue } from "@/app/lib/server/sequences";
 import { notifyTelegram } from "@/app/lib/server/telegram";
+import { sendFollowUpReminders } from "@/app/lib/server/follow-ups";
 
-// Daily run (vercel.json → crons) that sends the sequence emails that are due.
+// Daily run (vercel.json → crons, 10 a.m. Eastern): reminds the team of the calls to
+// return today, then sends the sequence emails that are due.
 // Vercel calls it with "Authorization: Bearer <CRON_SECRET>"; set CRON_SECRET in
 // Vercel → Settings → Environment Variables.
 
@@ -20,7 +22,13 @@ function authorized(req: Request) {
 
 export async function GET(req: Request) {
   if (!authorized(req)) return new Response("unauthorized", { status: 401 });
-  if (!dbReady() || !resendReady()) return Response.json({ ok: false, error: "not configured" }, { status: 500 });
+  if (!dbReady()) return Response.json({ ok: false, error: "not configured" }, { status: 500 });
+  const followUps = await sendFollowUpReminders().catch((e) => {
+    console.error("[cron] follow-up reminders failed", e);
+    return null;
+  });
+  console.log("[cron] follow-ups", followUps);
+  if (!resendReady()) return Response.json({ ok: false, error: "not configured", followUps }, { status: 500 });
   const result = await processDue(500);
   console.log("[cron] sequences", result);
   if (result.sent || result.failed)
@@ -29,5 +37,5 @@ export async function GET(req: Request) {
         (result.failed ? `\nFallaron: ${result.failed} (se reintentan)` : "") +
         (result.remaining ? `\nPendientes: ${result.remaining}` : "")
     );
-  return Response.json({ ok: true, ...result });
+  return Response.json({ ok: true, ...result, followUps });
 }

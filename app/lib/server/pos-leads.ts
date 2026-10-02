@@ -1,6 +1,6 @@
 import "server-only";
 import { db, listRecords } from "./redis";
-import { appendNote, type LeadNote } from "@/app/lib/lead-notes";
+import { applyNote, type FollowUp, type LeadNote } from "@/app/lib/lead-notes";
 
 // Leads for billing systems in Nicaragua (Meta Instant Forms on the Pro-DG page).
 // Kept apart from insurance: own inbox (/agentes/facturacion), own Telegram group,
@@ -30,6 +30,7 @@ export type PosLead = {
   assignedAt?: number;
   statusAt?: Partial<Record<PosStatus, number>>; // first time each status was reached
   log?: LeadNote[]; // call log / notes, oldest first
+  followUp?: FollowUp; // pending "volver a llamar"
 };
 
 const KEY = (id: string) => `pdg:pos:${id}`;
@@ -86,7 +87,17 @@ export async function updatePosLead(id: string, patch: Patch): Promise<PosLead |
 export async function addPosLeadNote(id: string, note: LeadNote): Promise<PosLead | null> {
   const lead = await getPosLead(id);
   if (!lead) return null;
-  const next: PosLead = { ...lead, log: appendNote(lead.log, note), updatedAt: Date.now() };
+  const next: PosLead = { ...applyNote(lead, note), updatedAt: Date.now() };
+  await db([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}
+
+/** The call back was made (or is no longer needed). */
+export async function clearPosFollowUp(id: string): Promise<PosLead | null> {
+  const lead = await getPosLead(id);
+  if (!lead) return null;
+  const next: PosLead = { ...lead, updatedAt: Date.now() };
+  delete next.followUp;
   await db([["SET", KEY(id), JSON.stringify(next)]]);
   return next;
 }

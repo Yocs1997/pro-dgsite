@@ -22,8 +22,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { PosLead, PosStatus } from "@/app/lib/server/pos-leads";
-import { addPosLead, addPosNote, assignPosLead, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
-import LeadNotes, { Linkify } from "../LeadNotes";
+import { addPosLead, addPosNote, assignPosLead, donePosFollowUp, removePosLead, setPosStatus, type NewPosLead } from "../pos-actions";
+import LeadNotes, { FollowUpBadge, Linkify } from "../LeadNotes";
 import { logout } from "../actions";
 import Phone2Button from "../Phone2Button";
 import EmailButton from "../EmailButton";
@@ -275,6 +275,8 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [status, setStatus] = useState<PosStatus>(l.status);
+  const [log, setLog] = useState(l.log ?? []);
+  const [followUp, setFollowUp] = useState(l.followUp ?? null);
 
   const changeStatus = (s: PosStatus) =>
     start(async () => {
@@ -316,6 +318,7 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="font-mono font-bold text-[#7cc4ff]">{l.code}</span>
         <span className={"px-2.5 py-0.5 rounded-full border text-xs font-semibold " + STATUS[status].cls}>{STATUS[status].label}</span>
+        <FollowUpBadge followUp={followUp} />
         <span className="px-2 py-0.5 rounded-full bg-white/10 text-[11px] text-sky-text/75">{l.source === "whatsapp" ? "💬 WhatsApp" : "📋 Formulario"}</span>
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">{l.name || "(sin nombre)"}</span>
         <span className="text-xs text-sky-text/60">{l.when}</span>
@@ -414,7 +417,16 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
       </div>
       {msg && <p className={"mt-2 text-xs " + (msg.ok ? "text-emerald-300" : "text-red-200")}>{msg.text}</p>}
       <div className="mt-4">
-        <LeadNotes initial={l.log ?? []} add={(outcome, text) => addPosNote(l.id, outcome, text)} />
+        <LeadNotes
+          initial={log}
+          followUp={followUp}
+          add={(outcome, text, due) => addPosNote(l.id, outcome, text, due)}
+          done={() => donePosFollowUp(l.id)}
+          onChange={(nextLog, nextFollowUp) => {
+            setLog(nextLog);
+            setFollowUp(nextFollowUp);
+          }}
+        />
       </div>
     </article>
   );

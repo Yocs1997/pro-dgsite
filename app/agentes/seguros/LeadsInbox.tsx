@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Contact as IdCard } from "lucide-react";
-import { addInsuranceNote, removeLead, updateLeadStatus } from "../admin-actions";
-import LeadNotes, { Linkify } from "../LeadNotes";
+import { addInsuranceNote, doneInsuranceFollowUp, removeLead, updateLeadStatus } from "../admin-actions";
+import LeadNotes, { FollowUpBadge, Linkify } from "../LeadNotes";
 import LeadEditor from "./LeadEditor";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
@@ -81,6 +81,7 @@ function LeadCard({
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [log, setLog] = useState(l.log ?? []); // kept here so it survives closing the card
+  const [followUp, setFollowUp] = useState(l.followUp ?? null);
 
   const del = async () => {
     if (!confirm(`¿Eliminar la solicitud ${l.code} de ${[l.driver.firstName, l.driver.lastName].join(" ").trim() || l.driver.email}? Esto también borra las fotos de licencia y no se puede deshacer.`)) return;
@@ -116,6 +117,7 @@ function LeadCard({
         <span className="font-display font-bold text-lg flex-1 min-w-40 truncate">
           {[d.firstName, d.lastName].join(" ").trim() || d.email}
         </span>
+        <FollowUpBadge followUp={followUp} />
         {log.length ? (
           <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-sky-text/80" title="Notas y llamadas registradas">
             📝 {log.length}
@@ -275,10 +277,12 @@ function LeadCard({
           <div className="lg:col-span-2">
             <LeadNotes
               initial={log}
-              add={async (outcome, text) => {
-                const r = await addInsuranceNote(l.id, outcome, text);
-                if (r.ok) setLog((x) => [...x, r.note]);
-                return r;
+              followUp={followUp}
+              add={(outcome, text, due) => addInsuranceNote(l.id, outcome, text, due)}
+              done={() => doneInsuranceFollowUp(l.id)}
+              onChange={(nextLog, nextFollowUp) => {
+                setLog(nextLog);
+                setFollowUp(nextFollowUp);
               }}
             />
           </div>

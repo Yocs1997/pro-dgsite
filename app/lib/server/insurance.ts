@@ -1,5 +1,5 @@
 import { leadService } from "@/app/lib/lead-service";
-import { appendNote, type LeadNote } from "@/app/lib/lead-notes";
+import { applyNote, type FollowUp, type LeadNote } from "@/app/lib/lead-notes";
 import "server-only";
 import { db, listRecords } from "./redis";
 import type { InsuranceInput } from "@/app/seguros/model";
@@ -19,6 +19,7 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licens
   source?: "web" | "meta"; // missing = the /seguros form
   metaLeadId?: string; // Meta lead ads: the leadgen id
   log?: LeadNote[]; // call log / notes, oldest first
+  followUp?: FollowUp; // pending "volver a llamar"
   service?: string; // Meta form "which service" answer ("placas de virginia"); kept apart from the editable notes
 };
 
@@ -71,7 +72,17 @@ export async function updateLead(id: string, patch: Partial<Pick<InsuranceLead, 
 export async function addLeadNote(id: string, note: LeadNote) {
   const lead = await getLead(id);
   if (!lead) return null;
-  const next: InsuranceLead = { ...lead, log: appendNote(lead.log, note), updatedAt: Date.now() };
+  const next: InsuranceLead = { ...applyNote(lead, note), updatedAt: Date.now() };
+  await db([["SET", KEY(id), JSON.stringify(next)]]);
+  return next;
+}
+
+/** The call back was made (or is no longer needed). */
+export async function clearLeadFollowUp(id: string) {
+  const lead = await getLead(id);
+  if (!lead) return null;
+  const next: InsuranceLead = { ...lead, updatedAt: Date.now() };
+  delete next.followUp;
   await db([["SET", KEY(id), JSON.stringify(next)]]);
   return next;
 }
