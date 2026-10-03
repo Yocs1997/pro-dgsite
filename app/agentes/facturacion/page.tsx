@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { dbUsers, envUsers, getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import { listPosLeads, waLink, waNumber, type PosLead } from "@/app/lib/server/pos-leads";
+import { teamPhones } from "@/app/lib/server/team-phones";
 import AdminNav from "../AdminNav";
 import PosLeadsView, { type PosRow, type TeamUser } from "./PosLeadsView";
 
@@ -34,10 +35,11 @@ export default async function FacturacionPage() {
   let team: TeamUser[] = [];
   if (isAdmin) {
     const all = [...envUsers(), ...(await dbUsers().catch(() => []))];
+    const phones = await teamPhones().catch(() => ({}) as Record<string, string>);
     const seen = new Set<string>();
     team = all
       .filter((u) => (seen.has(u.u.toLowerCase()) ? false : (seen.add(u.u.toLowerCase()), true)))
-      .map((u) => ({ u: u.u, name: u.name, role: u.role }))
+      .map((u) => ({ u: u.u, name: u.name, role: u.role, wa: phones[u.u.toLowerCase()] ?? "" }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 

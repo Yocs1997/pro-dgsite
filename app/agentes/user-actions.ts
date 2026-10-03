@@ -3,6 +3,8 @@
 import { dbReady } from "@/app/lib/server/redis";
 import { dbUsers, deleteDbUser, envUsers, getSession, hashPassword, saveDbUser, type DbUser, type Role } from "./_lib/auth";
 import { createLink, disconnect } from "@/app/lib/server/telegram-links";
+import { setTeamPhone } from "@/app/lib/server/team-phones";
+import { waNumber } from "@/app/lib/server/pos-leads";
 
 // Manage portal users from the portal (admins only). Users from the Vercel
 // variable PORTAL_USERS are shown but can't be changed here.
@@ -105,6 +107,23 @@ export async function telegramLink(username: string) {
     const user = await knownUser(username);
     if (!user) return { ok: false as const, error: "Usuario no encontrado." };
     return { ok: true as const, link: await createLink(user.u) };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Saves this user's own WhatsApp number ("" removes it). 8 digits = Nicaragua, 10 = US. */
+export async function setUserWhatsApp(username: string, phone: string) {
+  try {
+    await requireAdmin();
+    if (!dbReady()) return { ok: false as const, error: "La base de datos no está configurada." };
+    const user = await knownUser(username);
+    if (!user) return { ok: false as const, error: "Usuario no encontrado." };
+    const raw = clean(phone, 40);
+    const digits = raw ? waNumber(raw) : "";
+    if (raw && (digits.length < 10 || digits.length > 15)) return { ok: false as const, error: "Número no válido: 8 dígitos para Nicaragua, o con código de país." };
+    await setTeamPhone(user.u, digits);
+    return { ok: true as const, whatsapp: digits };
   } catch (e) {
     return failure(e);
   }

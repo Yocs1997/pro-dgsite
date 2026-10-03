@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Copy, KeyRound, Loader2, Send, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from "lucide-react";
-import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink } from "../user-actions";
+import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink, setUserWhatsApp } from "../user-actions";
 
-export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean };
+export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean; whatsapp?: string };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
 const input =
@@ -51,6 +51,48 @@ function PasswordField({ value, onChange, id }: { value: string; onChange: (v: s
       <button type="button" onClick={() => onChange(generatePassword())} className={btn + " border border-[#7cc4ff40] text-sky-text/85 hover:text-white shrink-0"} title="Generar una contraseña segura">
         <Wand2 className="w-4 h-4" /> Generar
       </button>
+    </div>
+  );
+}
+
+/** This user's own WhatsApp number, so leads can be forwarded to them from Facturación. */
+function WhatsAppRow({ user }: { user: UserRow }) {
+  const [value, setValue] = useState(user.whatsapp ? `+${user.whatsapp}` : "");
+  const [saved, setSaved] = useState(user.whatsapp ?? "");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  const save = () =>
+    start(async () => {
+      setMsg(null);
+      const r = await setUserWhatsApp(user.u, value);
+      if (!r.ok) return setMsg({ ok: false, text: r.error });
+      setSaved(r.whatsapp);
+      setValue(r.whatsapp ? `+${r.whatsapp}` : "");
+      setMsg({ ok: true, text: r.whatsapp ? "WhatsApp guardado." : "WhatsApp quitado." });
+    });
+  return (
+    <div className="flex flex-col gap-1 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sky-text/75">WhatsApp</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="8888 7777 o +1 240 555 0100"
+          inputMode="tel"
+          className="w-48 rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-3 py-1.5 outline-none focus:border-[#33aaff]"
+          aria-label={`WhatsApp de ${user.name}`}
+        />
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending || value.replace(/\D/g, "") === saved.replace(/\D/g, "")}
+          className="rounded-full border border-[#7cc4ff40] px-3 py-1.5 text-sky-text/85 hover:text-white disabled:opacity-40"
+        >
+          {pending ? "Guardando…" : "Guardar"}
+        </button>
+        {saved && <span className="text-emerald-300">✓ Se le pueden enviar leads por WhatsApp</span>}
+      </div>
+      {msg && <p className={msg.ok ? "text-emerald-300" : "text-red-200"}>{msg.text}</p>}
     </div>
   );
 }
@@ -194,6 +236,7 @@ function UserCard({ user, me }: { user: UserRow; me: string }) {
         </div>
       </div>
       <TelegramRow user={user} />
+      <WhatsAppRow user={user} />
       {showPw && editable && (
         <div className="flex flex-col gap-2">
           <PasswordField id={`pw-${user.u}`} value={pw} onChange={setPw} />

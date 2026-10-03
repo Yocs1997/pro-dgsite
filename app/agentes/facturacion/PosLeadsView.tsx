@@ -29,7 +29,26 @@ import Phone2Button from "../Phone2Button";
 import EmailButton from "../EmailButton";
 
 export type PosRow = PosLead & { wa: string; tel: string; when: string; assignedWhen: string };
-export type TeamUser = { u: string; name: string; role: "admin" | "agent" };
+export type TeamUser = { u: string; name: string; role: "admin" | "agent"; wa?: string }; // wa: their WhatsApp (digits), set in Usuarios
+
+/** The message that goes to an agent's WhatsApp with everything they need about the lead. */
+function forwardText(l: PosRow, agent: TeamUser) {
+  const first = agent.name.trim().split(/\s+/)[0] || agent.name;
+  return [
+    `Hola ${first}, te paso un lead de sistema de facturación:`,
+    "",
+    `*${l.code}* · ${l.name || "(sin nombre)"}`,
+    l.business && `🏪 ${l.business}`,
+    l.city && `📍 ${l.city}`,
+    l.tel && `📞 ${l.tel}`,
+    ...l.extra.filter((x) => !/^https?:/i.test(x)).map((x) => `📝 ${x}`),
+    "",
+    l.tel && `Escríbele aquí: https://wa.me/${l.tel.replace(/\D/g, "")}`,
+    `En el portal: ${window.location.origin}/agentes/facturacion`,
+  ]
+    .filter((x): x is string => typeof x === "string") // "" stays: it's a blank line
+    .join("\n");
+}
 
 const STATUS: Record<PosStatus, { label: string; cls: string }> = {
   nueva: { label: "Nueva", cls: "border-emerald-400/50 text-emerald-300 bg-emerald-500/10" },
@@ -304,6 +323,14 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
       router.refresh();
     });
 
+  // Opens WhatsApp (web or app) with the lead ready to send to the agent, and assigns it to them.
+  const forward = (u: string) => {
+    const agent = team.find((t) => t.u === u);
+    if (!agent?.wa) return;
+    window.open(`https://wa.me/${agent.wa}?text=${encodeURIComponent(forwardText(l, agent))}`, "_blank", "noopener");
+    if (l.assignedTo?.u !== agent.u) assign(agent.u);
+  };
+
   const remove = () => {
     if (!window.confirm(`¿Eliminar el lead ${l.code} de ${l.name || l.business || "(sin nombre)"}? No se puede deshacer.`)) return;
     start(async () => {
@@ -370,6 +397,34 @@ function LeadCard({ l, isAdmin, team }: { l: PosRow; isAdmin: boolean; team: Tea
           {l.assignedWhen && <span className="text-xs text-sky-text/55">desde {l.assignedWhen}</span>}
         </label>
       ) : null}
+      {isAdmin && (
+        <label className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <MessageCircle className="w-4 h-4 text-emerald-300" />
+          <span className="text-sky-text/75">Enviar por WhatsApp a</span>
+          {team.some((t) => t.wa) ? (
+            <select
+              value=""
+              disabled={pending}
+              onChange={(e) => forward(e.target.value)}
+              className="rounded-full border border-emerald-400/40 bg-[#0B2B5E] px-3 py-1.5 text-sm"
+              aria-label="Enviar por WhatsApp a"
+            >
+              <option value="">Elegir agente…</option>
+              {team
+                .filter((t) => t.wa)
+                .map((t) => (
+                  <option key={t.u} value={t.u}>
+                    {t.name}
+                  </option>
+                ))}
+            </select>
+          ) : (
+            <a href="/agentes/usuarios" className="text-xs text-[#7cc4ff] underline">
+              Agrega el WhatsApp de tus agentes en Usuarios
+            </a>
+          )}
+        </label>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {l.wa ? (
