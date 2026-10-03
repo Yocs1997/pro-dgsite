@@ -173,6 +173,69 @@ Gracias,
 ${COMPANY}`,
     },
   },
+  {
+    // Prices, times and requirements as given by the office (Oct 2026). Update here if they change.
+    id: "md-tags-info",
+    label: "Información de placas de Maryland (precios)",
+    en: {
+      subject: "Everything you need to know about Maryland tags",
+      body: `Hi {name},
+
+As we talked, here's all the info about Maryland tags so you have it when you're ready.
+
+First thing: to get tags for 1 year or more, the car needs the inspection. We can get it for you.
+
+This is how it works:
+
+Step 1: $550
+We give you metal Maryland plates with 30-day stickers, so you can drive legally while we work on the inspection. You get the plates the same day.
+
+Step 2: $650 more
+Once we have the inspection (it takes up to a week), we give you the inspection plus the stickers for a year.
+
+That's $1,200 in total.
+
+What you need:
+- A picture of your ID
+- Your original title
+
+Address: 4000 Glengyle Ave, Baltimore, Maryland
+
+When you're ready, call or text me at ${PHONE}.
+
+{agent}
+${COMPANY}`,
+    },
+    es: {
+      subject: "Toda la información de las placas de Maryland",
+      body: `Hola {name},
+
+Como hablamos, aquí te mando toda la información de las placas de Maryland para cuando estés listo.
+
+Primero: para sacar placas por 1 año o más, el carro necesita la inspección. Nosotros te la conseguimos.
+
+Así funciona:
+
+Paso 1: $550
+Te damos placas de metal de Maryland con stickers de 30 días, para que puedas manejar legal mientras trabajamos en la inspección. Las placas te las damos el mismo día.
+
+Paso 2: $650 más
+Cuando ya tengamos la inspección (tarda hasta una semana), te damos la inspección y los stickers por un año.
+
+En total son $1,200.
+
+Lo que necesitas:
+- Una foto de tu ID
+- Tu título original
+
+Dirección: 4000 Glengyle Ave, Baltimore, Maryland
+
+Cuando estés listo, llámame o escríbeme al ${PHONE}.
+
+{agent}
+${COMPANY}`,
+    },
+  },
 ];
 
 /** Tokens left in the composer; each recipient gets their own values when the email is sent. */
