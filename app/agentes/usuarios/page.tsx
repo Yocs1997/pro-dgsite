@@ -3,7 +3,7 @@ import { dbUsers, envUsers, getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import AdminNav from "../AdminNav";
 import { connectedUsers } from "@/app/lib/server/telegram-links";
-import { teamPhones } from "@/app/lib/server/team-phones";
+import { teamPhones, teamSignatures } from "@/app/lib/server/team-phones";
 import UsersView, { type UserRow } from "./UsersView";
 
 export const metadata = { title: "Usuarios | Pro-DG" };
@@ -29,8 +29,9 @@ export default async function UsuariosPage() {
   const fromEnv: UserRow[] = envUsers().map((u) => ({ u: u.u, name: u.name, role: u.role, source: "vercel" as const, added: "" }));
   let connected = new Set<string>();
   let phones: Record<string, string> = {};
+  let sigs: Record<string, string> = {};
   try {
-    if (dbReady()) [connected, phones] = await Promise.all([connectedUsers(), teamPhones()]);
+    if (dbReady()) [connected, phones, sigs] = await Promise.all([connectedUsers(), teamPhones(), teamSignatures()]);
   } catch {
     /* no Telegram / WhatsApp info: shown as not set */
   }
@@ -41,7 +42,7 @@ export default async function UsuariosPage() {
     <>
       <AdminNav active="/agentes/usuarios" />
       <UsersView
-        users={[...fromEnv, ...portal.filter((u) => !envKeys.has(u.u.toLowerCase()))].map((u) => ({ ...u, telegram: connected.has(u.u.toLowerCase()), whatsapp: phones[u.u.toLowerCase()] ?? "" }))}
+        users={[...fromEnv, ...portal.filter((u) => !envKeys.has(u.u.toLowerCase()))].map((u) => ({ ...u, telegram: connected.has(u.u.toLowerCase()), whatsapp: phones[u.u.toLowerCase()] ?? "", signature: sigs[u.u.toLowerCase()] ?? "" }))}
         me={me.u}
         ready={dbReady()}
         error={error}

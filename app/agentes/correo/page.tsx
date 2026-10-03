@@ -9,6 +9,7 @@ import { listLeads } from "@/app/lib/server/insurance";
 import { leadService } from "@/app/lib/lead-service";
 import AdminNav from "../AdminNav";
 import MailCenter from "./MailCenter";
+import { signatureFor } from "@/app/lib/server/team-phones";
 
 function when(ts: number) {
   return new Date(ts).toLocaleString("es-NI", {
@@ -65,7 +66,7 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
         contacts={contacts}
         compose={{ to: one(sp.to), subject: one(sp.subject) }}
         services={services}
-        adminName={user.name}
+        adminName={(await signatureFor(user.u).catch(() => null)) || user.name}
       />
     </>
   );

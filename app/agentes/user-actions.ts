@@ -3,7 +3,7 @@
 import { dbReady } from "@/app/lib/server/redis";
 import { dbUsers, deleteDbUser, envUsers, getSession, hashPassword, saveDbUser, type DbUser, type Role } from "./_lib/auth";
 import { createLink, disconnect } from "@/app/lib/server/telegram-links";
-import { setTeamPhone } from "@/app/lib/server/team-phones";
+import { setSignature, setTeamPhone } from "@/app/lib/server/team-phones";
 import { waNumber } from "@/app/lib/server/pos-leads";
 
 // Manage portal users from the portal (admins only). Users from the Vercel
@@ -124,6 +124,21 @@ export async function setUserWhatsApp(username: string, phone: string) {
     if (raw && (digits.length < 10 || digits.length > 15)) return { ok: false as const, error: "Número no válido: 8 dígitos para Nicaragua, o con código de país." };
     await setTeamPhone(user.u, digits);
     return { ok: true as const, whatsapp: digits };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** The name this user signs emails with (templates in Correo); "" = use their portal name. */
+export async function setUserSignature(username: string, name: string) {
+  try {
+    await requireAdmin();
+    if (!dbReady()) return { ok: false as const, error: "La base de datos no está configurada." };
+    const user = await knownUser(username);
+    if (!user) return { ok: false as const, error: "Usuario no encontrado." };
+    const sig = clean(name, 40).replace(/\s+/g, " ");
+    await setSignature(user.u, sig);
+    return { ok: true as const, signature: sig };
   } catch (e) {
     return failure(e);
   }

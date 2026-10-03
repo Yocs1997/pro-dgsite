@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Copy, KeyRound, Loader2, Send, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from "lucide-react";
-import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink, setUserWhatsApp } from "../user-actions";
+import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink, setUserWhatsApp, setUserSignature } from "../user-actions";
 
-export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean; whatsapp?: string };
+export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean; whatsapp?: string; signature?: string };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
 const input =
@@ -51,6 +51,47 @@ function PasswordField({ value, onChange, id }: { value: string; onChange: (v: s
       <button type="button" onClick={() => onChange(generatePassword())} className={btn + " border border-[#7cc4ff40] text-sky-text/85 hover:text-white shrink-0"} title="Generar una contraseña segura">
         <Wand2 className="w-4 h-4" /> Generar
       </button>
+    </div>
+  );
+}
+
+/** The name this user signs emails with (Correo → Redactar templates). */
+function SignatureRow({ user }: { user: UserRow }) {
+  const [value, setValue] = useState(user.signature ?? "");
+  const [saved, setSaved] = useState(user.signature ?? "");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  const save = () =>
+    start(async () => {
+      setMsg(null);
+      const r = await setUserSignature(user.u, value);
+      if (!r.ok) return setMsg({ ok: false, text: r.error });
+      setSaved(r.signature);
+      setValue(r.signature);
+      setMsg({ ok: true, text: `Sus correos se firman como: ${r.signature || user.name}` });
+    });
+  return (
+    <div className="flex flex-col gap-1 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sky-text/75">Firma en correos</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={user.name}
+          className="w-48 rounded-lg border border-[#7cc4ff40] bg-white/[0.06] px-3 py-1.5 outline-none focus:border-[#33aaff]"
+          aria-label={`Firma en correos de ${user.name}`}
+        />
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending || value.trim() === saved}
+          className="rounded-full border border-[#7cc4ff40] px-3 py-1.5 text-sky-text/85 hover:text-white disabled:opacity-40"
+        >
+          {pending ? "Guardando…" : "Guardar"}
+        </button>
+        {!msg && <span className="text-sky-text/55">Firma como: {saved || user.name}</span>}
+      </div>
+      {msg && <p className={msg.ok ? "text-emerald-300" : "text-red-200"}>{msg.text}</p>}
     </div>
   );
 }
@@ -237,6 +278,7 @@ function UserCard({ user, me }: { user: UserRow; me: string }) {
       </div>
       <TelegramRow user={user} />
       <WhatsAppRow user={user} />
+      <SignatureRow user={user} />
       {showPw && editable && (
         <div className="flex flex-col gap-2">
           <PasswordField id={`pw-${user.u}`} value={pw} onChange={setPw} />
