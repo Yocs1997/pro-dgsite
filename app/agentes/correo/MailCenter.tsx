@@ -149,6 +149,8 @@ function Composer({
   const lang: TemplateLang = tplLang ?? contact?.lang ?? "en";
   const usesName = (subject + body).toLowerCase().includes(NAME_TOKEN);
   const usesProduct = (subject + body).toLowerCase().includes(PRODUCT_TOKEN);
+  // Templates mark what you must fill in (prices, company…) with ___: never send one half-done.
+  const blanks = ((subject + "\n" + body).match(/_{3,}/g) ?? []).length;
   // What {producto} becomes for each person: the service on their lead, unless typed here.
   const [productEdits, setProductEdits] = useState<Record<string, string>>({});
   const productFor = (email: string) => productEdits[email] ?? productLabel(templates?.services[email] ?? "", lang);
@@ -267,6 +269,11 @@ function Composer({
           <span className="text-[11px] text-sky-text/55">Así saldrá en el asunto y el mensaje en lugar de {PRODUCT_TOKEN}. Puedes corregirlo.</span>
         </div>
       )}
+      {blanks > 0 && (
+        <p className="text-xs text-amber-200">
+          Faltan {blanks} {blanks === 1 ? "espacio" : "espacios"} por llenar (___). Complétalos o bórralos para poder enviar.
+        </p>
+      )}
       {(recipients.length > 1 || usesName) && (
         <p className="text-xs text-sky-text/70">
           {recipients.length > 1 && `Se envían ${recipients.length} correos por separado: nadie ve las otras direcciones. `}
@@ -281,7 +288,7 @@ function Composer({
         <button
           type="button"
           onClick={send}
-          disabled={pending || !to.trim() || !subject.trim() || !body.trim() || (usesProduct && recipients.some((e) => !productFor(e).trim()))}
+          disabled={pending || !to.trim() || !subject.trim() || !body.trim() || blanks > 0 || (usesProduct && recipients.some((e) => !productFor(e).trim()))}
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-electric hover:bg-electric-light disabled:opacity-50 font-bold"
         >
           {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

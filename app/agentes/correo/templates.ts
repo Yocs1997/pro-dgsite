@@ -174,6 +174,55 @@ ${COMPANY}`,
     },
   },
   {
+    // The ___ are filled in by hand before sending (the composer won't send while any are left).
+    id: "insurance-quote",
+    label: "Cotización de seguro de auto (llenar datos)",
+    en: {
+      subject: "Your car insurance quote is ready, {name}",
+      body: `Hi {name},
+
+Your car insurance quote is ready. Here it is:
+
+Company: ___
+Coverage: ___
+Vehicle: ___
+Down payment: $___
+Monthly payment: $___
+Policy length: ___ months
+Can start on: ___
+
+To get it going, just tell me yes and we take care of the down payment. Call or text me at ${PHONE}, or reply to this email.
+
+If you want me to look at another option (another company, a different deductible or less coverage), let me know and I'll find it for you.
+
+Thank you,
+{agent}
+${COMPANY}`,
+    },
+    es: {
+      subject: "Tu cotización de seguro de auto está lista, {name}",
+      body: `Hola {name},
+
+Ya tengo tu cotización de seguro de auto. Aquí está:
+
+Compañía: ___
+Cobertura: ___
+Vehículo: ___
+Pago inicial: $___
+Pago mensual: $___
+Póliza por: ___ meses
+Puede empezar: ___
+
+Para activarla solo dime que sí y hacemos el pago inicial. Llámame o escríbeme al ${PHONE}, o responde este correo.
+
+Si quieres que te busque otra opción (otra compañía, otro deducible o menos cobertura), dime y te la consigo.
+
+Gracias,
+{agent}
+${COMPANY}`,
+    },
+  },
+  {
     // Prices, times and requirements as given by the office (Oct 2026). Update here if they change.
     id: "md-tags-info",
     label: "Información de placas de Maryland (precios)",
