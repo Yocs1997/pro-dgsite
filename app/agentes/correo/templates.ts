@@ -114,6 +114,38 @@ ${COMPANY}`,
     },
   },
   {
+    id: "info-received",
+    label: "Recibí sus datos (cotización en 45–90 min)",
+    en: {
+      subject: "Got your info: your {product} quote is on the way",
+      body: `Hi {name},
+
+I got your info, thank you. I'm already working on your {product} quote.
+
+I'll get back to you with it in 45 to 90 minutes.
+
+If anything changes or you have a question in the meantime, just reply to this email or call me at ${PHONE}.
+
+Thank you,
+{agent}
+${COMPANY}`,
+    },
+    es: {
+      subject: "Ya tengo tus datos: tu cotización de {product} va en camino",
+      body: `Hola {name},
+
+Ya recibí tus datos, gracias. Ya estoy trabajando en tu cotización de {product}.
+
+Te la mando en 45 a 90 minutos.
+
+Si algo cambia o tienes alguna pregunta mientras tanto, responde este correo o llámame al ${PHONE}.
+
+Gracias,
+{agent}
+${COMPANY}`,
+    },
+  },
+  {
     id: "quote-follow-up",
     label: "Seguimiento después de la cotización",
     en: {
