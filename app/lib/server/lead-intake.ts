@@ -19,15 +19,23 @@ type NewLead = Omit<InsuranceLead, "id" | "number"> & { code: string };
 
 const t = (lang: Lang, es: string, en: string) => (lang === "es" ? es : en);
 
-/** Runs the follow-up steps. Returns true if we (the team) were notified by email or Telegram. */
-export async function afterNewLead(saved: InsuranceLead | null, l: NewLead, opts: { list: string; source: string }): Promise<boolean> {
+/**
+ * Runs the follow-up steps. Returns true if we (the team) were notified by email or Telegram.
+ * Leads added by hand in the portal pass `notifyEmail: false` (the team already knows) and
+ * `customerEmail: false` unless the agent chose to send the follow-up emails.
+ */
+export async function afterNewLead(
+  saved: InsuranceLead | null,
+  l: NewLead,
+  opts: { list: string; source: string; notifyEmail?: boolean; customerEmail?: boolean }
+): Promise<boolean> {
   const d = l.driver;
   const service = saved ? leadService(saved) : "";
   let notified = false;
   const telegram = telegramReady() ? notifyTelegram(leadTelegram(l)) : Promise.resolve(false);
   if (resendReady() && d.email) {
     const tasks: Promise<unknown>[] = [];
-    const notify = process.env.NOTIFY_EMAIL;
+    const notify = opts.notifyEmail === false ? "" : process.env.NOTIFY_EMAIL;
     if (notify) {
       tasks.push(
         sendEmail({
@@ -39,13 +47,14 @@ export async function afterNewLead(saved: InsuranceLead | null, l: NewLead, opts
         }).then(() => (notified = true))
       );
     }
-    tasks.push(
-      startSequence(saved, d.email, opts.source).then((sent) =>
-        sent
-          ? undefined
-          : sendEmail({ to: d.email, subject: confirmationSubject(l.lang, l.code, service), html: emailLayout(confirmationBody(l.lang, l.code, d.firstName, service)), category: "confirmation" })
-      )
-    );
+    if (opts.customerEmail !== false)
+      tasks.push(
+        startSequence(saved, d.email, opts.source).then((sent) =>
+          sent
+            ? undefined
+            : sendEmail({ to: d.email, subject: confirmationSubject(l.lang, l.code, service), html: emailLayout(confirmationBody(l.lang, l.code, d.firstName, service)), category: "confirmation" })
+        )
+      );
     const state = normalizeState(d.state);
     tasks.push(
       upsertContact(

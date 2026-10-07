@@ -1,26 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Contact as IdCard } from "lucide-react";
+import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Plus, Contact as IdCard } from "lucide-react";
 import { addInsuranceNote, doneInsuranceFollowUp, removeLead, updateLeadStatus } from "../admin-actions";
 import LeadNotes, { FollowUpBadge, Linkify } from "../LeadNotes";
 import LeadEditor from "./LeadEditor";
+import Dashboard from "./Dashboard";
+import NewLeadForm from "./NewLeadForm";
+import { ORDER, STATUS, channelLabel, type LeadRow } from "./status";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
 import { leadService, productLabel } from "@/app/lib/lead-service";
 import { label, type OptionGroup } from "@/app/seguros/model";
-import type { InsuranceLead, InsStatus } from "@/app/lib/server/insurance";
+import type { InsStatus } from "@/app/lib/server/insurance";
 
-type Row = InsuranceLead & { when: string };
+type Row = LeadRow;
 
-const STATUS: Record<InsStatus, { label: string; cls: string }> = {
-  nueva: { label: "Nueva", cls: "bg-emerald-500/20 text-emerald-200 border-emerald-400/40" },
-  cotizando: { label: "Cotizando", cls: "bg-amber-500/20 text-amber-200 border-amber-400/40" },
-  enviada: { label: "Cotización enviada", cls: "bg-sky-500/20 text-sky-200 border-sky-400/40" },
-  vendida: { label: "Póliza vendida", cls: "bg-violet-500/25 text-violet-200 border-violet-400/40" },
-  perdida: { label: "No compró", cls: "bg-white/10 text-white/60 border-white/20" },
-};
-const ORDER: InsStatus[] = ["nueva", "cotizando", "enviada", "vendida", "perdida"];
 const L = (g: OptionGroup, v: string) => (v ? label(g, v, "es") : "");
 
 function Info({ k, v }: { k: string; v?: string }) {
@@ -107,6 +102,11 @@ function LeadCard({
         {l.source === "meta" && (
           <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#1877F2]/25 text-[#9cc2ff]" title="Formulario instantáneo de Meta">
             Meta
+          </span>
+        )}
+        {l.source === "manual" && (
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-100" title={`Agregado a mano${l.addedBy ? ` por ${l.addedBy}` : ""}`}>
+            A mano{l.channel ? ` · ${channelLabel(l.channel)}` : ""}
           </span>
         )}
         {service && (
@@ -297,6 +297,7 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
   const [filter, setFilter] = useState<InsStatus | "todas">("todas");
   const [q, setQ] = useState("");
   const [saveError, setSaveError] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { todas: leads.length };
@@ -329,9 +330,20 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 text-white">
       <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Seguros de auto</p>
-      <h1 className="font-display font-black text-3xl md:text-5xl mt-2">Solicitudes de seguro</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3 mt-2">
+        <h1 className="font-display font-black text-3xl md:text-5xl">Solicitudes de seguro</h1>
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
+          >
+            <Plus className="w-4 h-4" /> Nuevo lead
+          </button>
+        )}
+      </div>
       <p className="text-sky-text/75 mt-2">
-        Llegan desde <a href="/seguros" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/seguros</a>.
+        Llegan desde <a href="/seguros" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/seguros</a>, los formularios de Meta, o los agregas a mano.
         {sold > 0 && (
           <>
             {" "}Pólizas vendidas: <span className="font-mono font-bold text-white">{sold}</span> · Cargos de servicio:{" "}
@@ -351,7 +363,28 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
         </p>
       )}
 
-      <div className="mt-8 flex flex-col md:flex-row gap-3 md:items-center justify-between">
+      {adding && (
+        <NewLeadForm
+          onClose={() => setAdding(false)}
+          onCreated={(lead) => {
+            const when = new Date(lead.createdAt).toLocaleString("es-NI", {
+              timeZone: "America/Managua", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+            });
+            setLeads((list) => [{ ...lead, when }, ...list]);
+            setFilter("todas");
+          }}
+        />
+      )}
+
+      <Dashboard
+        leads={leads}
+        onFilter={(s) => {
+          setFilter(s);
+          document.getElementById("lista")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
+
+      <div id="lista" className="mt-8 flex flex-col md:flex-row gap-3 md:items-center justify-between scroll-mt-20">
         <div className="flex flex-wrap gap-2">
           {(["todas", ...ORDER] as const).map((s) => (
             <button

@@ -1,7 +1,22 @@
 "use server";
 
 import { getSession } from "./_lib/auth";
-import { INS_STATUSES, addLeadNote, clearLeadFollowUp, deleteLead, getLead, setLeadStatus, updateLead, type InsStatus } from "@/app/lib/server/insurance";
+import {
+  INS_STATUSES,
+  addLeadNote,
+  clearLeadFollowUp,
+  deleteLead,
+  getLead,
+  listLeads,
+  saveLead,
+  setLeadStatus,
+  updateLead,
+  type InsStatus,
+  type InsuranceLead,
+} from "@/app/lib/server/insurance";
+import { dbReady } from "@/app/lib/server/redis";
+import { afterNewLead } from "@/app/lib/server/lead-intake";
+import { CHANNELS, SERVICES } from "./seguros/status";
 import { newNote } from "@/app/lib/lead-notes";
 import { stopFor } from "@/app/lib/server/sequences";
 import { sanitizeInsurance } from "@/app/lib/server/insurance-sanitize";
@@ -12,7 +27,7 @@ import { upsertContact, segmentId, listLocalContacts, getLocalContacts, updateCo
 import { normalizeInsured, normalizeLang, normalizeState, stateFromPhone } from "@/app/lib/contact-details";
 import { notifyTelegram, telegramReady, tg } from "@/app/lib/server/telegram";
 import { deleteCampaign, deleteInMail, deleteOutMail, markRead, saveCampaign, saveOutMail } from "@/app/lib/server/mail";
-import { isEmail } from "@/app/seguros/model";
+import { emptyCoverage, emptyDriver, isEmail, phoneDigits } from "@/app/seguros/model";
 import { personalize } from "./correo/templates";
 
 async function requireAdmin() {
@@ -59,6 +74,94 @@ export async function addInsuranceNote(id: string, outcome: string, text: string
     const lead = await addLeadNote(clean(id, 64), note);
     if (!lead) return { ok: false as const, error: "El lead ya no existe." };
     return { ok: true as const, note, followUp: lead.followUp ?? null };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+export type NewInsuranceLead = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  state: string;
+  zip: string;
+  lang: "es" | "en";
+  services: string[];
+  channel: string;
+  insured: string;
+  level: string;
+  year: string;
+  make: string;
+  model: string;
+  notes: string;
+  sendEmails: boolean; // enroll in the follow-up sequence (or send the confirmation)
+};
+
+/**
+ * Adds a lead by hand (a call, a walk-in, a WhatsApp chat): it shows up in Seguros like any
+ * other lead, the Telegram group is told, the contact joins the "Seguros" list, and the
+ * follow-up emails go out only if `sendEmails` is checked.
+ */
+export async function addInsuranceLead(input: NewInsuranceLead, force = false) {
+  try {
+    const admin = await requireAdmin();
+    if (!dbReady()) return { ok: false as const, error: "La base de datos no está configurada." };
+    const lang = input?.lang === "en" ? "en" : "es";
+    const email = clean(input?.email, 120).toLowerCase();
+    const phone = clean(input?.phone, 30);
+    const digits = phoneDigits(phone);
+    if (!clean(input?.firstName, 60)) return { ok: false as const, error: "Escribe el nombre." };
+    if (!email && !phone) return { ok: false as const, error: "Escribe al menos un teléfono o un correo." };
+    if (email && !isEmail(email)) return { ok: false as const, error: "El correo no es válido." };
+    if (phone && digits.length < 10) return { ok: false as const, error: "El teléfono debe tener al menos 10 dígitos." };
+
+    if (!force) {
+      const last10 = digits.slice(-10);
+      const dup = (await listLeads(1000)).find(
+        (l) => (email && l.driver?.email?.toLowerCase() === email) || (last10 && phoneDigits(l.driver?.phone ?? "").slice(-10) === last10)
+      );
+      if (dup) {
+        const who = [dup.driver?.firstName, dup.driver?.lastName].filter(Boolean).join(" ") || "sin nombre";
+        return { ok: false as const, duplicate: dup.code, error: `Ya existe ${dup.code} (${who}) con ese teléfono o correo.` };
+      }
+    }
+
+    const { driver, vehicles, coverage } = sanitizeInsurance({
+      driver: { ...emptyDriver(), firstName: input?.firstName, lastName: input?.lastName, email, phone, state: input?.state, zip: input?.zip },
+      vehicles: [{ year: input?.year, make: input?.make, model: input?.model, vin: "", ownership: "", use: "", miles: "" }],
+      coverage: { ...emptyCoverage(), insured: input?.insured, level: input?.level, notes: input?.notes, contactPref: email ? "email" : "phone" },
+    });
+    // Not asked on the phone: leave history blank instead of "0 / No".
+    Object.assign(driver, { accidents: "", tickets: "", sr22: "" });
+    const services = (Array.isArray(input?.services) ? input.services : []).filter((s) => SERVICES.some(([v]) => v === s));
+    const channel = CHANNELS.some(([v]) => v === input?.channel) ? input.channel : "";
+
+    const now = Date.now();
+    const base: Omit<InsuranceLead, "id" | "number" | "code"> = {
+      lang,
+      driver,
+      extraDrivers: [],
+      vehicles,
+      coverage,
+      createdAt: now,
+      updatedAt: now,
+      status: "nueva",
+      consentAt: now,
+      licensePhotos: 0,
+      source: "manual",
+      service: services.join(", "),
+      addedBy: admin.name,
+      ...(channel ? { channel } : {}),
+    };
+    const lead = await saveLead(base);
+    await afterNewLead(lead, { ...base, code: lead.code }, {
+      list: "Seguros",
+      source: "Manual",
+      notifyEmail: false,
+      customerEmail: Boolean(input?.sendEmails && email),
+    });
+    return { ok: true as const, lead };
   } catch (e) {
     return failure(e);
   }

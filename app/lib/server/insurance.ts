@@ -16,8 +16,11 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licens
   status: InsStatus;
   consentAt: number;
   licensePhotos?: number; // how many license photos are stored (0–2)
-  source?: "web" | "meta"; // missing = the /seguros form
+  source?: "web" | "meta" | "manual"; // missing = the /seguros form; "manual" = added by hand in the portal
   metaLeadId?: string; // Meta lead ads: the leadgen id
+  addedBy?: string; // manual leads: portal user who added it
+  channel?: string; // manual leads: how they reached us (llamada, whatsapp, en persona…)
+  statusAt?: Partial<Record<InsStatus, number>>; // first time each status was reached (leads changed after Oct 2026)
   log?: LeadNote[]; // call log / notes, oldest first
   followUp?: FollowUp; // pending "volver a llamar"
   service?: string; // Meta form "which service" answer ("placas de virginia"); kept apart from the editable notes
@@ -48,8 +51,13 @@ export async function setLeadStatus(id: string, status: InsStatus) {
   const [raw] = (await db([["GET", KEY(id)]])) as [string | null];
   if (!raw) return;
   const lead = JSON.parse(raw) as InsuranceLead;
+  const now = Date.now();
+  if (lead.status !== status) {
+    lead.statusAt = { ...(lead.statusAt ?? {}) };
+    lead.statusAt[status] ??= now;
+  }
   lead.status = status;
-  lead.updatedAt = Date.now();
+  lead.updatedAt = now;
   await db([["SET", KEY(id), JSON.stringify(lead)]]);
 }
 
