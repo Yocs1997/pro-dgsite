@@ -70,7 +70,7 @@ function LeadCard({
   onSaved: (d: Pick<Row, "driver" | "extraDrivers" | "vehicles" | "coverage">) => void;
   onDeleted: () => void;
 }) {
-  const [open, setOpen] = useState(l.status === "nueva");
+  const [open, setOpen] = useState(false); // every lead starts closed; click its row to see the details
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);

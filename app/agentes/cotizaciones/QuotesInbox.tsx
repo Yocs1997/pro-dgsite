@@ -169,7 +169,7 @@ function QuoteCard({
   onSaved: (q: InboxQuote) => void;
   onDeleted: () => void;
 }) {
-  const [open, setOpen] = useState(q.status === "nueva");
+  const [open, setOpen] = useState(false); // every quote starts closed; click its row to see the details
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
