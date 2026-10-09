@@ -306,7 +306,7 @@ We have them ready the same day.
 
 How you get them:
 - If you're in Maryland, you pick them up at our office: 4000 Glengyle Ave, Baltimore, Maryland.
-- If you're anywhere else, we ship them to you.
+- If you're anywhere else, we ship them to you. Shipping is paid by you.
 
 When you're ready, just reply to this email with the pictures, or call or text me at ${PHONE}.
 
@@ -330,7 +330,7 @@ Te las tenemos listas el mismo día.
 
 Cómo las recibes:
 - Si estás en Maryland, las recoges en nuestra oficina: 4000 Glengyle Ave, Baltimore, Maryland.
-- Si estás en otro lugar, te las enviamos por correo.
+- Si estás en otro lugar, te las enviamos por correo. El envío lo pagas tú.
 
 Cuando estés listo, solo responde este correo con las fotos, o llámame o escríbeme al ${PHONE}.
 
