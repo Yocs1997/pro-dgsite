@@ -285,6 +285,59 @@ Cuando estés listo, llámame o escríbeme al ${PHONE}.
 ${COMPANY}`,
     },
   },
+  {
+    // Price, time and requirements as given by the office (Oct 2026). Update here if they change.
+    id: "va-temp-tags-info",
+    label: "Información de placas temporales de Virginia (precio)",
+    en: {
+      subject: "Virginia temporary tags: price and what we need",
+      body: `Hi {name},
+
+Thanks for reaching out about Virginia temporary tags. Here's everything you need to know.
+
+Price: $250
+They're good for 30 days.
+
+What you need to send us:
+- A picture of your ID
+- A picture of your registration
+
+We have them ready the same day.
+
+How you get them:
+- If you're in Maryland, you pick them up at our office: 4000 Glengyle Ave, Baltimore, Maryland.
+- If you're anywhere else, we ship them to you.
+
+When you're ready, just reply to this email with the pictures, or call or text me at ${PHONE}.
+
+{agent}
+${COMPANY}`,
+    },
+    es: {
+      subject: "Placas temporales de Virginia: precio y lo que necesitamos",
+      body: `Hola {name},
+
+Gracias por escribirnos por las placas temporales de Virginia. Aquí te mando toda la información.
+
+Precio: $250
+Son válidas por 30 días.
+
+Lo que necesitas mandarnos:
+- Una foto de tu ID
+- Una foto del registro de tu carro
+
+Te las tenemos listas el mismo día.
+
+Cómo las recibes:
+- Si estás en Maryland, las recoges en nuestra oficina: 4000 Glengyle Ave, Baltimore, Maryland.
+- Si estás en otro lugar, te las enviamos por correo.
+
+Cuando estés listo, solo responde este correo con las fotos, o llámame o escríbeme al ${PHONE}.
+
+{agent}
+${COMPANY}`,
+    },
+  },
 ];
 
 /** Tokens left in the composer; each recipient gets their own values when the email is sent. */
