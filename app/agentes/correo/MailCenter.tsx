@@ -71,6 +71,7 @@ function TelegramButton({ ready }: { ready: boolean }) {
     </div>
   );
 }
+type Templates = { contacts: LocalContact[]; agentName: string; services: Record<string, string> };
 type Tab = "inbox" | "compose" | "campaigns" | "contacts" | "sent";
 
 const input =
@@ -134,7 +135,7 @@ function Composer({
   onSent: (m: { to: string; subject: string; body: string }) => void;
   onCancel?: () => void;
   title: string;
-  templates?: { contacts: LocalContact[]; agentName: string; services: Record<string, string> }; // new emails only: ready-made subject + message
+  templates?: Templates; // ready-made messages (on a reply only the message is filled; the subject stays "Re: …")
 }) {
   const [to, setTo] = useState(initial.to);
   const [subject, setSubject] = useState(initial.subject);
@@ -142,6 +143,7 @@ function Composer({
   const [tplId, setTplId] = useState("");
   const [tplLang, setTplLang] = useState<TemplateLang | null>(null); // null = follow the contact's language
   const [filled, setFilled] = useState(""); // last message a template wrote, to notice hand edits
+  const isReply = Boolean(initial.inReplyTo);
 
   // Each address gets its own email. The first recipient's contact sets the default language.
   const recipients = Array.from(new Set(to.split(/[,;\s]+/).map((e) => e.trim().toLowerCase()).filter(Boolean)));
@@ -158,10 +160,11 @@ function Composer({
   const applyTemplate = (id: string, l: TemplateLang) => {
     const tpl = MAIL_TEMPLATES.find((t) => t.id === id);
     if (!tpl || !templates) return;
-    if (body.trim() && body !== filled && !window.confirm("Esto reemplaza el asunto y el mensaje que escribiste. ¿Continuar?")) return;
+    if (body.trim() && body !== filled && !window.confirm(isReply ? "Esto reemplaza el mensaje que escribiste. ¿Continuar?" : "Esto reemplaza el asunto y el mensaje que escribiste. ¿Continuar?")) return;
     const r = fillTemplate(tpl[l], { agent: templates.agentName });
     setTplId(id);
-    setSubject(r.subject);
+    // A reply keeps its "Re: …" subject so it stays in the same conversation.
+    if (!isReply) setSubject(r.subject);
     setBody(r.body);
     setFilled(r.body);
   };
@@ -240,7 +243,9 @@ function Composer({
               ))}
             </div>
           </div>
-          <span className="text-[11px] text-sky-text/55">Puedes editar todo antes de enviar.</span>
+          <span className="text-[11px] text-sky-text/55">
+            {isReply ? "Llena solo el mensaje: el asunto se queda igual para que siga en la misma conversación. " : ""}Puedes editar todo antes de enviar.
+          </span>
         </div>
       )}
       <label className="flex flex-col gap-1.5">
@@ -301,7 +306,17 @@ function Composer({
 
 // ─── Inbox ───────────────────────────────────────────────────────────────────
 
-function InboxView({ items, setItems, onSent }: { items: (InMail & { when: string })[]; setItems: (f: (x: (InMail & { when: string })[]) => (InMail & { when: string })[]) => void; onSent: (m: { to: string; subject: string; body: string }) => void }) {
+function InboxView({
+  items,
+  setItems,
+  onSent,
+  templates,
+}: {
+  items: (InMail & { when: string })[];
+  setItems: (f: (x: (InMail & { when: string })[]) => (InMail & { when: string })[]) => void;
+  onSent: (m: { to: string; subject: string; body: string }) => void;
+  templates: Templates;
+}) {
   const [sel, setSel] = useState<string | null>(null);
   const [mail, setMail] = useState<OpenedMail | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -473,6 +488,7 @@ function InboxView({ items, setItems, onSent }: { items: (InMail & { when: strin
                   subject: mail.subject.match(/^re:/i) ? mail.subject : `Re: ${mail.subject}`,
                   inReplyTo: mail.messageId,
                 }}
+                templates={templates}
                 onCancel={() => setReplying(false)}
                 onSent={(m) => {
                   onSent(m);
@@ -1344,7 +1360,7 @@ export default function MailCenter({
         ))}
       </div>
 
-      {tab === "inbox" && <InboxView items={inbox} setItems={setInbox} onSent={addSent} />}
+      {tab === "inbox" && <InboxView items={inbox} setItems={setInbox} onSent={addSent} templates={{ contacts, agentName: adminName, services }} />}
       {tab === "compose" && (
         <div className="max-w-3xl">
           <Composer title="Nuevo correo" initial={{ to: compose.to, subject: compose.subject }} onSent={addSent} templates={{ contacts, agentName: adminName, services }} />
