@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "va-test",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "-p",
+        "3123"
+      ],
+      "port": 3123,
+      "env": {
+        "KV_REST_API_URL": "http://127.0.0.1:8799",
+        "KV_REST_API_TOKEN": "local-test",
+        "META_GRAPH_BASE": "http://127.0.0.1:8798",
+        "META_ADS_TOKEN": "local-test",
+        "META_AD_ACCOUNT_ID": "123"
+      }
+    }
+  ]
+}
