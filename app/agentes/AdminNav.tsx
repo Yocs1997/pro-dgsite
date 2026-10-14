@@ -1,4 +1,4 @@
-import { Zap, Calculator, Inbox, Users, Receipt, Mail, Repeat, BarChart3, UserCog, LogOut } from "lucide-react";
+import { Zap, Calculator, Inbox, Users, Receipt, Mail, Repeat, BarChart3, Flag, UserCog, LogOut } from "lucide-react";
 import { logout } from "./actions";
 import { adminBadges } from "./_lib/badges";
 
@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/agentes/correo", label: "Correo", icon: Mail },
   { href: "/agentes/secuencias", label: "Secuencias", icon: Repeat },
   { href: "/agentes/rendimiento", label: "Rendimiento", icon: BarChart3 },
+  { href: "/agentes/va", label: "VA campaign", icon: Flag },
   { href: "/agentes/usuarios", label: "Usuarios", icon: UserCog },
 ];
 
