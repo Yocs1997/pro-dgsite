@@ -4,8 +4,8 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 
 // Google AdSense, only on the public marketing pages: never on the insurance
-// quote and tags pages (other companies' ads next to our forms) or the agent portal.
-const NO_ADS = ["/seguros", "/es/seguros", "/tags", "/es/tags", "/agentes"];
+// quote, tags and VA cash-out pages (other companies' ads next to our forms) or the agent portal.
+const NO_ADS = ["/seguros", "/es/seguros", "/tags", "/es/tags", "/va-cash-out", "/agentes"];
 
 export default function AdSense() {
   const path = usePathname() ?? "/";
