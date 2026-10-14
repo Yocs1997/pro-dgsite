@@ -3,7 +3,7 @@
 // owns the home, wants cash out); each answer is saved as they go, so someone who stops
 // halfway still shows up as a (partial) lead. The loan officer covers the rest on the call.
 
-export const BRAND = "Vet Benefits";
+export const BRAND = "VA Benefits";
 
 export type Option = [value: string, label: string];
 

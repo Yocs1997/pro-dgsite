@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   openGraph: { title: TITLE, description: DESCRIPTION, url: "/va-cash-out", type: "website", locale: "en_US" },
 };
 
-// Meta Pixel for this campaign. Set VA_META_PIXEL_ID to the client's ad account pixel;
-// until then the site's own pixel is used.
-const PIXEL = process.env.VA_META_PIXEL_ID || "1403861690984950";
+// Meta Pixel for this campaign: the "VA Cash Out" dataset in the Prodg portfolio.
+// VA_META_PIXEL_ID can override it without a code change.
+const PIXEL = process.env.VA_META_PIXEL_ID || "686375087380025";
 
 export default function Page() {
   return (

@@ -229,7 +229,7 @@ export default function VaDashboard({
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-white">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
         <div>
-          <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Vet Benefits · /va-cash-out</p>
+          <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">VA Benefits · /va-cash-out</p>
           <h1 className="font-display font-black text-3xl md:text-4xl mt-1">VA campaign</h1>
           <p className="text-sm text-sky-text/70 mt-1">
             Meta spend and results next to the leads from the landing page. {rangeLabel} · {timezone}
