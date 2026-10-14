@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowLeft, Check, ChevronDown, Clock, CreditCard, Hammer, Home, Landmark, Loader2, Lock, PiggyBank, Phone, ShieldCheck, Star } from "lucide-react";
 import { US_STATES, isEmail, phoneDigits } from "@/app/seguros/model";
 import { answerVaQuestion, requestVaCallback, startVaLead } from "./actions";
-import { activeQuestions, CONSENT_TEXT, disqualifiers, MAX_AGE, MIN_AGE, PARTNER, type Answers, type QuestionId } from "./model";
+import { BRAND, CONSENT_TEXT, disqualifiers, MAX_AGE, MIN_AGE, PARTNER, QUESTIONS, type Answers, type QuestionId } from "./model";
 import type { VaTracking } from "@/app/lib/server/va-leads";
 
 const NAVY = "#0B1F3A";
@@ -149,7 +149,7 @@ function LeadForm() {
     scrollTop();
   };
 
-  const questions = activeQuestions(answers);
+  const questions = QUESTIONS;
 
   const answer = async (id: QuestionId, value: string) => {
     if (busy) return;
@@ -170,9 +170,8 @@ function LeadForm() {
       fbq("track", "Lead", { content_name: "VA cash-out" }, { eventID: l?.code });
       setStage({ kind: "done" });
     } else {
-      const list = activeQuestions(next);
-      const i = list.findIndex((q) => !next[q.id]);
-      setStage({ kind: "question", index: i === -1 ? list.length - 1 : i });
+      const i = QUESTIONS.findIndex((q) => !next[q.id]);
+      setStage({ kind: "question", index: i === -1 ? QUESTIONS.length - 1 : i });
     }
     scrollTop();
   };
@@ -347,7 +346,7 @@ function LeadForm() {
             </div>
             <h2 className="va-display text-3xl text-slate-900">Thank you, {c.firstName.trim()}</h2>
             <p className="text-slate-700 text-lg max-w-sm">
-              These programs are for veterans, service members and surviving spouses who own their home, so you don&apos;t qualify right now because you said:
+              These programs are for veterans, service members and surviving spouses who own their home and want to access cash from it, so you don&apos;t qualify right now because you said:
             </p>
             <ul className="w-full max-w-sm flex flex-col gap-2 text-left">
               {disqualifiers(answers).map((d) => (
@@ -422,7 +421,7 @@ const USES = [
 ];
 
 const STEPS = [
-  ["Answer a few questions", "About you and your home. It takes about 60 seconds."],
+  ["Answer a few questions", "About you and your home. It takes about 30 seconds."],
   ["Talk to a loan officer", "A licensed loan officer calls to go over the options that fit you."],
   ["You decide", "Free, with no obligation. If it doesn't make sense for you, you walk away."],
 ];
@@ -451,7 +450,7 @@ export default function VaPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Star className="w-6 h-6 fill-white" />
-            <span className="va-display text-lg sm:text-xl">Veteran Home Equity Options</span>
+            <span className="va-display text-lg sm:text-xl">{BRAND}</span>
           </div>
           <span className="hidden sm:flex items-center gap-1.5 text-sm text-white/75">
             <ShieldCheck className="w-4 h-4" /> Not affiliated with the VA
@@ -477,7 +476,7 @@ export default function VaPage() {
               {[
                 [Check, "Free, no obligation"],
                 [ShieldCheck, "Won't affect your credit score"],
-                [Clock, "Takes about 60 seconds"],
+                [Clock, "Takes about 30 seconds"],
               ].map(([Icon, t]) => {
                 const I = Icon as typeof Check;
                 return (
@@ -595,7 +594,7 @@ export default function VaPage() {
             <Phone className="w-4 h-4" /> A licensed loan officer will call you after you finish the questions.
           </p>
           <p>
-            This website is operated by Pro-DG, a marketing company. Pro-DG is not a lender, does not make loans or credit decisions, and is not licensed to
+            {BRAND} is a marketing service, not a lender. {BRAND} does not make loans or credit decisions, and is not licensed to
             make mortgage loans. The information you submit is shared with {PARTNER} so a licensed loan officer can contact you.
           </p>
           <p>
@@ -606,7 +605,7 @@ export default function VaPage() {
             <a href="/privacy" className="underline hover:text-white">
               Privacy Policy
             </a>{" "}
-            · © {new Date().getFullYear()} Pro-DG
+            · © {new Date().getFullYear()} {BRAND}
           </p>
         </div>
       </footer>

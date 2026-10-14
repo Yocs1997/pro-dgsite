@@ -37,8 +37,6 @@ export type VaLead = {
   status: VaLeadStatus;
   contact: { firstName: string; lastName: string; email: string; phone: string; age: number; state: string };
   answers: Answers;
-  product?: string;
-  flags?: string[];
   /** Questions whose answer ruled the visitor out (e.g. "served", "ownHome"). */
   disqualifiedFor?: string[];
   /** Set when a ruled-out visitor said they answered by mistake and asked for a call. */

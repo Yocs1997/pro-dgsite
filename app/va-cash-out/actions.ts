@@ -6,11 +6,8 @@ import { createVaLead, getVaLead, saveVaLead, type VaLead, type VaLeadStatus, ty
 import { notifyTelegram, portalLink, tg } from "@/app/lib/server/telegram";
 import { isEmail, phoneDigits, US_STATES } from "@/app/seguros/model";
 import {
-  activeQuestions,
   CONSENT_TEXT,
   disqualifiers,
-  leadFlags,
-  likelyProduct,
   MAX_AGE,
   MIN_AGE,
   optionLabel,
@@ -107,16 +104,14 @@ export async function answerVaQuestion(id: string, token: string, question: Ques
     if (lead.status !== "partial") return { ok: true, status: lead.status };
 
     const answers: Answers = { ...lead.answers, [question]: value };
-    // A paid-off home has no rate or balance; drop them if the visitor went back and changed it.
-    for (const k of Object.keys(answers) as QuestionId[]) if (!activeQuestions(answers).some((x) => x.id === k)) delete answers[k];
 
     // Everyone answers every question; a ruled-out visitor is only marked once they finish.
     const now = Date.now();
-    const finished = activeQuestions(answers).every((x) => answers[x.id]);
+    const finished = QUESTIONS.every((x) => answers[x.id]);
     Object.assign(lead, { answers, updatedAt: now });
     const out = disqualifiers(answers).map((d) => d.id);
     const status: VaLeadStatus = !finished ? "partial" : out.length ? "disqualified" : "qualified";
-    if (finished) Object.assign(lead, { status, completedAt: now, product: likelyProduct(answers), flags: leadFlags(answers), ...(out.length ? { disqualifiedFor: out } : {}) });
+    if (finished) Object.assign(lead, { status, completedAt: now, ...(out.length ? { disqualifiedFor: out } : {}) });
     await saveVaLead(lead);
     if (status === "qualified") await notifyTelegram(vaTelegram(lead), process.env.TELEGRAM_VA_CHAT_ID || undefined);
     return { ok: true, status };
@@ -156,12 +151,8 @@ function vaTelegram(l: VaLead): string {
       : `🇺🇸 <b>New VA cash-out lead</b> · ${tg(l.code)}`,
     `<b>${tg(`${c.firstName} ${c.lastName}`)}</b> · ${tg(c.age)} · ${tg(c.state)}`,
     `📞 ${tg(c.phone)}${c.email ? `\n✉️ ${tg(c.email)}` : ""}`,
-    `🎖 ${tg(optionLabel("served", a.served))} · 🏠 ${tg(optionLabel("loanType", a.loanType))}${a.rate ? ` at ${tg(optionLabel("rate", a.rate))}` : ""}`,
-    `💵 Wants ${tg(optionLabel("cashAmount", a.cashAmount))} for ${tg(optionLabel("purpose", a.purpose).toLowerCase())}`,
-    `🏡 Worth ${tg(optionLabel("homeValue", a.homeValue))}${a.balance ? ` · owes ${tg(optionLabel("balance", a.balance))}` : ""}`,
-    `📊 Credit: ${tg(optionLabel("credit", a.credit))}`,
-    `👉 Likely product: <b>${tg(l.product)}</b>`,
-    ...(l.flags?.length ? [`⚠️ ${tg(l.flags.join(" · "))}`] : []),
+    `🎖 ${tg(optionLabel("served", a.served))}`,
+    `🏠 ${tg(optionLabel("ownHome", a.ownHome))} · 💵 ${tg(optionLabel("wantsCash", a.wantsCash))}`,
     ...(t.utmContent || t.utmCampaign ? [`<i>Ad: ${tg(t.utmContent || "—")} · ${tg(t.utmCampaign)}</i>`] : []),
   ];
   return [lines.join("\n"), portalLink("", "Open the portal")].join("\n\n");
