@@ -12,6 +12,9 @@ function when(ts: number) {
   });
 }
 
+// Imports from the contact lists run as server actions from this page: give them time.
+export const maxDuration = 60;
+
 export default async function SegurosAdminPage() {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
@@ -22,7 +25,7 @@ export default async function SegurosAdminPage() {
   if (!dbReady()) error = "La base de datos aún no está conectada.";
   else {
     try {
-      leads = await listLeads();
+      leads = await listLeads(5000);
     } catch {
       error = "No se pudieron cargar las solicitudes. Recarga en un momento.";
     }

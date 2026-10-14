@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Plus, Contact as IdCard } from "lucide-react";
+import { Users as UsersIcon, Search, ChevronDown, Phone, Mail, MessageCircle, Copy, Check, AlertTriangle, Car, User, ShieldCheck, Reply, Pencil, Trash2, Loader2, Plus, Contact as IdCard } from "lucide-react";
 import { addInsuranceNote, doneInsuranceFollowUp, removeLead, updateLeadStatus } from "../admin-actions";
 import LeadNotes, { FollowUpBadge, Linkify } from "../LeadNotes";
 import LeadEditor from "./LeadEditor";
 import Dashboard from "./Dashboard";
 import NewLeadForm from "./NewLeadForm";
+import ContactImport from "./ContactImport";
+import type { InsuranceLead } from "@/app/lib/server/insurance";
 import { ORDER, STATUS, channelLabel, type LeadRow } from "./status";
 import Phone2Button from "../Phone2Button";
 import EmailButton, { composeHref } from "../EmailButton";
@@ -107,6 +109,11 @@ function LeadCard({
         {l.source === "tags" && (
           <span className="px-2 py-0.5 rounded text-xs font-semibold bg-teal-500/20 text-teal-100" title="Formulario de placas y registro (pro-dg.com/tags)">
             Web placas
+          </span>
+        )}
+        {l.source === "contacts" && (
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-sky-500/20 text-sky-100" title={`Creado desde la lista de contactos${l.lists?.length ? `: ${l.lists.join(", ")}` : ""}`}>
+            Lista
           </span>
         )}
         {l.source === "manual" && (
@@ -301,12 +308,17 @@ function LeadCard({
   );
 }
 
+const when = (ts: number) =>
+  new Date(ts).toLocaleString("es-NI", { timeZone: "America/Managua", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
 export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; error: string | null }) {
   const [leads, setLeads] = useState(initial);
   const [filter, setFilter] = useState<InsStatus | "todas">("todas");
   const [q, setQ] = useState("");
   const [saveError, setSaveError] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [limit, setLimit] = useState(100); // cards drawn at once; "Mostrar más" adds more
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { todas: leads.length };
@@ -338,22 +350,33 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 text-white">
-      <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Seguros de auto</p>
+      <p className="text-xs font-mono uppercase tracking-widest text-[#7cc4ff]">Seguros, placas, registro y más</p>
       <div className="flex flex-wrap items-end justify-between gap-3 mt-2">
-        <h1 className="font-display font-black text-3xl md:text-5xl">Solicitudes de seguro</h1>
-        {!adding && (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
-          >
-            <Plus className="w-4 h-4" /> Nuevo lead
-          </button>
-        )}
+        <h1 className="font-display font-black text-3xl md:text-5xl">Leads</h1>
+        <div className="flex flex-wrap gap-2">
+          {!importing && (
+            <button
+              type="button"
+              onClick={() => setImporting(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-sky-400/50 hover:bg-sky-500/15 text-sm font-semibold"
+            >
+              <UsersIcon className="w-4 h-4" /> Importar contactos
+            </button>
+          )}
+          {!adding && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold"
+            >
+              <Plus className="w-4 h-4" /> Nuevo lead
+            </button>
+          )}
+        </div>
       </div>
       <p className="text-sky-text/75 mt-2">
         Llegan desde <a href="/seguros" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/seguros</a>,{" "}
-        <a href="/tags" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/tags</a>, los formularios de Meta, o los agregas a mano.
+        <a href="/tags" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/tags</a>, los formularios de Meta, tus listas de contactos, o los agregas a mano.
         {sold > 0 && (
           <>
             {" "}Pólizas vendidas: <span className="font-mono font-bold text-white">{sold}</span> · Cargos de servicio:{" "}
@@ -377,11 +400,24 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
         <NewLeadForm
           onClose={() => setAdding(false)}
           onCreated={(lead) => {
-            const when = new Date(lead.createdAt).toLocaleString("es-NI", {
-              timeZone: "America/Managua", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-            });
-            setLeads((list) => [{ ...lead, when }, ...list]);
+            setLeads((list) => [{ ...lead, when: when(lead.createdAt) }, ...list]);
             setFilter("todas");
+          }}
+        />
+      )}
+
+      {importing && (
+        <ContactImport
+          onClose={() => setImporting(false)}
+          onCreated={(created: InsuranceLead[]) => {
+            if (!created.length) return;
+            const rows = created.map((lead) => ({ ...lead, when: when(lead.createdAt) }));
+            setLeads((list) => [...rows, ...list].sort((a, b) => b.createdAt - a.createdAt));
+            setFilter("todas");
+          }}
+          onUndone={(ids) => {
+            const gone = new Set(ids);
+            setLeads((list) => list.filter((x) => !gone.has(x.id)));
           }}
         />
       )}
@@ -423,7 +459,7 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
-        {shown.map((l) => (
+        {shown.slice(0, limit).map((l) => (
           <LeadCard
             key={l.id}
             l={l}
@@ -432,6 +468,11 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
             onDeleted={() => setLeads((list) => list.filter((x) => x.id !== l.id))}
           />
         ))}
+        {shown.length > limit && (
+          <button type="button" onClick={() => setLimit((n) => n + 100)} className="self-center px-6 py-2.5 rounded-full border border-[#7cc4ff55] hover:bg-white/10 text-sm font-semibold">
+            Mostrar más ({shown.length - limit} restantes)
+          </button>
+        )}
         {!error && shown.length === 0 && (
           <p className="text-center py-16 text-sky-text/70">
             {leads.length === 0 ? "Aún no hay solicitudes. Aparecerán aquí cuando alguien complete el formulario." : "No hay solicitudes con este filtro."}

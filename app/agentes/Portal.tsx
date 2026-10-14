@@ -373,7 +373,7 @@ export default function Portal({
                   className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-sky-text/80 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <Car className="w-4 h-4" />
-                  <span className="hidden sm:inline">Seguros</span>
+                  <span className="hidden sm:inline">Leads</span>
                 </a>
                 <a
                   href="/agentes/correo"

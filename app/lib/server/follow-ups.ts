@@ -33,7 +33,7 @@ export async function sendFollowUpReminders(): Promise<{ insurance: number; pos:
         (l.followUp!.note ? `\n   ${tg(l.followUp!.note.slice(0, 200))}` : "")
       );
     });
-    await notifyTelegram([`📞 <b>Llamadas pendientes para hoy</b> · Seguros (${ins.length})`, lines.join("\n") + more(ins.length), portalLink("/seguros", "Abrir Seguros")].join("\n\n"));
+    await notifyTelegram([`📞 <b>Llamadas pendientes para hoy</b> · Leads (${ins.length})`, lines.join("\n") + more(ins.length), portalLink("/seguros", "Abrir Leads")].join("\n\n"));
   }
 
   // ── Facturación ──

@@ -35,8 +35,13 @@ export async function db(cmds: Cmd[]): Promise<unknown[]> {
 export async function listRecords<T>(index: string, keyOf: (id: string) => string, limit = 300): Promise<T[]> {
   const [ids] = (await db([["ZREVRANGE", index, 0, limit - 1]])) as [string[]];
   if (!ids?.length) return [];
-  const [raw] = (await db([["MGET", ...ids.map(keyOf)]])) as [(string | null)[]];
-  return raw.filter((r): r is string => Boolean(r)).map((r) => JSON.parse(r) as T);
+  // Read in chunks so a long list doesn't become one huge request.
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += 300) {
+    const [raw] = (await db([["MGET", ...ids.slice(i, i + 300).map(keyOf)]])) as [(string | null)[]];
+    for (const r of raw) if (r) out.push(JSON.parse(r) as T);
+  }
+  return out;
 }
 
 /** Very small fixed-window rate limiter. Returns true if the call is allowed. */

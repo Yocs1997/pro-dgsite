@@ -1,11 +1,11 @@
-import { Zap, Calculator, Inbox, Car, Receipt, Mail, Repeat, BarChart3, UserCog, LogOut } from "lucide-react";
+import { Zap, Calculator, Inbox, Users, Receipt, Mail, Repeat, BarChart3, UserCog, LogOut } from "lucide-react";
 import { logout } from "./actions";
 import { adminBadges } from "./_lib/badges";
 
 const LINKS = [
   { href: "/agentes", label: "Calculadora", icon: Calculator },
   { href: "/agentes/cotizaciones", label: "Cotizaciones", icon: Inbox },
-  { href: "/agentes/seguros", label: "Seguros", icon: Car },
+  { href: "/agentes/seguros", label: "Leads", icon: Users }, // all kinds of leads (address kept so old links still work)
   { href: "/agentes/facturacion", label: "Facturación", icon: Receipt },
   { href: "/agentes/correo", label: "Correo", icon: Mail },
   { href: "/agentes/secuencias", label: "Secuencias", icon: Repeat },
