@@ -31,10 +31,10 @@ export function leadTelegram(l: Omit<InsuranceLead, "id" | "number"> & { code: s
     l.coverage.notes ? `📝 ${tg(l.coverage.notes.slice(0, 300))}` : null,
   ].filter((x): x is string => Boolean(x));
   const origin = l.source === "meta" ? " · <b>Meta</b>" : l.source === "manual" ? " · <b>Agregado a mano</b>" : "";
-  if (l.source === "manual") {
-    if (l.service) details.splice(1, 0, `📌 ${tg(productLabel(l.service, "es"))}`);
-    details.push(`<i>Agregado por ${tg(l.addedBy || "el equipo")}${l.channel ? ` · llegó por ${tg(l.channel)}` : ""}</i>`);
-  }
-  return [`🚗 <b>Nueva solicitud de seguro</b> · ${tg(l.code)}${origin}`, details.join("\n"), portalLink("/seguros", "Ver en el portal")].join("\n\n");
+  if ((l.source === "manual" || l.source === "tags") && l.service) details.splice(1, 0, `📌 ${tg(productLabel(l.service, "es"))}`);
+  if (l.source === "manual") details.push(`<i>Agregado por ${tg(l.addedBy || "el equipo")}${l.channel ? ` · llegó por ${tg(l.channel)}` : ""}</i>`);
+  if (l.photoLabels?.length) details.push(`📎 Fotos: ${tg(l.photoLabels.join(", "))}`);
+  const title = l.source === "tags" ? "🚘 <b>Nueva solicitud de placas / registro</b>" : "🚗 <b>Nueva solicitud de seguro</b>";
+  return [`${title} · ${tg(l.code)}${origin}`, details.join("\n"), portalLink("/seguros", "Ver en el portal")].join("\n\n");
 }
 

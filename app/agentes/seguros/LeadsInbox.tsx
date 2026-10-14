@@ -104,6 +104,11 @@ function LeadCard({
             Meta
           </span>
         )}
+        {l.source === "tags" && (
+          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-teal-500/20 text-teal-100" title="Formulario de placas y registro (pro-dg.com/tags)">
+            Web placas
+          </span>
+        )}
         {l.source === "manual" && (
           <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-100" title={`Agregado a mano${l.addedBy ? ` por ${l.addedBy}` : ""}`}>
             A mano{l.channel ? ` · ${channelLabel(l.channel)}` : ""}
@@ -125,7 +130,7 @@ function LeadCard({
         ) : null}
         {l.licensePhotos ? (
           <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-400/20 text-amber-100">
-            <IdCard className="w-3.5 h-3.5" /> Licencia
+            <IdCard className="w-3.5 h-3.5" /> {l.photoLabels?.length ? `${l.licensePhotos} fotos` : "Licencia"}
           </span>
         ) : null}
         <span className="text-sm text-sky-text/75 hidden md:inline">
@@ -196,15 +201,19 @@ function LeadCard({
             {l.licensePhotos ? (
               <div className="rounded-xl bg-black/20 p-3">
                 <p className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#7cc4ff] mb-2">
-                  <IdCard className="w-3.5 h-3.5" /> Licencia de conducir
+                  <IdCard className="w-3.5 h-3.5" /> {l.photoLabels?.length ? "Documentos" : "Licencia de conducir"}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {Array.from({ length: l.licensePhotos }, (_, i) => (
-                    <a key={i} href={`/agentes/seguros/licencia/${l.id}/${i}`} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden bg-black/30 hover:ring-2 ring-[#33aaff]" title={i === 0 ? "Frente (abrir)" : "Reverso (abrir)"}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`/agentes/seguros/licencia/${l.id}/${i}`} alt={i === 0 ? "Frente" : "Reverso"} className="w-full h-24 object-cover" />
-                    </a>
-                  ))}
+                  {Array.from({ length: l.licensePhotos }, (_, i) => {
+                    const name = l.photoLabels?.[i] ?? (i === 0 ? "Frente" : "Reverso");
+                    return (
+                      <a key={i} href={`/agentes/seguros/licencia/${l.id}/${i}`} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden bg-black/30 hover:ring-2 ring-[#33aaff]" title={`${name} (abrir)`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/agentes/seguros/licencia/${l.id}/${i}`} alt={name} className="w-full h-24 object-cover" />
+                        {l.photoLabels?.length ? <span className="block px-2 py-1 text-[11px] text-sky-text/80 truncate">{name}</span> : null}
+                      </a>
+                    );
+                  })}
                 </div>
                 <p className="text-[11px] text-sky-text/55 mt-2">Toca para verla completa y copiar los datos.</p>
               </div>
@@ -343,7 +352,8 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
         )}
       </div>
       <p className="text-sky-text/75 mt-2">
-        Llegan desde <a href="/seguros" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/seguros</a>, los formularios de Meta, o los agregas a mano.
+        Llegan desde <a href="/seguros" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/seguros</a>,{" "}
+        <a href="/tags" className="text-[#7cc4ff] underline" target="_blank">pro-dg.com/tags</a>, los formularios de Meta, o los agregas a mano.
         {sold > 0 && (
           <>
             {" "}Pólizas vendidas: <span className="font-mono font-bold text-white">{sold}</span> · Cargos de servicio:{" "}

@@ -38,6 +38,7 @@ export const channelLabel = (v?: string) => CHANNELS.find(([k]) => k === v)?.[1]
 /** "Formulario web" / "Meta" / "A mano · Llamada". */
 export function sourceLabel(l: Pick<InsuranceLead, "source" | "channel">): string {
   if (l.source === "meta") return "Meta (Facebook / Instagram)";
+  if (l.source === "tags") return "Formulario de placas (web)";
   if (l.source === "manual") return l.channel ? `A mano · ${channelLabel(l.channel)}` : "A mano";
   return "Formulario web";
 }

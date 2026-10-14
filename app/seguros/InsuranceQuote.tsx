@@ -27,6 +27,7 @@ import {
   Contact as IdCard,
 } from "lucide-react";
 import { submitInsuranceQuote } from "./actions";
+import { compressImage } from "@/app/lib/compress-image";
 import { FAQ } from "./faq";
 import {
   COMMON_MAKES,
@@ -462,38 +463,6 @@ function CarrierStrip({ carriers, c }: { carriers: Carrier[]; c: Copy }) {
       <p className="text-center text-[11px] text-sky-text/45 mt-4 px-6 max-w-3xl mx-auto">{c.stripNote}</p>
     </section>
   );
-}
-
-// ─── License photo: resize + compress in the browser ─────────────────────────
-
-async function compressImage(file: File, maxSide = 1600, quality = 0.82): Promise<string> {
-  if (!file.type.startsWith("image/")) throw new Error("not an image");
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = url;
-    });
-    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.naturalWidth * scale);
-    canvas.height = Math.round(img.naturalHeight * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("no canvas");
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    let q = quality;
-    let out = canvas.toDataURL("image/jpeg", q);
-    while (out.length > 1_400_000 && q > 0.4) {
-      q -= 0.12;
-      out = canvas.toDataURL("image/jpeg", q);
-    }
-    if (out.length > 1_500_000) throw new Error("too large");
-    return out;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────

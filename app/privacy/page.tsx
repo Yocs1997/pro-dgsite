@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = { en: "September 29, 2026", es: "29 de septiembre de 2026" };
+const UPDATED = { en: "October 14, 2026", es: "14 de octubre de 2026" };
 const BUSINESS = "Car Tag & Registration Services";
 const PHONE = "(240) 256-6360";
 
@@ -72,8 +72,8 @@ export default function PrivacyPage() {
 
           <Section title="Who we are">
             <p>
-              {BUSINESS} (“we”, “us”), a Pro-DG company, helps drivers compare and buy car insurance. This policy explains what information we collect when you
-              request a quote on our website (www.pro-dg.com) or through our ads on Facebook and Instagram, how we use it, and your choices.
+              {BUSINESS} (“we”, “us”), a Pro-DG company, helps drivers compare and buy car insurance and get their tags and registration. This policy explains what information we collect when you
+              request a quote or a tags or registration service on our website (www.pro-dg.com) or through our ads on Facebook and Instagram, how we use it, and your choices.
             </p>
           </Section>
 
@@ -82,7 +82,8 @@ export default function PrivacyPage() {
               <li>Contact details: name, email, phone number, address, city, state and ZIP code.</li>
               <li>
                 Driver and vehicle details you give us to prepare a quote: date of birth, license type and number, driving history (accidents, tickets, SR-22),
-                vehicles, current insurance and the coverage you want. A photo of your driver&apos;s license, only if you choose to upload one.
+                vehicles, current insurance and the coverage you want. A photo of your driver&apos;s license, only if you choose to upload one. For tags
+                and registration: photos of your ID, your vehicle title and other vehicle documents you send us.
               </li>
               <li>Messages you send us and notes from our calls with you.</li>
               <li>
@@ -95,6 +96,7 @@ export default function PrivacyPage() {
           <Section title="How we use it">
             <ul className={ul}>
               <li>To prepare and compare insurance quotes and help you buy a policy if you choose to.</li>
+              <li>To process your tags, temporary tags or registration with the motor vehicle agency of the state you choose.</li>
               <li>To contact you about your request by email, phone or text message, according to the consent you gave.</li>
               <li>To send follow-up emails about your quote. Every email has an unsubscribe link.</li>
               <li>To measure and improve our website and ads.</li>
@@ -105,6 +107,7 @@ export default function PrivacyPage() {
           <Section title="Who we share it with">
             <ul className={ul}>
               <li>Insurance carriers and licensed agents, only as needed to get your quotes and issue a policy you choose.</li>
+              <li>The motor vehicle agency (MVA / DMV) of the state you choose, to process your tags or registration.</li>
               <li>
                 Service providers that run our business for us, such as website hosting, databases, email delivery and internal notification tools. They may
                 only use your information to provide those services.
@@ -162,8 +165,8 @@ export default function PrivacyPage() {
 
           <Section title="Quiénes somos">
             <p>
-              {BUSINESS} (“nosotros”), una empresa de Pro-DG, ayuda a conductores a comparar y comprar seguros de auto. Esta política explica qué información
-              recopilamos cuando pides una cotización en nuestro sitio web (www.pro-dg.com) o en nuestros anuncios de Facebook e Instagram, cómo la usamos y qué
+              {BUSINESS} (“nosotros”), una empresa de Pro-DG, ayuda a conductores a comparar y comprar seguros de auto y a sacar sus placas y registro. Esta política explica qué información
+              recopilamos cuando pides una cotización o un trámite de placas o registro en nuestro sitio web (www.pro-dg.com) o en nuestros anuncios de Facebook e Instagram, cómo la usamos y qué
               opciones tienes.
             </p>
           </Section>
@@ -173,7 +176,8 @@ export default function PrivacyPage() {
               <li>Datos de contacto: nombre, correo, teléfono, dirección, ciudad, estado y código postal.</li>
               <li>
                 Datos del conductor y del vehículo que nos das para cotizar: fecha de nacimiento, tipo y número de licencia, historial de manejo (accidentes,
-                multas, SR-22), vehículos, seguro actual y la cobertura que quieres. Una foto de tu licencia, solo si decides subirla.
+                multas, SR-22), vehículos, seguro actual y la cobertura que quieres. Una foto de tu licencia, solo si decides subirla. Para placas y
+                registro: fotos de tu ID, del título de tu vehículo y de otros documentos del vehículo que nos mandes.
               </li>
               <li>Mensajes que nos envías y notas de nuestras llamadas contigo.</li>
               <li>
@@ -186,6 +190,7 @@ export default function PrivacyPage() {
           <Section title="Cómo la usamos">
             <ul className={ul}>
               <li>Para preparar y comparar cotizaciones de seguro y ayudarte a comprar una póliza si así lo decides.</li>
+              <li>Para tramitar tus placas, placas temporales o registro ante la oficina de vehículos del estado que elijas.</li>
               <li>Para contactarte sobre tu solicitud por correo, teléfono o mensaje de texto, según el consentimiento que diste.</li>
               <li>Para enviarte correos de seguimiento sobre tu cotización. Cada correo incluye un enlace para darte de baja.</li>
               <li>Para medir y mejorar nuestro sitio web y nuestros anuncios.</li>
@@ -196,6 +201,7 @@ export default function PrivacyPage() {
           <Section title="Con quién la compartimos">
             <ul className={ul}>
               <li>Aseguradoras y agentes con licencia, solo lo necesario para obtener tus cotizaciones y emitir la póliza que elijas.</li>
+              <li>La oficina de vehículos (MVA / DMV) del estado que elijas, para tramitar tus placas o registro.</li>
               <li>
                 Proveedores que operan servicios para nosotros, como alojamiento web, bases de datos, envío de correos y herramientas internas de notificación.
                 Solo pueden usar tu información para prestar esos servicios.

@@ -15,8 +15,9 @@ export type InsuranceLead = Omit<InsuranceInput, "consent" | "website" | "licens
   updatedAt: number;
   status: InsStatus;
   consentAt: number;
-  licensePhotos?: number; // how many license photos are stored (0–2)
-  source?: "web" | "meta" | "manual"; // missing = the /seguros form; "manual" = added by hand in the portal
+  licensePhotos?: number; // how many photos are stored (0–2 license photos; up to 4 documents on the tags form)
+  photoLabels?: string[]; // tags form: what each photo is ("ID", "Título (frente)"…); missing = license front / back
+  source?: "web" | "meta" | "manual" | "tags"; // missing = the /seguros form; "manual" = added by hand; "tags" = the /tags form
   metaLeadId?: string; // Meta lead ads: the leadgen id
   addedBy?: string; // manual leads: portal user who added it
   channel?: string; // manual leads: how they reached us (llamada, whatsapp, en persona…)
@@ -96,7 +97,7 @@ export async function clearLeadFollowUp(id: string) {
 }
 
 export async function deleteLead(id: string) {
-  await db([["DEL", KEY(id), PHOTO(id, 0), PHOTO(id, 1)], ["ZREM", INDEX, id]]);
+  await db([["DEL", KEY(id), ...[0, 1, 2, 3].map((n) => PHOTO(id, n))], ["ZREM", INDEX, id]]);
 }
 
 export async function saveLicensePhotos(id: string, photos: string[]) {

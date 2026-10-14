@@ -375,7 +375,7 @@ export default function Dashboard({ leads, onFilter }: { leads: LeadRow[]; onFil
         ["Con multas (3 años)", cohort.filter((l) => l.driver.tickets && l.driver.tickets !== "0").length],
         ["Licencia extranjera o sin licencia", cohort.filter((l) => l.driver.licenseStatus === "intl" || l.driver.licenseStatus === "none").length],
         ["Más de un conductor", cohort.filter((l) => l.extraDrivers.length > 0).length],
-        ["Subió foto de licencia", cohort.filter((l) => l.licensePhotos).length],
+        ["Subió fotos (licencia o documentos)", cohort.filter((l) => l.licensePhotos).length],
       ] as [string, number][],
       byOutcome: countBy(entries, (e) => outcomeLabel(e.outcome)),
     };

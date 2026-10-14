@@ -96,11 +96,11 @@ export function missingRequired(x: CleanInsurance, hasLicensePhoto: boolean): bo
   return !(contactOk && driverOk && vehiclesOk && coverageOk);
 }
 
-/** Accepts up to 2 browser-compressed images as data URLs. */
-export function sanitizePhotos(v: unknown): string[] {
+/** Accepts up to `max` browser-compressed images as data URLs (2 license photos by default). */
+export function sanitizePhotos(v: unknown, max = 2, maxLength = 1_600_000): string[] {
   if (!Array.isArray(v)) return [];
   return v
-    .slice(0, 2)
+    .slice(0, max)
     .map(String)
-    .filter((p) => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p) && p.length <= 1_600_000);
+    .filter((p) => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p) && p.length <= maxLength);
 }

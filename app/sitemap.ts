@@ -12,6 +12,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       // English and Spanish versions of the same quote page.
       alternates: { languages: { "en-US": `${base}/seguros`, "es-US": `${base}/es/seguros` } },
     })),
+    ...["/tags", "/es/tags"].map((path) => ({
+      url: `${base}${path}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+      alternates: { languages: { "en-US": `${base}/tags`, "es-US": `${base}/es/tags` } },
+    })),
     { url: `${base}/cotizador`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/privacy`, changeFrequency: "yearly", priority: 0.2 },
   ];

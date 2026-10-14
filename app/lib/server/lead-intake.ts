@@ -41,7 +41,7 @@ export async function afterNewLead(
         sendEmail({
           to: notify,
           replyTo: d.email,
-          subject: `Nueva solicitud de seguro ${l.code}${opts.source === "Meta" ? " (Meta)" : ""} — ${[d.firstName, d.lastName].filter(Boolean).join(" ") || d.email}`,
+          subject: `Nueva solicitud de ${l.source === "tags" ? "placas / registro" : "seguro"} ${l.code}${opts.source === "Meta" ? " (Meta)" : ""} — ${[d.firstName, d.lastName].filter(Boolean).join(" ") || d.email}`,
           html: emailLayout(adminSummary(l)),
           category: "notify",
         }).then(() => (notified = true))
@@ -140,8 +140,10 @@ function adminSummary(l: NewLead) {
   let html = `<p style="margin:0 0 6px;font-size:18px;font-weight:700">Solicitud ${l.code}</p>
 <p style="margin:0 0 14px;color:#5b6b82">${l.source === "meta" ? "Origen: formulario instantáneo de Meta · " : ""}Idioma del cliente: ${l.lang === "es" ? "Español" : "Inglés"} · Responde a este correo para escribirle.</p>`;
   if (l.licensePhotos) {
-    html += `<p style="margin:0 0 14px;padding:10px 12px;background:#fff7e0;border-radius:8px">📎 El cliente subió ${l.licensePhotos === 1 ? "una foto" : "fotos"} de su licencia de conducir. Por seguridad no se adjuntan al correo: ábrelas en el portal → Seguros.</p>`;
+    const what = l.photoLabels?.length ? `fotos de sus documentos (${esc(l.photoLabels.join(", "))})` : `${l.licensePhotos === 1 ? "una foto" : "fotos"} de su licencia de conducir`;
+    html += `<p style="margin:0 0 14px;padding:10px 12px;background:#fff7e0;border-radius:8px">📎 El cliente subió ${what}. Por seguridad no se adjuntan al correo: ábrelas en el portal → Seguros.</p>`;
   }
+  if (l.service) html += `<p style="margin:0 0 14px"><strong>Servicio:</strong> ${esc(productLabel(l.service, "es"))}</p>`;
   html += h("Conductor principal") + table(
     row("Nombre", `${d.firstName} ${d.lastName}`) + row("Nacimiento", d.dob) + row("Género", L("gender", d.gender)) +
     row("Estado civil", L("marital", d.marital)) + row("Correo", d.email) + row("Teléfono", d.phone) +
