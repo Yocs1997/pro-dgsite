@@ -67,7 +67,7 @@ export function serviceGroup(service: string): FormGroup {
     .map((p) => p.trim())
     .filter(Boolean);
   if (!parts.length) return "insurance";
-  if (parts.some((p) => /^placas?\b/.test(p))) return "tags";
+  if (parts.some((p) => /^(placas?|registro|registraci[oó]n)\b/.test(p))) return "tags"; // the /tags form's registration requests too
   return parts.every(isCarInsurance) ? "insurance" : "other";
 }
 

@@ -7,6 +7,7 @@ import { listLocalContacts } from "@/app/lib/server/contacts";
 import { resendReady } from "@/app/lib/server/resend";
 import { defaultInsuranceSequence } from "@/app/lib/server/sequence-default";
 import { defaultTagsSequence } from "@/app/lib/server/sequence-tags";
+import { defaultTagsNurtureSequence } from "@/app/lib/server/sequence-tags-nurture";
 import {
   deleteSequence,
   enroll,
@@ -36,6 +37,11 @@ const safeId = (id: unknown) => {
   if (!/^[a-z0-9_-]+$/i.test(v)) throw new Error("Registro inválido");
   return v;
 };
+/** A button link: https://… or a phone number to call (tel:+12402566360). Anything else → "". */
+const link = (v: unknown) => {
+  const u = clean(v, 300);
+  return /^https:\/\/\S+$/.test(u) || /^tel:\+?\d{7,15}$/.test(u) ? u : "";
+};
 const bi = (v: unknown, max: number) => {
   const o = (v ?? {}) as { es?: unknown; en?: unknown };
   return { es: clean(o.es, max), en: clean(o.en, max) };
@@ -50,15 +56,19 @@ function sanitize(input: Sequence, prev: Sequence): Sequence {
     preview: bi(s?.preview, 200),
     body: bi(s?.body, 8000),
     button: bi(s?.button, 60),
+    ...(s?.inactive ? { inactive: true } : {}),
+    ...(link(s?.buttonUrl?.es) || link(s?.buttonUrl?.en) ? { buttonUrl: { es: link(s?.buttonUrl?.es), en: link(s?.buttonUrl?.en) } } : {}),
   }));
-  const url = clean(input.buttonUrl, 300);
+  const url = link(input.buttonUrl);
+  const note = bi(input.footerNote, 400);
   return {
     ...prev,
     name: clean(input.name, 80) || prev.name,
     company: clean(input.company, 80),
     agentName: clean(input.agentName, 40),
     phone: clean(input.phone, 30),
-    buttonUrl: /^https:\/\//.test(url) ? url : prev.buttonUrl,
+    buttonUrl: url || prev.buttonUrl,
+    footerNote: note,
     autoEnrollForm: Boolean(input.autoEnrollForm),
     formFor: (["insurance", "tags", "other"] as const).find((k) => k === input.formFor) ?? "all",
     active: Boolean(input.active),
@@ -79,7 +89,7 @@ export async function createInsuranceSequence() {
 }
 
 /** New sequence: "blank" (one empty email), "copy" (duplicate of `fromId`, paused, no one enrolled) or "insurance" (template). */
-export async function newSequence(kind: "blank" | "copy" | "insurance" | "tags", fromId?: string) {
+export async function newSequence(kind: "blank" | "copy" | "insurance" | "tags" | "tags-nurture", fromId?: string) {
   try {
     await requireAdmin();
     const now = Date.now();
@@ -87,6 +97,7 @@ export async function newSequence(kind: "blank" | "copy" | "insurance" | "tags",
     let seq: Sequence;
     if (kind === "insurance") seq = { ...defaultInsuranceSequence(now), id };
     else if (kind === "tags") seq = { ...defaultTagsSequence(now), id };
+    else if (kind === "tags-nurture") seq = { ...defaultTagsNurtureSequence(now), id };
     else if (kind === "copy") {
       const src = await getSequence(safeId(fromId));
       if (!src) return { ok: false as const, error: "La secuencia original ya no existe." };

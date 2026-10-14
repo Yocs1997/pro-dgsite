@@ -2,7 +2,7 @@ import { DEFAULT_PRODUCT, leadService, productLabel, type FormGroup } from "@/ap
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { db, listRecords } from "./redis";
-import { resend, mailFrom, mailReplyTo, esc } from "./resend";
+import { resend, mailFrom, mailReplyTo, esc, linkify } from "./resend";
 import { listLeads, type InsuranceLead } from "./insurance";
 import { STEP_STAT_KEY } from "./mail-tracking";
 import { getLocalContacts } from "./contacts";
@@ -29,6 +29,8 @@ export type Step = {
   preview: Bi;
   body: Bi; // plain text, blank line = new paragraph, {{tokens}}
   button: Bi; // button label ("" = no button)
+  buttonUrl?: Bi; // where this email's button goes; empty = the sequence's link
+  inactive?: boolean; // built but not sent (e.g. waiting for real content); nobody gets it until it's turned on
 };
 
 export type Sequence = {
@@ -40,7 +42,8 @@ export type Sequence = {
   company: string; // shown in the From name and footer
   agentName: string; // {{agent}}
   phone: string; // {{phone}}
-  buttonUrl: string;
+  buttonUrl: string; // https link, or tel:+1… to call
+  footerNote?: Bi; // extra footer line (why they get it, disclaimers), above the address
   steps: Step[];
   createdAt: number;
   updatedAt: number;
@@ -127,7 +130,9 @@ export function sequenceProblems(s: Sequence): string[] {
   if (!s.company.trim()) out.push("Falta el nombre de la empresa.");
   if (!s.steps.length) out.push("La secuencia no tiene correos.");
   if (!process.env.MAIL_POSTAL_ADDRESS) out.push("Falta MAIL_POSTAL_ADDRESS (la ley exige la dirección postal en el pie).");
+  if (s.steps.length && s.steps.every((st) => st.inactive)) out.push("Todos los correos están inactivos.");
   for (const [i, st] of s.steps.entries()) {
+    if (st.inactive) continue; // not sent, so it may still have [placeholders]
     for (const lang of ["es", "en"] as const) {
       const all = `${st.subject[lang]} ${st.preview[lang]} ${st.body[lang]} ${st.button[lang]}`;
       if (!st.subject[lang].trim() || !st.body[lang].trim()) out.push(`Correo ${i + 1} (${lang.toUpperCase()}): falta asunto o texto.`);
@@ -176,20 +181,22 @@ export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "first
   const subject = tidy(fill(step.subject[lang], v, lang, false)).trim();
   const preview = tidy(fill(step.preview[lang], v, lang, false)).trim();
   const paras = step.body[lang].trim().split(/\n{2,}/);
+  const link = step.buttonUrl?.[lang]?.trim() || seq.buttonUrl; // this email's own link, else the sequence's
   const p = (inner: string) => `<p style="margin:0 0 16px;line-height:1.6">${inner}</p>`;
   const bodyHtml = paras
     .map((para) => {
       if (BUTTON_MARK.test(para.trim())) return "{{BUTTON}}";
-      return p(tidy(fill(esc(para), v, lang, true)).replace(/\n/g, "<br>"));
+      return p(tidy(fill(linkify(esc(para)), v, lang, true)).replace(/\n/g, "<br>"));
     })
     .join("");
   const button = step.button[lang].trim()
-    ? `<p style="margin:8px 0 24px"><a href="${esc(seq.buttonUrl)}" style="display:inline-block;background:#0B57D0;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">${esc(tidy(fill(step.button[lang], v, lang, false)))}</a></p>`
+    ? `<p style="margin:8px 0 24px"><a href="${esc(link)}" style="display:inline-block;background:#0B57D0;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">${esc(tidy(fill(step.button[lang], v, lang, false)))}</a></p>`
     : "";
   const withButton = bodyHtml.includes("{{BUTTON}}") ? bodyHtml.replace("{{BUTTON}}", button) : bodyHtml + button;
   const address = process.env.MAIL_POSTAL_ADDRESS ?? "";
   const unsubText = lang === "es" ? "Darme de baja" : "Unsubscribe";
-  const footer = `${esc(seq.company)} · ${esc(address)}<br><a href="${esc(unsubUrl)}" style="color:#5b6b82">${unsubText}</a>`;
+  const note = tidy(fill(seq.footerNote?.[lang] ?? "", v, lang, false)).trim();
+  const footer = `${note ? `${esc(note)}<br>` : ""}${esc(seq.company)} · ${esc(address)}<br><a href="${esc(unsubUrl)}" style="color:#5b6b82">${unsubText}</a>`;
   const html = `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preview)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:24px 16px">
@@ -197,7 +204,7 @@ export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "first
 <tr><td>${withButton}</td></tr>
 <tr><td style="padding-top:20px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;line-height:1.5">${footer}</td></tr>
 </table></td></tr></table></body></html>`;
-  const buttonText = step.button[lang].trim() ? `${tidy(fill(step.button[lang], v, lang, false)).replace(/\s*[→>]+\s*$/, "")}: ${seq.buttonUrl}` : "";
+  const buttonText = step.button[lang].trim() ? `${tidy(fill(step.button[lang], v, lang, false)).replace(/\s*[→>]+\s*$/, "")}: ${link.replace(/^tel:/, "")}` : "";
   const hasMark = paras.some((x) => BUTTON_MARK.test(x.trim()));
   const text =
     paras
@@ -205,7 +212,7 @@ export function renderStep(seq: Sequence, step: Step, e: Pick<Enrollment, "first
       .filter(Boolean)
       .join("\n\n") +
     (buttonText && !hasMark ? `\n\n${buttonText}` : "") +
-    `\n\n--\n${seq.company} · ${address}\n${unsubText}: ${unsubUrl}`;
+    `\n\n--\n${note ? `${note}\n` : ""}${seq.company} · ${address}\n${unsubText}: ${unsubUrl}`;
   return { subject, html, text };
 }
 
@@ -388,7 +395,7 @@ const matches = (st: Step, insured: string) =>
 export const stepsFor = (seq: Sequence, insured: string) =>
   seq.steps
     .map((s, i) => ({ s, i }))
-    .filter(({ s }) => matches(s, insured))
+    .filter(({ s }) => !s.inactive && matches(s, insured))
     .sort((a, b) => a.s.day - b.s.day || Number(a.s.audience === "all") - Number(b.s.audience === "all") || a.i - b.i)
     .map(({ s }) => s);
 

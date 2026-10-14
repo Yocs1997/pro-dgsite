@@ -208,6 +208,7 @@ function StepEditor({
             <span className="block text-sm font-semibold truncate">{step.subject.es || step.subject.en || "(sin asunto)"}</span>
             <span className="block text-xs text-sky-text/60">
               Día {step.day} · {AUDIENCE[step.audience]}
+              {step.inactive && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200">Inactivo: no se envía</span>}
             </span>
           </span>
           <span className="hidden sm:flex gap-3 text-xs text-sky-text/70 shrink-0">
@@ -265,10 +266,27 @@ function StepEditor({
             <Label>Mensaje ({lang.toUpperCase()})</Label>
             <textarea className={input + " min-h-72 font-mono text-sm leading-relaxed"} value={step.body[lang]} onChange={(e) => set("body", e.target.value)} />
           </label>
-          <label>
-            <Label>Texto del botón ({lang.toUpperCase()}) — vacío = sin botón</Label>
-            <input className={input} value={step.button[lang]} onChange={(e) => set("button", e.target.value)} />
-          </label>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label>
+              <Label>Texto del botón ({lang.toUpperCase()}) — vacío = sin botón</Label>
+              <input className={input} value={step.button[lang]} onChange={(e) => set("button", e.target.value)} />
+            </label>
+            <label>
+              <Label>Enlace del botón ({lang.toUpperCase()}) — vacío = el de Ajustes</Label>
+              <input
+                className={input}
+                placeholder="https://… o tel:+12402566360"
+                value={step.buttonUrl?.[lang] ?? ""}
+                onChange={(e) => onChange({ ...step, buttonUrl: { es: step.buttonUrl?.es ?? "", en: step.buttonUrl?.en ?? "", [lang]: e.target.value } })}
+              />
+            </label>
+          </div>
+          <Toggle
+            on={!step.inactive}
+            onChange={(on) => onChange({ ...step, inactive: !on })}
+            label={step.inactive ? "Inactivo: nadie recibe este correo" : "Activo: se envía"}
+            hint="Apágalo para dejar un correo listo sin enviarlo (por ejemplo, mientras falta contenido real). Recuerda guardar."
+          />
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex-1 min-w-56">
               <Label>Enviar prueba ({lang.toUpperCase()}, con datos de ejemplo)</Label>
@@ -522,9 +540,20 @@ function SequenceCard({ item, segments, startOpen }: { item: SequenceItem; segme
                 <input className={input} value={seq.phone} onChange={(e) => update({ phone: e.target.value })} />
               </label>
               <label className="sm:col-span-2">
-                <Label>Enlace del botón</Label>
+                <Label>Enlace del botón (https://… o tel:+1… para llamar)</Label>
                 <input className={input} value={seq.buttonUrl} onChange={(e) => update({ buttonUrl: e.target.value })} />
               </label>
+              {(["es", "en"] as const).map((l) => (
+                <label key={l}>
+                  <Label>Nota del pie de página ({l.toUpperCase()}) — opcional</Label>
+                  <textarea
+                    className={input + " min-h-24 text-sm"}
+                    placeholder={l === "es" ? "Por qué recibe el correo, avisos legales…" : "Why they get this email, disclaimers…"}
+                    value={seq.footerNote?.[l] ?? ""}
+                    onChange={(e) => update({ footerNote: { es: seq.footerNote?.es ?? "", en: seq.footerNote?.en ?? "", [l]: e.target.value } })}
+                  />
+                </label>
+              ))}
               <p className="sm:col-span-2 text-xs text-sky-text/60 leading-relaxed">
                 El correo sale como “{seq.agentName || "Agente"} at {seq.company}”. Campos en los textos: {"{{name}}"}, {"{{vehicle}}"}, {"{{state}}"},{" "}
                 {"{{agent}}"}, {"{{phone}}"}, {"{{product}}"}. Si falta un dato se usa un texto neutro (“tu auto”); o pon el tuyo así: {"{{name|Hola}}"}. Un
@@ -721,7 +750,7 @@ export default function SequencesView({ items, openId, segments, setup }: { item
     !setup.replyTo && "MAIL_REPLY_TO (para detectar respuestas)",
   ].filter(Boolean);
 
-  const create = (kind: "blank" | "insurance" | "tags") =>
+  const create = (kind: "blank" | "insurance" | "tags" | "tags-nurture") =>
     start(async () => {
       setMsg(null);
       const r = await newSequence(kind);
@@ -751,6 +780,7 @@ export default function SequencesView({ items, openId, segments, setup }: { item
                 [
                   ["insurance", "Plantilla de seguro de auto", "La secuencia de seguimiento de cotización, en español e inglés."],
                   ["tags", "Plantilla de placas (tags)", "4 correos para quien pidió placas: fotos del título y la identificación, sin pago por adelantado."],
+                  ["tags-nurture", "Placas y registro: 8 correos", "Seguimiento de 14 días para placas y registro en NJ, PA, VA, MD, NY y SD (inglés y español)."],
                   ["blank", "En blanco", "Un solo correo vacío para escribir desde cero."],
                 ] as const
               ).map(([kind, title, hint]) => (
