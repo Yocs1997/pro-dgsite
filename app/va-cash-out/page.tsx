@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import VaPage from "./VaPage";
+import { BRAND } from "./model";
 
 // Landing page for the VA cash-out campaign (Meta ads → this form). Only reached from the
 // ads, so it stays out of search results and the sitemap. Leads land in their own list.
 
-const TITLE = "VA Benefits | Veteran Home Equity: Cash-Out, HELOC & Second Mortgage";
+const TITLE = `${BRAND} | Veteran Cash-Out, HELOC & Second Mortgage`;
 const DESCRIPTION =
   "Veteran homeowners: see if you may qualify to access cash from your home's equity with a VA cash-out refinance, a home equity line of credit or a second mortgage. Free, no obligation.";
 

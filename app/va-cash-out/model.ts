@@ -3,7 +3,8 @@
 // owns the home, wants cash out); each answer is saved as they go, so someone who stops
 // halfway still shows up as a (partial) lead. The loan officer covers the rest on the call.
 
-export const BRAND = "VA Benefits";
+/** Same name as the Facebook Page that runs the ads, so the ad and the page match. */
+export const BRAND = "Stars & Stripes - Home Equity";
 
 export type Option = [value: string, label: string];
 
