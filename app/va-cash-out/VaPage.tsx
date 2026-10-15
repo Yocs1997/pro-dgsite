@@ -449,7 +449,8 @@ export default function VaPage() {
         <StripeBar />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Star className="w-6 h-6 fill-white" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/va/icon-192.png" alt="" width={40} height={40} className="w-10 h-10 rounded-lg" />
             <span className="va-display text-lg sm:text-xl">{BRAND}</span>
           </div>
           <span className="hidden sm:flex items-center gap-1.5 text-sm text-white/75">

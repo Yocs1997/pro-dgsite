@@ -15,7 +15,16 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   robots: { index: false, follow: false },
   alternates: { canonical: "/va-cash-out" },
-  openGraph: { title: TITLE, description: DESCRIPTION, url: "/va-cash-out", type: "website", locale: "en_US" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/va-cash-out", type: "website", locale: "en_US", images: ["/va/icon-512.png"] },
+  // The campaign's own logo (public/va), not the Pro-DG favicon.
+  icons: {
+    icon: [
+      { url: "/va/favicon.ico", sizes: "any" },
+      { url: "/va/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/va/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/va/apple-icon.png",
+  },
 };
 
 // Meta Pixel for this campaign: the "VA Cash Out" dataset in the Prodg portfolio.
