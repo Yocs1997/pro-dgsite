@@ -18,6 +18,7 @@ function when(ts: number) {
 export default async function CotizacionesPage() {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
+  if (user.role === "va") redirect("/agentes/va"); // VA campaign people only see their tab
   const isAdmin = user.role === "admin";
 
   let quotes: Quote[] = [];

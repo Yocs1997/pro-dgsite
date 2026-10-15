@@ -28,6 +28,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export async function submitQuote(input: SubmitInput): Promise<SubmitResult> {
   const user = await getSession();
   if (!user) return { ok: false, error: "Tu sesión expiró. Vuelve a iniciar sesión." };
+  if (user.role === "va") return { ok: false, error: "No autorizado" };
   if (!quotesReady()) return { ok: false, error: "El envío de cotizaciones aún no está configurado." };
 
   const client = {

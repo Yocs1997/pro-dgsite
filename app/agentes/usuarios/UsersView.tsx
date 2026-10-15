@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Copy, KeyRound, Loader2, Send, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from "lucide-react";
 import { addUser, removeUser, setUserPassword, setUserRole, telegramDisconnect, telegramLink, setUserWhatsApp, setUserSignature } from "../user-actions";
 
-export type UserRow = { u: string; name: string; role: "admin" | "agent"; source: "vercel" | "portal"; added: string; telegram?: boolean; whatsapp?: string; signature?: string };
+export type UserRow = { u: string; name: string; role: "admin" | "agent" | "va"; source: "vercel" | "portal"; added: string; telegram?: boolean; whatsapp?: string; signature?: string };
 type Msg = { kind: "ok" | "err"; text: string } | null;
 
 const input =
   "w-full rounded-xl border border-[#7cc4ff40] bg-white/[0.06] px-4 py-3 text-white outline-none placeholder:text-white/35 focus:border-[#33aaff]";
 const card = "rounded-2xl border border-[#7cc4ff33] p-5 sm:p-6";
 const btn = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold disabled:opacity-50";
-const ROLE_LABEL = { admin: "Administrador", agent: "Agente" } as const;
+const ROLE_LABEL = { admin: "Administrador", agent: "Agente", va: "Campaña VA" } as const;
 
 /** Random, easy-to-read password (no look-alike characters). */
 function generatePassword() {
@@ -252,6 +252,7 @@ function UserCard({ user, me }: { user: UserRow; me: string }) {
             >
               <option value="admin">Administrador</option>
               <option value="agent">Agente</option>
+              <option value="va">Campaña VA</option>
             </select>
           ) : (
             <span className={"text-xs rounded-full px-3 py-1 " + (user.role === "admin" ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-sky-text/80")}>
@@ -363,11 +364,12 @@ export default function UsersView({ users, me, ready, error }: { users: UserRow[
         </div>
         <fieldset>
           <legend className="block text-xs font-medium text-sky-text/75 mb-1.5">Acceso</legend>
-          <div className="grid sm:grid-cols-2 gap-2">
+          <div className="grid sm:grid-cols-3 gap-2">
             {(
               [
                 ["admin", "Administrador", "Todo: seguros, correo, secuencias, rendimiento, usuarios, costos y ganancias."],
                 ["agent", "Agente", "Calculadora y sus propias cotizaciones. No ve costos ni ganancias de Pro-DG."],
+                ["va", "Campaña VA", "Solo la pestaña de la campaña VA: sus leads, disposiciones y notas. Nada más del portal."],
               ] as const
             ).map(([value, label, hint]) => (
               <label

@@ -3,10 +3,11 @@ import { getSession } from "../_lib/auth";
 import { dbReady } from "@/app/lib/server/redis";
 import { listVaLeads } from "@/app/lib/server/va-leads";
 import { metaAccount, metaAdsReady, metaReport, type MetaReport, type Range } from "@/app/lib/server/meta-ads";
-import { optionLabel } from "@/app/va-cash-out/model";
+import { dispositionLabel, optionLabel } from "@/app/va-cash-out/model";
 import AdminNav from "../AdminNav";
 import VaDashboard, { type VaRow } from "./VaDashboard";
-import { RANGES, type RangeId } from "./ranges";
+import { RANGES, isDay, type RangeId } from "./ranges";
+import VaNav from "./VaNav";
 
 export const metadata = { title: "VA campaign | Pro-DG" };
 
@@ -17,8 +18,12 @@ export const maxDuration = 60;
 const dayIn = (tz: string, t: number | Date) => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(t);
 const shift = (day: string, days: number) => new Date(Date.parse(`${day}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-function rangeFor(id: RangeId, tz: string): Range {
+function rangeFor(id: RangeId, tz: string, from = "", to = ""): Range {
   const today = dayIn(tz, new Date());
+  if (id === "custom") {
+    const [a, b] = [from || to || today, to || from || today].sort();
+    return { since: a, until: b };
+  }
   if (id === "today") return { since: today, until: today };
   if (id === "yesterday") return { since: shift(today, -1), until: shift(today, -1) };
   if (id === "7d") return { since: shift(today, -6), until: today };
@@ -26,24 +31,27 @@ function rangeFor(id: RangeId, tz: string): Range {
   return { preset: "maximum" };
 }
 
-export default async function VaCampaignPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
+export default async function VaCampaignPage({ searchParams }: { searchParams: Promise<{ range?: string; from?: string; to?: string }> }) {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
-  if (user.role !== "admin") redirect("/agentes");
+  if (user.role !== "admin" && user.role !== "va") redirect("/agentes");
 
-  const asked = (await searchParams).range;
-  const rangeId: RangeId = RANGES.some((r) => r.id === asked) ? (asked as RangeId) : "7d";
+  const sp = await searchParams;
+  const asked = sp.range;
+  const from = isDay(sp.from);
+  const to = isDay(sp.to);
+  const rangeId: RangeId = RANGES.some((r) => r.id === asked) && (asked !== "custom" || from || to) ? (asked as RangeId) : "7d";
 
   // Meta first: its time zone decides where "today" starts for the leads too.
   let meta: MetaReport | null = null;
   let metaError: string | null = null;
   let tz = "America/New_York";
-  let range = rangeFor(rangeId, tz);
+  let range = rangeFor(rangeId, tz, from, to);
   if (metaAdsReady()) {
     try {
       const acct = await metaAccount();
       tz = acct.timezone;
-      range = rangeFor(rangeId, tz);
+      range = rangeFor(rangeId, tz, from, to);
       meta = await metaReport(range, acct);
     } catch (e) {
       metaError = e instanceof Error ? e.message : "Could not read Meta.";
@@ -56,6 +64,7 @@ export default async function VaCampaignPage({ searchParams }: { searchParams: P
   else {
     try {
       const leads = await listVaLeads(5000);
+      const fmt = (t: number) => new Date(t).toLocaleString("en-US", { timeZone: tz, month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
       const inRange = (t: number) => "preset" in range || (dayIn(tz, t) >= range.since && dayIn(tz, t) <= range.until);
       rows = leads
         .filter((l) => inRange(l.createdAt))
@@ -67,6 +76,25 @@ export default async function VaCampaignPage({ searchParams }: { searchParams: P
           status: l.status,
           callback: Boolean(l.callbackRequestedAt),
           name: `${l.contact.firstName} ${l.contact.lastName}`.trim(),
+          firstName: l.contact.firstName,
+          lastName: l.contact.lastName,
+          answers: l.answers,
+          completed: l.completedAt ? fmt(l.completedAt) : "",
+          callbackAt: l.callbackRequestedAt ? fmt(l.callbackRequestedAt) : "",
+          disposition: l.disposition ?? "",
+          dispositionLabel: dispositionLabel(l.disposition),
+          dispositionWhen: l.dispositionAt ? fmt(l.dispositionAt) : "",
+          dispositionBy: l.dispositionBy ?? "",
+          notes: (l.notes ?? []).map((n) => ({ ...n, when: fmt(n.at) })),
+          editedBy: l.editedBy ?? "",
+          medium: l.tracking.utmMedium,
+          landingUrl: l.tracking.landingUrl,
+          referrer: l.tracking.referrer,
+          ip: l.tracking.ip,
+          userAgent: l.tracking.userAgent,
+          fbclid: l.tracking.fbclid,
+          consentText: l.consent?.text ?? "",
+          consentWhen: l.consent?.at ? fmt(l.consent.at) : "",
           phone: l.contact.phone,
           email: l.contact.email,
           age: l.contact.age,
@@ -91,9 +119,11 @@ export default async function VaCampaignPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <AdminNav active="/agentes/va" />
+      {user.role === "admin" ? <AdminNav active="/agentes/va" /> : <VaNav name={user.name} />}
       <VaDashboard
         rangeId={rangeId}
+        from={"preset" in range ? "" : range.since}
+        to={"preset" in range ? "" : range.until}
         rangeLabel={"preset" in range ? "Lifetime" : range.since === range.until ? range.since : `${range.since} → ${range.until}`}
         timezone={tz}
         leads={rows}

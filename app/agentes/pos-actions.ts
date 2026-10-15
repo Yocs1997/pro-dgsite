@@ -25,6 +25,7 @@ import { newNote } from "@/app/lib/lead-notes";
 
 async function requireUser() {
   const u = await getSession();
+  if (u?.role === "va") throw new Error("No autorizado");
   if (!u) throw new Error("Tu sesión expiró. Vuelve a iniciar sesión.");
   return u;
 }

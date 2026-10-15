@@ -9,6 +9,7 @@ import { canWork, getPosLead, listPosLeads } from "@/app/lib/server/pos-leads";
 export default async function AgentesPage({ searchParams }: { searchParams: Promise<{ [k: string]: string | string[] | undefined }> }) {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
+  if (user.role === "va") redirect("/agentes/va"); // VA campaign people only see their tab
 
   const prices = loadPrices();
   const isAdmin = user.role === "admin";

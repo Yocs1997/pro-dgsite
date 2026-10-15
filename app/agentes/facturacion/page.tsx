@@ -18,6 +18,7 @@ function when(ts: number) {
 export default async function FacturacionPage() {
   const user = await getSession();
   if (!user) redirect("/agentes/login");
+  if (user.role === "va") redirect("/agentes/va"); // VA campaign people only see their tab
   const isAdmin = user.role === "admin";
 
   let leads: PosLead[] = [];
@@ -39,7 +40,8 @@ export default async function FacturacionPage() {
     const seen = new Set<string>();
     team = all
       .filter((u) => (seen.has(u.u.toLowerCase()) ? false : (seen.add(u.u.toLowerCase()), true)))
-      .map((u) => ({ u: u.u, name: u.name, role: u.role, wa: phones[u.u.toLowerCase()] ?? "" }))
+      .filter((u) => u.role !== "va")
+      .map((u) => ({ u: u.u, name: u.name, role: u.role as "admin" | "agent", wa: phones[u.u.toLowerCase()] ?? "" }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 

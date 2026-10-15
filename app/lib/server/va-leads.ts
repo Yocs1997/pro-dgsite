@@ -44,7 +44,17 @@ export type VaLead = {
   tracking: VaTracking;
   /** Proof of consent: the exact words shown, when, from where. */
   consent: { text: string; at: number; ip: string; url: string };
+  /** Set by the team after working the lead (see VA_DISPOSITIONS). */
+  disposition?: string;
+  dispositionAt?: number;
+  dispositionBy?: string;
+  /** Team notes, oldest first. */
+  notes?: VaNote[];
+  /** Who last edited the contact details or answers by hand. */
+  editedBy?: string;
 };
+
+export type VaNote = { at: number; by: string; text: string };
 
 const INDEX = "pdg:va:leads";
 const SEQ = "pdg:va:seq";
@@ -72,4 +82,8 @@ export async function saveVaLead(lead: VaLead): Promise<void> {
 
 export function listVaLeads(limit = 2000): Promise<VaLead[]> {
   return listRecords<VaLead>(INDEX, key, limit);
+}
+
+export async function deleteVaLead(id: string): Promise<void> {
+  await db([["DEL", key(id)], ["ZREM", INDEX, id]]);
 }

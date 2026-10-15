@@ -14,7 +14,8 @@ import { readJsonEnv } from "./env";
 // in the database (hash pdg:portal:users) and work alongside PORTAL_USERS; a
 // username that exists in PORTAL_USERS always uses the PORTAL_USERS entry.
 
-export type Role = "admin" | "agent";
+// "va": people working the VA campaign only (they see the VA campaign tab and nothing else).
+export type Role = "admin" | "agent" | "va";
 export type PortalUser = { u: string; name: string; role: Role; hash: string };
 export type SessionUser = { u: string; name: string; role: Role };
 

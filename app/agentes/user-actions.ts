@@ -16,7 +16,7 @@ async function requireAdmin() {
 }
 const failure = (e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : "Error inesperado" });
 const clean = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
-const ROLES: Role[] = ["admin", "agent"];
+const ROLES: Role[] = ["admin", "agent", "va"];
 const MIN_PASSWORD = 10;
 
 async function findDbUser(username: string): Promise<DbUser | undefined> {

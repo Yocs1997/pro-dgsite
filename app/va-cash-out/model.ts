@@ -72,3 +72,21 @@ export const CONSENT_TEXT =
 
 export const MIN_AGE = 18;
 export const MAX_AGE = 110;
+
+/** What happened when the team worked a lead. "" = not worked yet. */
+export const VA_DISPOSITIONS: Option[] = [
+  ["contacted", "Contacted"],
+  ["no-answer", "No answer"],
+  ["voicemail", "Left voicemail"],
+  ["callback", "Call back later"],
+  ["appointment", "Appointment set"],
+  ["sent-to-lender", "Sent to loan officer"],
+  ["application", "Application started"],
+  ["funded", "Closed / funded"],
+  ["not-interested", "Not interested"],
+  ["not-qualified", "Not qualified"],
+  ["wrong-number", "Wrong number"],
+  ["dnc", "Do not contact"],
+];
+
+export const dispositionLabel = (v?: string) => VA_DISPOSITIONS.find(([k]) => k === v)?.[1] ?? "";
