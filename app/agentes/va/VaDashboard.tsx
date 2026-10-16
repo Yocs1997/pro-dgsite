@@ -87,9 +87,10 @@ const STATUS_LABEL: Record<VaRow["status"], { label: string; cls: string }> = {
 
 function Tile({ label, value, sub, tone = "" }: { label: string; value: string | number; sub?: string; tone?: string }) {
   return (
-    <div className="rounded-2xl border border-[#7cc4ff33] p-4">
+    <div className="rounded-2xl border border-[#7cc4ff33] p-4 min-w-0">
       <p className="text-xs text-sky-text/70">{label}</p>
-      <p className={"font-display font-black text-2xl md:text-3xl mt-1 " + tone}>{value}</p>
+      {/* DM Sans with even-width digits: the wide display font made long amounts run into the next tile. */}
+      <p className={"font-body font-bold text-[clamp(1.25rem,1.7vw,1.75rem)] tabular-nums tracking-tight leading-tight mt-1 whitespace-nowrap " + tone}>{value}</p>
       {sub && <p className="text-xs text-sky-text/60 mt-1">{sub}</p>}
     </div>
   );
@@ -400,7 +401,7 @@ export default function VaDashboard({
       )}
 
       {/* Totals */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 mb-8">
         <Tile label="Spend" value={meta ? money(total.spend) : "—"} />
         <Tile label="Leads" value={num(leads.length)} sub="Gave their contact info" />
         <Tile label="Qualified" value={num(qualified)} sub={pct(qualified, leads.length) + " of leads"} tone="text-emerald-300" />
