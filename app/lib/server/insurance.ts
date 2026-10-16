@@ -156,6 +156,25 @@ export async function setLeadStatus(id: string, status: InsStatus) {
   await db([["SET", KEY(id), JSON.stringify(lead)]]);
 }
 
+/** Many leads at once (missing ones are left out). */
+export async function getLeads(ids: string[]): Promise<InsuranceLead[]> {
+  const out: InsuranceLead[] = [];
+  for (let i = 0; i < ids.length; i += 300) {
+    const [raw] = (await db([["MGET", ...ids.slice(i, i + 300).map(KEY)]])) as [(string | null)[]];
+    for (const r of raw ?? []) if (r) out.push(JSON.parse(r) as InsuranceLead);
+  }
+  return out;
+}
+
+/** Sets the service on these leads (lead id -> service), keeping everything else. */
+export async function setLeadServices(services: Map<string, string>) {
+  const leads = await getLeads([...services.keys()]);
+  const now = Date.now();
+  for (let i = 0; i < leads.length; i += 200) {
+    await db(leads.slice(i, i + 200).map((l) => ["SET", KEY(l.id), JSON.stringify({ ...l, service: services.get(l.id), updatedAt: now })]));
+  }
+}
+
 export async function getLead(id: string): Promise<InsuranceLead | null> {
   const [raw] = (await db([["GET", KEY(id)]])) as [string | null];
   return raw ? (JSON.parse(raw) as InsuranceLead) : null;

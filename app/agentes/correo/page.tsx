@@ -54,6 +54,8 @@ export default async function CorreoPage({ searchParams }: { searchParams: Promi
     const service = leadService(l);
     if (email && service) services[email] = service;
   }
+  // People who are only contacts (no lead) can carry the service too (filled from Orion).
+  for (const c of contacts) if (c.service && !services[c.email.toLowerCase()]) services[c.email.toLowerCase()] = c.service;
 
   return (
     <>

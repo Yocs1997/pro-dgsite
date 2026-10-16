@@ -8,6 +8,7 @@ import LeadEditor from "./LeadEditor";
 import Dashboard from "./Dashboard";
 import NewLeadForm from "./NewLeadForm";
 import ContactImport from "./ContactImport";
+import ServiceFill from "./ServiceFill";
 import type { InsuranceLead } from "@/app/lib/server/insurance";
 import { ORDER, STATUS, channelLabel, type LeadRow } from "./status";
 import Phone2Button from "../Phone2Button";
@@ -318,6 +319,7 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
   const [saveError, setSaveError] = useState(false);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [filling, setFilling] = useState(false);
   const [limit, setLimit] = useState(100); // cards drawn at once; "Mostrar más" adds more
 
   const counts = useMemo(() => {
@@ -354,6 +356,15 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
       <div className="flex flex-wrap items-end justify-between gap-3 mt-2">
         <h1 className="font-display font-black text-3xl md:text-5xl">Leads</h1>
         <div className="flex flex-wrap gap-2">
+          {!filling && (
+            <button
+              type="button"
+              onClick={() => setFilling(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-amber-400/50 hover:bg-amber-500/15 text-sm font-semibold"
+            >
+              Completar servicio
+            </button>
+          )}
           {!importing && (
             <button
               type="button"
@@ -405,6 +416,8 @@ export default function LeadsInbox({ leads: initial, error }: { leads: Row[]; er
           }}
         />
       )}
+
+      {filling && <ServiceFill onClose={() => setFilling(false)} />}
 
       {importing && (
         <ContactImport

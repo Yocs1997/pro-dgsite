@@ -18,6 +18,7 @@ export type LocalContact = {
   vehicle?: string;
   lang?: "es" | "en";
   insured?: string; // yes | lapsed | no
+  service?: string; // what they asked for, in the leads' words ("placas de virginia"); filled from Orion
 };
 
 export type ContactDetails = Partial<Pick<LocalContact, "phone" | "state" | "stateGuessed" | "vehicle" | "lang" | "insured">>;
@@ -92,6 +93,7 @@ export async function upsertContact(c: { email: string; firstName?: string; last
       segments: Array.from(new Set([...(old?.segments ?? []), segment])),
       addedAt: old?.addedAt ?? Date.now(),
       ...mergeDetails(old, c),
+      ...(old?.service ? { service: old.service } : {}),
     };
     await db([["HSET", CONTACTS, email, JSON.stringify(rec)]]);
   }
@@ -170,4 +172,27 @@ export async function deleteContact(email: string) {
     if (!(e instanceof ResendError && e.status === 404)) throw e; // already gone in Resend
   }
   if (dbReady()) await db([["HDEL", CONTACTS, key]]);
+}
+
+/** Sets the service on these contacts (email -> service). Only where it's empty unless `overwrite`.
+ *  Returns how many contacts were found and how many changed. */
+export async function setContactServices(byEmail: Map<string, string>, overwrite: boolean, apply: boolean): Promise<{ found: number; changed: number }> {
+  const emails = [...byEmail.keys()];
+  let found = 0;
+  let changed = 0;
+  for (let i = 0; i < emails.length; i += 300) {
+    const part = emails.slice(i, i + 300);
+    const recs = await getLocalContacts(part);
+    const cmds: (string | number)[][] = [];
+    recs.forEach((rec, k) => {
+      if (!rec) return;
+      found++;
+      const svc = byEmail.get(part[k])!;
+      if ((rec.service && !overwrite) || rec.service === svc) return;
+      changed++;
+      cmds.push(["HSET", CONTACTS, rec.email, JSON.stringify({ ...rec, service: svc })]);
+    });
+    if (apply && cmds.length) await db(cmds);
+  }
+  return { found, changed };
 }
