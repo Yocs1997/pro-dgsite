@@ -273,8 +273,16 @@ export default function VaDashboard({
   const callbacks = count((l) => l.callback);
 
   /** Scale / kill hint for an ad or ad set, from the target cost per qualified lead. */
+  /** Minimum impressions (and spend of at least the target) before an ad gets Scale or Kill. */
+  const SIGNAL_MIN_IMPRESSIONS = 1000;
+
   function signal(r: Agg): { label: string; cls: string; why: string } | null {
     if (!goal || !r.spend || r.key === NONE || r.key.startsWith("name:")) return null;
+    // Too little data to judge either way: one lead more or less would flip the answer.
+    if (r.impressions < SIGNAL_MIN_IMPRESSIONS || r.spend < goal) {
+      const need = [r.impressions < SIGNAL_MIN_IMPRESSIONS ? `${num(SIGNAL_MIN_IMPRESSIONS)} impressions (has ${num(r.impressions)})` : "", r.spend < goal ? `${money(goal)} spent (has ${money(r.spend)})` : ""].filter(Boolean).join(" and ");
+      return { label: "Wait", cls: "bg-amber-500/20 text-amber-200", why: `Not enough data yet. Needs at least ${need} before it can be judged.` };
+    }
     const cpql = r.qualified ? r.spend / r.qualified : Infinity;
     if (r.qualified && cpql <= goal) return { label: "Scale", cls: "bg-emerald-500/20 text-emerald-300", why: `Cost per qualified lead ${money(cpql)} is at or under your ${money(goal)} target.` };
     if (r.spend >= goal * 2 && (cpql >= goal * 1.5 || !r.qualified))
@@ -530,8 +538,8 @@ export default function VaDashboard({
         </div>
         <p className="text-xs text-sky-text/55 mt-2 leading-relaxed">
           Leads, Qualified, Call backs and Call taps (leads that tapped "Call us" after the form) come from the landing page; spend, clicks and Meta leads come from Meta. Set a target cost per qualified lead to
-          see a signal: <b>Scale</b> when it&apos;s at or under target, <b>Kill</b> after spending 2× the target with no qualified lead (or 50%+ over target),{" "}
-          <b>Wait</b> otherwise. Hover a signal to see why. Click a row to see its leads below.
+          see a signal once a row has at least 1,000 impressions and has spent the target: <b>Scale</b> when it&apos;s at or under target, <b>Kill</b> after spending 2× the
+          target with no qualified lead (or 50%+ over target), <b>Wait</b> otherwise. Hover a signal to see why. Click a row to see its leads below.
         </p>
       </section>
 
