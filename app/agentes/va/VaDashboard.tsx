@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, ChevronDown, Download, Filter, Phone, X } from "lucide-react";
 import type { MetaReport } from "@/app/lib/server/meta-ads";
 import { BRAND, VA_DISPOSITIONS, type Answers } from "@/app/va-cash-out/model";
@@ -185,6 +186,33 @@ export default function VaDashboard({
   const [custom, setCustom] = useState({ from: from || "", to: to || "" });
   const [target, setTarget] = useState("");
 
+  // Auto-refresh: every 2 minutes while the tab is visible, fetch fresh leads and Meta numbers.
+  // router.refresh() re-renders from the server but keeps filters, open rows and the date range.
+  // A round is skipped while someone is typing (a note, an edit, the target).
+  const router = useRouter();
+  const [loadedAt, setLoadedAt] = useState(0); // set after mount, so the server and browser render the same text
+  useEffect(() => setLeads(initialLeads), [initialLeads]);
+  useEffect(() => setLoadedAt(Date.now()), [initialLeads, meta]);
+  useEffect(() => {
+    const EVERY = 120_000;
+    let last = Date.now();
+    const typing = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return Boolean(el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable));
+    };
+    const tick = () => {
+      if (document.visibilityState !== "visible" || typing() || Date.now() - last < EVERY - 1000) return;
+      last = Date.now();
+      router.refresh();
+    };
+    const timer = setInterval(tick, 15_000);
+    document.addEventListener("visibilitychange", tick); // coming back to a stale tab refreshes right away
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [router]);
+
   // The target cost per qualified lead is a per-browser setting.
   useEffect(() => {
     try {
@@ -357,6 +385,11 @@ export default function VaDashboard({
           <p className="text-sm text-sky-text/70 mt-1">
             Meta spend and results next to the leads from the landing page. {rangeLabel} · {timezone}
           </p>
+          {loadedAt > 0 && (
+            <p className="text-xs text-sky-text/50 mt-0.5">
+              Updated {new Date(loadedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · refreshes every 2 minutes
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {RANGES.filter((r) => r.id !== "custom").map((r) => (
