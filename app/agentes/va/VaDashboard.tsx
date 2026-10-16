@@ -75,6 +75,7 @@ type Agg = {
   disqualified: number;
   partial: number;
   callbacks: number;
+  callTaps: number; // leads that tapped "Call us" after the form
 };
 
 const STATUS_LABEL: Record<VaRow["status"], { label: string; cls: string }> = {
@@ -217,7 +218,7 @@ export default function VaDashboard({
       if (!r) {
         const s = meta?.statuses[key];
         const budget = s?.dailyBudget ? `${money(s.dailyBudget)}/day` : s?.lifetimeBudget ? `${money(s.lifetimeBudget)} total` : undefined;
-        r = { key, name, sub, status: s?.status ?? "", budget, thumbnail: s?.thumbnail, spend: 0, impressions: 0, linkClicks: 0, landingViews: 0, metaLeads: 0, leads: 0, qualified: 0, disqualified: 0, partial: 0, callbacks: 0 };
+        r = { key, name, sub, status: s?.status ?? "", budget, thumbnail: s?.thumbnail, spend: 0, impressions: 0, linkClicks: 0, landingViews: 0, metaLeads: 0, leads: 0, qualified: 0, disqualified: 0, partial: 0, callbacks: 0, callTaps: 0 };
         map.set(key, r);
       }
       return r;
@@ -251,6 +252,7 @@ export default function VaDashboard({
       if (l.status === "disqualified") r.disqualified++;
       if (l.status === "partial") r.partial++;
       if (l.callback) r.callbacks++;
+      if (l.callTaps > 0) r.callTaps++;
     }
     return [...map.values()].sort((a, b) => b.spend - a.spend || b.qualified - a.qualified || b.leads - a.leads);
     // money depends on currency only
@@ -450,6 +452,7 @@ export default function VaDashboard({
                 <th className={th + " text-right"}>Qualified</th>
                 <th className={th + " text-right"}>Not qual.</th>
                 <th className={th + " text-right"}>Call backs</th>
+                <th className={th + " text-right"} title={'Leads that tapped "Call us" after the form'}>Call taps</th>
                 <th className={th + " text-right"}>Cost / lead</th>
                 <th className={th + " text-right"}>Cost / qualified</th>
                 <th className={th + " text-right"} title="Lead events Meta counted from the pixel (qualified visitors)">
@@ -461,7 +464,7 @@ export default function VaDashboard({
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={15} className="px-3 py-8 text-center text-sky-text/60">
+                  <td colSpan={16} className="px-3 py-8 text-center text-sky-text/60">
                     Nothing in this date range yet.
                   </td>
                 </tr>
@@ -506,6 +509,7 @@ export default function VaDashboard({
                     <td className={td + " text-right font-semibold text-emerald-300"}>{r.qualified}</td>
                     <td className={td + " text-right text-red-300/90"}>{r.disqualified}</td>
                     <td className={td + " text-right"}>{r.callbacks}</td>
+                    <td className={td + " text-right"}>{r.callTaps}</td>
                     <td className={td + " text-right"}>{per(r.spend, r.leads)}</td>
                     <td className={td + " text-right font-semibold text-emerald-300"}>{per(r.spend, r.qualified)}</td>
                     <td className={td + " text-right text-sky-text/70"}>{meta ? r.metaLeads : "—"}</td>
@@ -525,7 +529,7 @@ export default function VaDashboard({
           </table>
         </div>
         <p className="text-xs text-sky-text/55 mt-2 leading-relaxed">
-          Leads, Qualified and Call backs come from the landing page; spend, clicks and Meta leads come from Meta. Set a target cost per qualified lead to
+          Leads, Qualified, Call backs and Call taps (leads that tapped "Call us" after the form) come from the landing page; spend, clicks and Meta leads come from Meta. Set a target cost per qualified lead to
           see a signal: <b>Scale</b> when it&apos;s at or under target, <b>Kill</b> after spending 2× the target with no qualified lead (or 50%+ over target),{" "}
           <b>Wait</b> otherwise. Hover a signal to see why. Click a row to see its leads below.
         </p>
