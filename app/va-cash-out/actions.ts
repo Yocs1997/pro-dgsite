@@ -6,6 +6,7 @@ import { createVaLead, getVaLead, saveVaLead, type VaLead, type VaLeadStatus, ty
 import { notifyTelegram, portalLink, tg } from "@/app/lib/server/telegram";
 import { isEmail, phoneDigits, US_STATES } from "@/app/seguros/model";
 import {
+  CALL_PHONE,
   CONSENT_TEXT,
   disqualifiers,
   MAX_AGE,
@@ -138,6 +139,32 @@ export async function requestVaCallback(id: string, token: string): Promise<{ ok
   } catch (e) {
     console.error("[va] could not save call-back request", e);
     return { ok: false, error: "We couldn't send your request. Please try again." };
+  }
+}
+
+/** The visitor tapped "Call us" after the form: note it on their lead and tell the team who is calling. */
+export async function recordVaCallTap(id: string, token: string): Promise<{ ok: boolean }> {
+  if (!id || !dbReady()) return { ok: false };
+  try {
+    const lead = await getVaLead(clip(id, 40));
+    if (!lead || lead.token !== token) return { ok: false };
+    const now = Date.now();
+    const first = !lead.callTaps;
+    Object.assign(lead, { callTapFirstAt: lead.callTapFirstAt ?? now, callTapAt: now, callTaps: (lead.callTaps ?? 0) + 1, updatedAt: now });
+    await saveVaLead(lead);
+    if (first) {
+      const c = lead.contact;
+      await notifyTelegram(
+        `📲 <b>VA lead is calling now</b> · ${tg(lead.code)}
+<b>${tg(`${c.firstName} ${c.lastName}`)}</b> tapped "Call us" (${tg(CALL_PHONE.display)}) from ${tg(c.phone)} · ${tg(c.state)}
+Status: ${tg(lead.status)}`,
+        process.env.TELEGRAM_VA_CHAT_ID || undefined
+      );
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error("[va] could not save call tap", e);
+    return { ok: false };
   }
 }
 

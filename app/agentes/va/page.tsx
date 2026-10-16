@@ -81,6 +81,8 @@ export default async function VaCampaignPage({ searchParams }: { searchParams: P
           answers: l.answers,
           completed: l.completedAt ? fmt(l.completedAt) : "",
           callbackAt: l.callbackRequestedAt ? fmt(l.callbackRequestedAt) : "",
+          callTaps: l.callTaps ?? 0,
+          callTapAt: l.callTapFirstAt ? fmt(l.callTapFirstAt) : "",
           disposition: l.disposition ?? "",
           dispositionLabel: dispositionLabel(l.disposition),
           dispositionWhen: l.dispositionAt ? fmt(l.dispositionAt) : "",

@@ -37,6 +37,9 @@ export type VaRow = {
   answers: Answers;
   completed: string;
   callbackAt: string;
+  /** Times the lead tapped "Call us" after the form, and when they first did. */
+  callTaps: number;
+  callTapAt: string;
   disposition: string;
   dispositionLabel: string;
   dispositionWhen: string;
@@ -316,10 +319,10 @@ export default function VaDashboard({
     });
 
   const exportCsv = () => {
-    const head = ["Lead", "Date", "Status", "Disposition", "Asked for call back", "Name", "Phone", "Email", "Age", "State", "Served", "Owns home", "Wants cash out", "Ruled out by", "Campaign", "Ad set", "Ad", "Placement", "Campaign id", "Ad set id", "Ad id", "Notes"];
+    const head = ["Lead", "Date", "Status", "Disposition", "Asked for call back", "Tapped call us", "Name", "Phone", "Email", "Age", "State", "Served", "Owns home", "Wants cash out", "Ruled out by", "Campaign", "Ad set", "Ad", "Placement", "Campaign id", "Ad set id", "Ad id", "Notes"];
     const cell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = shown.map((l) =>
-      [l.code, l.when, STATUS_LABEL[l.status].label, l.dispositionLabel, l.callback ? "Yes" : "", l.name, l.phone, l.email, l.age, l.state, l.served, l.ownHome, l.wantsCash, l.ruledOutBy.join("; "), l.campaignName, l.adsetName, l.adName, l.placement, l.campaignId, l.adsetId, l.adId, l.notes.map((n) => `${n.when} ${n.by}: ${n.text}`).join(" | ")]
+      [l.code, l.when, STATUS_LABEL[l.status].label, l.dispositionLabel, l.callback ? "Yes" : "", l.callTapAt, l.name, l.phone, l.email, l.age, l.state, l.served, l.ownHome, l.wantsCash, l.ruledOutBy.join("; "), l.campaignName, l.adsetName, l.adName, l.placement, l.campaignId, l.adsetId, l.adId, l.notes.map((n) => `${n.when} ${n.by}: ${n.text}`).join(" | ")]
         .map(cell)
         .join(",")
     );
@@ -658,6 +661,7 @@ export default function VaDashboard({
                       <td className={td}>
                         <span className={"px-2 py-0.5 rounded-full text-xs font-semibold " + STATUS_LABEL[l.status].cls}>{STATUS_LABEL[l.status].label}</span>
                         {l.callback && <p className="text-xs text-amber-200 mt-1">📞 Asked for call back</p>}
+                        {l.callTaps > 0 && <p className="text-xs text-sky-200 mt-1">📲 Tapped &ldquo;Call us&rdquo;</p>}
                         {l.ruledOutBy.length > 0 && <p className="text-xs text-red-300/80 mt-1">{l.ruledOutBy.join(", ")}</p>}
                       </td>
                       <td className={td}>

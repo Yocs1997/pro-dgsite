@@ -42,6 +42,10 @@ export type VaLead = {
   disqualifiedFor?: string[];
   /** Set when a ruled-out visitor said they answered by mistake and asked for a call. */
   callbackRequestedAt?: number;
+  /** First and latest time the visitor tapped "Call us" after the form, and how many times. */
+  callTapFirstAt?: number;
+  callTapAt?: number;
+  callTaps?: number;
   tracking: VaTracking;
   /** Proof of consent: the exact words shown, when, from where. */
   consent: { text: string; at: number; ip: string; url: string };

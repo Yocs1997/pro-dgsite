@@ -61,6 +61,9 @@ export function disqualifiers(a: Answers): { id: QuestionId; question: string; a
   return RULES.filter(([id, v]) => a[id] === v).map(([id, v]) => ({ id, question: QUESTIONS.find((q) => q.id === id)!.title, answer: optionLabel(id, v) }));
 }
 
+/** The campaign's phone line, offered after the form so visitors can call right away. */
+export const CALL_PHONE = { display: "(888) 629-0148", tel: "+18886290148" };
+
 /** Who will contact the visitor. Put the lender's name here once the client confirms it. */
 export const PARTNER = "its mortgage lending partners";
 

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowLeft, Check, ChevronDown, Clock, CreditCard, Hammer, Home, Landmark, Loader2, Lock, PiggyBank, Phone, ShieldCheck, Star } from "lucide-react";
 import { US_STATES, isEmail, phoneDigits } from "@/app/seguros/model";
-import { answerVaQuestion, requestVaCallback, startVaLead } from "./actions";
-import { BRAND, CONSENT_TEXT, disqualifiers, MAX_AGE, MIN_AGE, PARTNER, QUESTIONS, type Answers, type QuestionId } from "./model";
+import { answerVaQuestion, recordVaCallTap, requestVaCallback, startVaLead } from "./actions";
+import { BRAND, CALL_PHONE, CONSENT_TEXT, disqualifiers, MAX_AGE, MIN_AGE, PARTNER, QUESTIONS, type Answers, type QuestionId } from "./model";
 import type { VaTracking } from "@/app/lib/server/va-leads";
 
 const NAVY = "#0B1F3A";
@@ -189,6 +189,27 @@ function LeadForm() {
     scrollTop();
   };
 
+  // "Call us" after the form: the call goes to the campaign line, and the tap is saved on this
+  // lead so the team knows who is calling (the phone app opens either way).
+  const callTap = () => {
+    fbq("track", "Contact", { content_name: "VA cash-out call" });
+    const l = lead.current;
+    if (l?.id) recordVaCallTap(l.id, l.token).catch(() => {});
+  };
+  const callUs = (
+    <div className="mt-3 w-full max-w-sm rounded-xl border-2 border-slate-200 p-4 flex flex-col items-center gap-2">
+      <p className="text-slate-700">Rather talk now? Call us:</p>
+      <a
+        href={`tel:${CALL_PHONE.tel}`}
+        onClick={callTap}
+        className="va-display w-full rounded-xl px-4 py-3.5 text-xl text-white shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.99]"
+        style={{ background: NAVY }}
+      >
+        <Phone className="w-5 h-5" /> {CALL_PHONE.display}
+      </a>
+    </div>
+  );
+
   const total = questions.length + 1;
   const position = stage.kind === "contact" ? 0 : stage.kind === "question" ? stage.index + 1 : total;
 
@@ -336,6 +357,7 @@ function LeadForm() {
                 ))}
               </ul>
             </div>
+            {callUs}
           </div>
         )}
 
@@ -379,6 +401,7 @@ function LeadForm() {
             <p className="va-display text-2xl" style={{ color: RED }}>
               {c.phone}
             </p>
+            {callUs}
           </div>
         )}
       </div>

@@ -211,6 +211,7 @@ export default function VaLeadDetail({ l, onChange, onDeleted }: { l: VaRow; onC
             <Info k="Started" v={l.when} />
             <Info k="Finished" v={l.completed || "Didn't finish"} />
             <Info k="Asked for call back" v={l.callbackAt} />
+            <Info k={`Tapped "Call us"`} v={l.callTapAt ? `${l.callTapAt}${l.callTaps > 1 ? ` (${l.callTaps} times)` : ""}` : ""} />
             <Info k="Consent given" v={l.consentWhen} />
           </Box>
           <Box title="Ad & tracking">
