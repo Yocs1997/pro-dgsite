@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { db, listRecords } from "./redis";
+import { removeVaLeadFromSheet, syncVaLeadToSheet } from "./va-sheet";
 import type { Answers } from "@/app/va-cash-out/model";
 
 // Leads from the VA cash-out landing page (/va-cash-out). Kept apart from the insurance and
@@ -67,6 +68,7 @@ export async function createVaLead(base: Omit<VaLead, "id" | "code" | "token">):
     ["SET", key(lead.id), JSON.stringify(lead)],
     ["ZADD", INDEX, lead.createdAt, lead.id],
   ]);
+  syncVaLeadToSheet(lead);
   return lead;
 }
 
@@ -78,6 +80,7 @@ export async function getVaLead(id: string): Promise<VaLead | null> {
 
 export async function saveVaLead(lead: VaLead): Promise<void> {
   await db([["SET", key(lead.id), JSON.stringify(lead)]]);
+  syncVaLeadToSheet(lead);
 }
 
 export function listVaLeads(limit = 2000): Promise<VaLead[]> {
@@ -86,4 +89,5 @@ export function listVaLeads(limit = 2000): Promise<VaLead[]> {
 
 export async function deleteVaLead(id: string): Promise<void> {
   await db([["DEL", key(id)], ["ZREM", INDEX, id]]);
+  removeVaLeadFromSheet(id);
 }
