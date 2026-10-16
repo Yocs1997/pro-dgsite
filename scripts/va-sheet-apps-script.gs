@@ -5,8 +5,20 @@
 // here and in Vercel (VA_SHEET_SECRET), then Deploy → New deployment → Web app,
 // "Execute as: Me", "Who has access: Anyone". Copy the /exec URL to Vercel (VA_SHEET_WEBHOOK_URL).
 // "Anyone" only means the URL can be called; nothing is written without the secret.
+//
+// Outcome dropdown (Sheet → portal): run setup() once from the editor (▶ Run). It adds the
+// dropdown to the Outcome column and an "on edit" trigger that sends each pick to the site
+// (/api/va/sheet). Only the Outcome column goes back; other columns are rewritten by the
+// portal on the lead's next update, so change everything else in the portal.
 
 const SECRET = "PUT-THE-SECRET-HERE";
+const SITE = "https://www.pro-dg.com/api/va/sheet";
+
+// Same labels as VA_DISPOSITIONS in app/va-cash-out/model.ts.
+const OUTCOMES = [
+  "Contacted", "No answer", "Left voicemail", "Call back later", "Appointment set", "Sent to loan officer",
+  "Application started", "Closed / funded", "Not interested", "Not qualified", "Wrong number", "Do not contact",
+];
 
 // Same order as VA_SHEET_HEADERS in app/lib/server/va-sheet.ts.
 const HEADERS = [
@@ -63,4 +75,44 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ─── Outcome dropdown → portal ───────────────────────────────────────────────
+
+/** Run once: dropdown on the Outcome column + the trigger that sends edits to the portal. */
+function setup() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  const col = HEADERS.indexOf("Outcome") + 1;
+  const rule = SpreadsheetApp.newDataValidation().requireValueInList(OUTCOMES, true).setAllowInvalid(false).build();
+  sheet.getRange(2, col, sheet.getMaxRows() - 1, 1).setDataValidation(rule);
+  for (const t of ScriptApp.getProjectTriggers()) if (t.getHandlerFunction() === "onOutcomeEdit") ScriptApp.deleteTrigger(t);
+  ScriptApp.newTrigger("onOutcomeEdit").forSpreadsheet(SpreadsheetApp.getActive()).onEdit().create();
+  SpreadsheetApp.getActive().toast("Outcome dropdown is ready. Picks now update the portal.", "VA leads", 8);
+}
+
+function onOutcomeEdit(e) {
+  const range = e.range;
+  const sheet = range.getSheet();
+  if (sheet.getIndex() !== 1) return;
+  const col = HEADERS.indexOf("Outcome") + 1;
+  if (range.getColumn() > col || range.getLastColumn() < col || range.getLastRow() < 2) return;
+  const idCol = HEADERS.indexOf("ID") + 1;
+  const first = Math.max(2, range.getRow());
+  const n = range.getLastRow() - first + 1;
+  const outcomes = sheet.getRange(first, col, n, 1).getValues();
+  const ids = sheet.getRange(first, idCol, n, 1).getValues();
+  const by = (e.user && e.user.getEmail && e.user.getEmail()) || "";
+  const failed = [];
+  for (let i = 0; i < n; i++) {
+    const id = String(ids[i][0] || "");
+    if (!id) continue;
+    const res = UrlFetchApp.fetch(SITE, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({ secret: SECRET, id: id, outcome: String(outcomes[i][0] || ""), by: by }),
+      muteHttpExceptions: true,
+    });
+    if (res.getResponseCode() !== 200) failed.push(first + i);
+  }
+  if (failed.length) SpreadsheetApp.getActive().toast("Couldn't update the portal for row(s) " + failed.join(", ") + ". Try again or set it in the portal.", "VA leads", 10);
 }
