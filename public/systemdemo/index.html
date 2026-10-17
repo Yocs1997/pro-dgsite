@@ -232,6 +232,19 @@ tbody tr.click:hover{background:#f8fafc;cursor:pointer}
 .progress{height:6px;border-radius:99px;background:#eef2f7;overflow:hidden;width:90px;display:inline-block;vertical-align:middle;margin-right:8px}
 .progress span{display:block;height:100%;background:var(--teal)}
 
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 22px;overflow-x:auto;flex:none}
+.tabs button{padding:10px 12px;font-weight:600;font-size:13px;color:var(--ink-2);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--brand);border-color:var(--brand)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat-grid div{background:#fafbfd;border:1px solid var(--line);border-radius:10px;padding:10px}
+.stat-grid b{display:block;font-size:18px;letter-spacing:-.01em}
+.stat-grid span{font-size:11px;color:var(--ink-3)}
+.doc{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.doc:last-child{border-bottom:0}
+.doc .grow{flex:1;min-width:0}
+.slip{display:grid;gap:6px;font-size:13px}
+.slip .r{display:flex;justify-content:space-between;gap:10px}
+.slip .r.t{border-top:1px solid var(--line);padding-top:8px;font-weight:800;font-size:15px}
 .policy{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
 .policy:last-child{border-bottom:0}
 
@@ -375,6 +388,7 @@ select.sel,input.sel{height:38px;border:1px solid var(--line);border-radius:10px
       <a data-v="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span data-i18n="v_calendar"></span></a>
       <a data-v="recurring"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span data-i18n="v_recurring"></span><span class="count" id="confCount"></span></a>
       <a data-v="quality"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span data-i18n="v_quality"></span></a>
+      <a data-v="team"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="v_team"></span><span class="count" id="teamCount"></span></a>
       <a data-v="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span data-i18n="v_payments"></span></a>
       <div class="nav-h" data-i18n="grpMkt"></div>
       <a data-v="email"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span data-i18n="v_email"></span></a>
@@ -519,6 +533,26 @@ select.sel,input.sel{height:38px;border:1px solid var(--line);border-radius:10px
         <div class="card">
           <div class="card-h"><h3 data-i18n="completedJobs"></h3><span class="muted small" data-i18n="qaSub"></span></div>
           <div class="tbl-wrap"><table><thead><tr><th data-i18n="thJob"></th><th data-i18n="thCrew"></th><th data-i18n="thChecklist"></th><th data-i18n="thPhotos"></th><th data-i18n="thRating"></th><th data-i18n="thStatus"></th></tr></thead><tbody id="qaRows"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- TEAM -->
+      <div class="view" id="v-team">
+        <div class="kpis" id="teamKpis"></div>
+        <div class="card">
+          <div class="card-h"><h3 data-i18n="teamRoster"></h3><button class="btn btn-primary btn-sm" id="addMember"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="addMember"></span></button></div>
+          <div class="tbl-wrap"><table><thead><tr><th data-i18n="thMember"></th><th data-i18n="thRole"></th><th data-i18n="thKey1"></th><th data-i18n="thKey2"></th><th data-i18n="thKey3"></th><th data-i18n="thRating"></th><th data-i18n="thStatus"></th></tr></thead><tbody id="teamRows"></tbody></table></div>
+        </div>
+        <div class="grid-2e">
+          <div class="card">
+            <div class="card-h"><h3 data-i18n="payrollTitle"></h3><span class="muted small" id="payPeriod"></span></div>
+            <div class="tbl-wrap"><table><thead><tr><th data-i18n="thMember"></th><th data-i18n="thHours"></th><th data-i18n="thGross"></th><th data-i18n="thStatus"></th></tr></thead><tbody id="payrollRows"></tbody></table></div>
+            <div class="card-b" style="display:grid;gap:10px;border-top:1px solid var(--line)"><p class="muted small" data-i18n="payrollNote"></p><button class="btn btn-primary" id="runPayroll"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span data-i18n="approvePayroll"></span></button></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3 data-i18n="teamRequests"></h3></div>
+            <div id="teamReqs"></div>
+          </div>
         </div>
       </div>
 
@@ -713,6 +747,26 @@ toastConf:"confirmations sent by text and email",toastOffer:"3-clean package off
 toastEv:"Reminder already scheduled 72h before this visit",toastAdd:"Leads arrive automatically — you can also add them by hand here",toastCamp:"Campaign builder: pick a list, write 3 emails, schedule",
 toastSent:"Sent from info@nicoscleaningservices.com",typeReply:"Type a reply first",writeReply:"Write a reply…",send:"Send",inboxBack:"Inbox",you:"You",
 bookTitle:"Book service",bookClient:"Client",bookType:"Service",bookDay:"Day",bookTime:"Time",bookCrew:"Crew",bookNote:"Client receives a confirmation now and a reminder 72 hours before.",cancel:"Cancel",confirmBooking:"Confirm booking",toastBooked:"Booked — confirmation sent to",
+v_team:"Team",teamRoster:"Team members",addMember:"Add member",thMember:"Member",thRole:"Role",thKey1:"Jobs / calls (30d)",thKey2:"On time / answer rate",thKey3:"Quality / bookings",thHours:"Hours",thGross:"Gross pay",
+tk_members:"Team members",tk_hours:"Hours this pay period",tk_payroll:"Payroll this period",tk_qa:"Avg. quality score",
+role_lead:"Crew lead",role_cleaner:"Cleaner",role_va:"Virtual assistant · NRT",st_active:"Active",
+payrollTitle:"Payroll — current period",payrollNote:"Hours come from crew check-in and check-out. Tax amounts are samples; withholding and filing run through your payroll provider.",approvePayroll:"Approve payroll",st_ready:"Ready",st_billedNRT:"Billed by NRT",
+teamRequests:"Requests & alerts",req1:"Time off: Nov 26–27 (Thanksgiving)",req2:"Shift swap: Sat Oct 24 with Carmen",req3:"Driver's license expires in 21 days",req4:"Annual review due Dec 1",approveBtn:"Approve",declineBtn:"Decline",remindBtn:"Remind",schedule:"Schedule",
+tab_perf:"Performance",tab_pay:"Pay",tab_docs:"Documents",tab_info:"Details",
+pf_jobs:"Jobs completed (30d)",pf_hours:"Hours worked",pf_ontime:"On-time check-ins",pf_qa:"Quality checks passed",pf_rating:"Client rating",pf_photos:"Photo compliance",pf_complaints:"Complaints",pf_feedback:"Recent client feedback",
+va_calls:"Calls answered",va_rate:"Answer rate",va_cb:"Avg. callback time",va_out:"Outbound calls",va_quotes:"Quotes sent",va_booked:"Jobs booked",va_conf:"72h confirmations sent",va_rev:"Revenue booked",va_notes:"Notes from the weekly review",
+fb1:"“Spotless conference room, thank you!” — Madison Realty",fb2:"“Common areas look great this week.” — Bushwick Lofts",fb3:"After-photos missing on one job — reminded",
+van1:"Callbacks under 10 minutes all week",van2:"Turned 2 property-manager replies into walkthroughs",
+payRate:"Pay rate",payType:"Pay type",hourly:"Hourly",overtime:"Overtime",payMethod:"Payment method",directDeposit:"Direct deposit",payslips:"Payslips",viewSlip:"View",gross:"gross",
+vaBilling:"Your assistant is hired and paid by NRT under your B2B agreement. You get one invoice from NRT, with no payroll or taxes on your side.",nrtInvoice:"NRT invoice",
+slipTitle:"Payslip",regHours:"Regular hours",otHours:"Overtime hours (1.5×)",grossPay:"Gross pay",fedTax:"Federal tax (sample)",stateTax:"NY State + NYC tax (sample)",fica:"Social Security & Medicare",netPay:"Net pay",download:"Download PDF",
+d_contract:"Employment agreement",d_i9:"ID & I-9 verified",d_w4:"W-4 on file",d_bg:"Background check",d_conf:"Confidentiality & key policy",d_keys:"Building keys / access cards",d_kit:"Uniform & equipment kit",d_train:"Training modules",d_license:"Driver's license",
+d_nrt:"NRT service agreement (B2B)",d_nda:"Confidentiality agreement",d_access:"System access role",
+signedOn:"Signed",cleared:"Cleared",assigned:"assigned",issued:"Issued",completed:"completed",expires:"Expires",
+i_phone:"Phone",i_email:"Team email",i_start:"Start date",i_emerg:"Emergency contact",i_avail:"Availability",i_langs:"Languages",i_zones:"Areas",i_pto:"Time-off days left",i_access:"System access",
+acc_lead:"Crew lead — jobs, checklists, photos, crew schedule",acc_cleaner:"Crew — own jobs, checklists, photos",acc_va:"Assistant — leads, calendar, inbox, quotes. No payroll or finances.",
+toastPayroll:"Payroll approved — payslips sent to the team",toastMember:"New member: contract, documents and access role in one step",toastReq:"Request updated and team member notified",toastSlip:"Payslip PDF downloaded",
+wCalls:"calls",wBooked:"booked",wJobs:"jobs",
 days:["Mon","Tue","Wed","Thu","Fri","Sat"],receivedAgo:"received"
 },
 es:{
@@ -808,6 +862,26 @@ toastConf:"confirmaciones enviadas por texto y correo",toastOffer:"Oferta de paq
 toastEv:"El recordatorio ya está programado 72h antes de esta visita",toastAdd:"Los prospectos llegan solos — también puede agregarlos a mano aquí",toastCamp:"Creador de campañas: elija una lista, escriba 3 correos y programe",
 toastSent:"Enviado desde info@nicoscleaningservices.com",typeReply:"Escriba una respuesta primero",writeReply:"Escriba una respuesta…",send:"Enviar",inboxBack:"Correo",you:"Usted",
 bookTitle:"Reservar servicio",bookClient:"Cliente",bookType:"Servicio",bookDay:"Día",bookTime:"Hora",bookCrew:"Equipo",bookNote:"El cliente recibe una confirmación ahora y un recordatorio 72 horas antes.",cancel:"Cancelar",confirmBooking:"Confirmar reserva",toastBooked:"Reservado — confirmación enviada a",
+v_team:"Equipo",teamRoster:"Miembros del equipo",addMember:"Agregar",thMember:"Miembro",thRole:"Rol",thKey1:"Trabajos / llamadas (30d)",thKey2:"Puntualidad / respuesta",thKey3:"Calidad / reservas",thHours:"Horas",thGross:"Pago bruto",
+tk_members:"Miembros del equipo",tk_hours:"Horas este periodo",tk_payroll:"Nómina este periodo",tk_qa:"Calidad promedio",
+role_lead:"Líder de equipo",role_cleaner:"Limpieza",role_va:"Asistente virtual · NRT",st_active:"Activo",
+payrollTitle:"Nómina — periodo actual",payrollNote:"Las horas salen de la llegada y salida que marca el equipo. Los impuestos son de ejemplo; la retención y la declaración se hacen con su proveedor de nómina.",approvePayroll:"Aprobar nómina",st_ready:"Lista",st_billedNRT:"Facturado por NRT",
+teamRequests:"Solicitudes y alertas",req1:"Días libres: 26–27 nov (Acción de Gracias)",req2:"Cambio de turno: sáb 24 oct con Carmen",req3:"La licencia de conducir vence en 21 días",req4:"Evaluación anual el 1 de dic",approveBtn:"Aprobar",declineBtn:"Rechazar",remindBtn:"Recordar",schedule:"Agendar",
+tab_perf:"Desempeño",tab_pay:"Pago",tab_docs:"Documentos",tab_info:"Datos",
+pf_jobs:"Trabajos completados (30d)",pf_hours:"Horas trabajadas",pf_ontime:"Llegadas a tiempo",pf_qa:"Controles aprobados",pf_rating:"Calificación de clientes",pf_photos:"Cumplimiento de fotos",pf_complaints:"Quejas",pf_feedback:"Comentarios recientes",
+va_calls:"Llamadas atendidas",va_rate:"Tasa de respuesta",va_cb:"Tiempo de devolución",va_out:"Llamadas salientes",va_quotes:"Cotizaciones enviadas",va_booked:"Trabajos reservados",va_conf:"Confirmaciones 72h",va_rev:"Ingresos reservados",va_notes:"Notas de la revisión semanal",
+fb1:"“Sala de juntas impecable, ¡gracias!” — Madison Realty",fb2:"“Las áreas comunes se ven muy bien.” — Bushwick Lofts",fb3:"Faltaron fotos de después en un trabajo — recordatorio enviado",
+van1:"Llamadas devueltas en menos de 10 minutos toda la semana",van2:"Convirtió 2 respuestas de administradores en visitas",
+payRate:"Tarifa",payType:"Tipo de pago",hourly:"Por hora",overtime:"Horas extra",payMethod:"Método de pago",directDeposit:"Depósito directo",payslips:"Recibos de pago",viewSlip:"Ver",gross:"bruto",
+vaBilling:"Su asistente es contratado y pagado por NRT bajo su acuerdo de empresa a empresa. Usted recibe una sola factura de NRT, sin nómina ni impuestos de su lado.",nrtInvoice:"Factura NRT",
+slipTitle:"Recibo de pago",regHours:"Horas regulares",otHours:"Horas extra (1.5×)",grossPay:"Pago bruto",fedTax:"Impuesto federal (ejemplo)",stateTax:"Impuesto NY + NYC (ejemplo)",fica:"Seguro Social y Medicare",netPay:"Pago neto",download:"Descargar PDF",
+d_contract:"Contrato de trabajo",d_i9:"ID e I-9 verificados",d_w4:"W-4 en archivo",d_bg:"Verificación de antecedentes",d_conf:"Confidencialidad y política de llaves",d_keys:"Llaves / tarjetas de edificios",d_kit:"Uniforme y equipo",d_train:"Módulos de entrenamiento",d_license:"Licencia de conducir",
+d_nrt:"Acuerdo de servicio NRT (B2B)",d_nda:"Acuerdo de confidencialidad",d_access:"Rol de acceso al sistema",
+signedOn:"Firmado",cleared:"Aprobada",assigned:"asignadas",issued:"Entregado",completed:"completados",expires:"Vence",
+i_phone:"Teléfono",i_email:"Correo del equipo",i_start:"Fecha de inicio",i_emerg:"Contacto de emergencia",i_avail:"Disponibilidad",i_langs:"Idiomas",i_zones:"Zonas",i_pto:"Días libres restantes",i_access:"Acceso al sistema",
+acc_lead:"Líder — trabajos, listas, fotos, horario del equipo",acc_cleaner:"Equipo — sus trabajos, listas y fotos",acc_va:"Asistente — prospectos, calendario, correo, cotizaciones. Sin nómina ni finanzas.",
+toastPayroll:"Nómina aprobada — recibos enviados al equipo",toastMember:"Nuevo miembro: contrato, documentos y rol de acceso en un paso",toastReq:"Solicitud actualizada y miembro notificado",toastSlip:"PDF del recibo descargado",
+wCalls:"llamadas",wBooked:"reservas",wJobs:"trabajos",
 days:["Lun","Mar","Mié","Jue","Vie","Sáb"],receivedAgo:"recibido"
 }};
 let lang=store.get('nicos_lang')==='es'?'es':'en';
@@ -1186,10 +1260,79 @@ function drawWebsite(){
    <div class="list-item"><span class="ico-box" style="background:#1d5fbf1a;color:#1d5fbf">${ICON.mail}</span><div style="min-width:0"><b style="overflow-wrap:anywhere">quotes@team.nicoscleaningservices.com</b><div class="muted small">PRO-DG · ${t('mb2')}</div></div></div>`;
 }
 
+/* =================== Team =================== */
+const team=[
+ {n:'Carmen Ruiz',role:'lead',crew:1,rate:24,hrs:76,ot:4,jobs:34,ontime:98,qa:100,rt:4.9,photos:100,comp:0,since:'Mar 2021',ph:'(347) 555-0110',em:'carmen@team.nicoscleaningservices.com',emerg:'Luis Ruiz · (347) 555-0111',avail:'Mon–Sat',langs:'EN · ES',zones:'Manhattan · Brooklyn · Queens · LI',pto:'6',st:'active'},
+ {n:'José Martínez',role:'cleaner',crew:2,rate:21,hrs:72,ot:0,jobs:24,ontime:91,qa:92,rt:4.8,photos:88,comp:1,since:'Jun 2024',ph:'(718) 555-0122',em:'jose@team.nicoscleaningservices.com',emerg:'Ana Martínez · (718) 555-0123',avail:'Mon–Fri',langs:'ES · EN',zones:'Brooklyn · Queens',pto:'4',st:'active'},
+ {n:'Daniela Rocha',role:'va',crew:0,since:'Nov 2026',ph:'(347) 247-3750',em:'assistant@team.nicoscleaningservices.com',emerg:'NRT · Sergio Baez',avail:'Mon–Sat · 8 AM–5 PM',langs:'EN · ES',zones:'Remote',pto:'—',st:'active',calls:47,rate:96,cb:'8 min',out:86,quotes:11,booked:6,conf:'100%',rev:3240}
+];
+const gross=m=>m.rate*m.hrs+m.rate*1.5*m.ot;
+let payrollDone=false;
+let teamReqs=[{who:0,k:'req1',a:['approveBtn','declineBtn']},{who:1,k:'req2',a:['approveBtn','declineBtn']},{who:1,k:'req3',a:['remindBtn']},{who:0,k:'req4',a:['schedule']}];
+function drawTeam(){
+  const staff=team.filter(m=>m.role!=='va');
+  const pay=staff.reduce((s,m)=>s+gross(m),0);
+  $('#teamKpis').innerHTML=kpi(t('tk_members'),String(team.length+1),'Nicolas + 2 · NRT',ICON.users,'#1d5fbf')+kpi(t('tk_hours'),staff.reduce((s,m)=>s+m.hrs+m.ot,0)+' h','',ICON.clock,'#0d9488')+kpi(t('tk_payroll'),money(pay),'',ICON.cash,'#7c3aed')+kpi(t('tk_qa'),'96%','',ICON.shield,'#d97706');
+  const RP={lead:'p-teal',cleaner:'p-blue',va:'p-violet'};
+  $('#teamRows').innerHTML=team.map((m,i)=>`<tr class="click" data-member="${i}"><td><div class="who"><div class="av" style="background:${colorFor(m.n)}">${initials(m.n)}</div><div><b>${m.n}</b><small>${m.role==='va'?'NRT':'Crew '+m.crew} · ${m.since}</small></div></div></td><td><span class="pill ${RP[m.role]}">${t('role_'+m.role)}</span></td>`+
+    (m.role==='va'?`<td>${m.calls} ${t('wCalls')}</td><td>${m.rate}%</td><td>${m.booked} ${t('wBooked')}</td><td>4.9 ★</td>`:`<td>${m.jobs} ${t('wJobs')}</td><td>${m.ontime}%</td><td><span class="progress"><span style="width:${m.qa}%"></span></span>${m.qa}%</td><td>${m.rt} ★</td>`)+
+    `<td><span class="pill p-teal">${t('st_'+m.st)}</span></td></tr>`).join('');
+  const ps=dayDate(-14);$('#payPeriod').textContent=fmtD(ps)+' – '+fmtD(dayDate(-1));
+  $('#payrollRows').innerHTML=staff.map(m=>`<tr><td><b>${m.n}</b><div class="muted small">$${m.rate}/h</div></td><td>${m.hrs}${m.ot?' + '+m.ot+' OT':''}</td><td>${money(gross(m))}</td><td><span class="pill ${payrollDone?'p-teal':'p-amber'}">${t(payrollDone?'st_paid':'st_ready')}</span></td></tr>`).join('')+
+    `<tr><td><b>${team[2].n}</b><div class="muted small">${t('role_va')}</div></td><td>—</td><td>—</td><td><span class="pill p-violet">${t('st_billedNRT')}</span></td></tr>`;
+  $('#teamReqs').innerHTML=teamReqs.map((r,i)=>{const m=team[r.who];return `<div class="list-item"><div class="who" style="flex:1;min-width:0"><div class="av" style="background:${colorFor(m.n)}">${initials(m.n)}</div><div style="min-width:0"><b>${m.n}</b><small style="white-space:normal">${t(r.k)}</small></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.done?'<span class="pill p-teal">✓</span>':r.a.map((a,j)=>`<button class="btn ${j?'btn-ghost':'btn-primary'} btn-sm" data-req="${i}">${t(a)}</button>`).join('')}</div></div>`;}).join('');
+  $('#teamCount').textContent=teamReqs.filter(r=>!r.done).length||'';
+}
+$('#runPayroll').onclick=()=>{payrollDone=true;drawTeam();toast(t('toastPayroll'));};
+$('#addMember').onclick=()=>toast(t('toastMember'));
+document.addEventListener('click',e=>{const b=e.target.closest('[data-req]');if(!b)return;teamReqs[+b.dataset.req].done=true;drawTeam();toast(t('toastReq'));});
+const docRow=(ok,label,meta)=>`<div class="doc"><span class="ico-box" style="width:28px;height:28px;background:${ok==='y'?'#e6f7f5':ok==='w'?'#fef5e6':'#e9f1fc'};color:${ok==='y'?'#0d9488':ok==='w'?'#d97706':'#1d5fbf'}">${ok==='w'?ICON.clock:(ok==='y'?ICON.check:ICON.cash)}</span><div class="grow"><b>${label}</b><div class="muted small">${meta}</div></div></div>`;
+const SLIPS=m=>[['Oct 1–15',m.hrs,m.ot],['Sep 16–30',m.hrs-4,2],['Sep 1–15',m.hrs-2,0]];
+function memberTab(m,tab){
+  const sg=a=>`<div class="stat-grid">${a.map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>`;
+  if(tab==='perf'){
+    if(m.role==='va')return sg([[m.calls,t('va_calls')],[m.rate+'%',t('va_rate')],[m.cb,t('va_cb')],[m.out,t('va_out')],[m.quotes,t('va_quotes')],[m.booked,t('va_booked')],[m.conf,t('va_conf')],[money(m.rev),t('va_rev')],['4.9 ★',t('pf_rating')]])+`<div><b style="display:block;margin:4px 0 8px">${t('va_notes')}</b><div class="check-list"><div>${ICON.check}<span>${t('van1')}</span></div><div>${ICON.check}<span>${t('van2')}</span></div></div></div>`;
+    return sg([[m.jobs,t('pf_jobs')],[(m.hrs+m.ot)+' h',t('pf_hours')],[m.ontime+'%',t('pf_ontime')],[m.qa+'%',t('pf_qa')],[m.rt+' ★',t('pf_rating')],[m.photos+'%',t('pf_photos')],[m.comp,t('pf_complaints')]])+`<div><b style="display:block;margin:4px 0 8px">${t('pf_feedback')}</b><div class="check-list">${(m.comp?['fb3','fb2']:['fb1','fb2']).map(k=>`<div>${k==='fb3'?ICON.clock:ICON.star}<span>${t(k)}</span></div>`).join('')}</div></div>`;
+  }
+  if(tab==='pay'){
+    if(m.role==='va')return `<div style="background:#f5f9ff;border:1px solid #d3e2f8;border-radius:12px;padding:12px 14px;font-size:13px" class="muted">${t('vaBilling')}</div><div>${['Nov 1–14','Nov 15–28'].map(p=>docRow('n',t('nrtInvoice')+' · '+p,t('st_billedNRT'))).join('')}</div>`;
+    return `<div class="kv"><span>${t('payRate')}</span><b>$${m.rate}/h</b><span>${t('payType')}</span><b>${t('hourly')} · ${t('overtime')} 1.5×</b><span>${t('payMethod')}</span><b>${t('directDeposit')} ••4821</b></div>
+      <div><b style="display:block;margin-bottom:6px">${t('payslips')}</b>${SLIPS(m).map((p,k)=>{const g=m.rate*p[1]+m.rate*1.5*p[2];return `<div class="doc"><span class="ico-box" style="width:28px;height:28px;background:#e9f1fc;color:#1d5fbf">${ICON.cash}</span><div class="grow"><b>${p[0]}</b><div class="muted small">${p[1]+p[2]} h · ${money(g)} ${t('gross')}</div></div><button class="btn btn-ghost btn-sm" data-slip="${k}">${t('viewSlip')}</button></div>`;}).join('')}</div>`;
+  }
+  if(tab==='docs'){
+    if(m.role==='va')return '<div>'+docRow('y',t('d_nrt'),t('signedOn')+' · Oct 2026')+docRow('y',t('d_nda'),t('signedOn')+' · Oct 2026')+docRow('y',t('d_train'),'6/6 '+t('completed'))+docRow('y',t('d_access'),t('acc_va'))+'</div>';
+    const lead=m.role==='lead';
+    return '<div>'+docRow('y',t('d_contract'),t('signedOn')+' · '+m.since)+docRow('y',t('d_i9'),'✓')+docRow('y',t('d_w4'),'✓')+docRow('y',t('d_bg'),t('cleared'))+docRow('y',t('d_conf'),t('signedOn'))+docRow('y',t('d_keys'),(lead?'3':'2')+' '+t('assigned')+' · Bushwick Lofts, Prospect Heights'+(lead?', Madison Realty':''))+docRow('y',t('d_kit'),t('issued'))+docRow('y',t('d_train'),(lead?'8/8':'6/8')+' '+t('completed'))+docRow(lead?'y':'w',t('d_license'),t('expires')+' '+(lead?'Aug 2028':fmtD(new Date(Date.now()+21*864e5))))+'</div>';
+  }
+  return `<div class="kv"><span>${t('i_phone')}</span><b>${m.ph}</b><span>${t('i_email')}</span><b style="overflow-wrap:anywhere;white-space:normal">${m.em}</b><span>${t('i_start')}</span><b>${m.since}</b><span>${t('i_avail')}</span><b>${m.avail}</b><span>${t('i_zones')}</span><b style="white-space:normal">${m.zones}</b><span>${t('i_langs')}</span><b>${m.langs}</b><span>${t('i_pto')}</span><b>${m.pto}</b><span>${t('i_emerg')}</span><b style="white-space:normal">${m.emerg}</b><span>${t('i_access')}</span><b style="white-space:normal">${t('acc_'+m.role)}</b></div>`;
+}
+let curMember=null;
+document.addEventListener('click',e=>{const r=e.target.closest('[data-member]');if(!r)return;curMember=team[+r.dataset.member];const m=curMember;
+  openDrawer(`<div class="drawer-h"><div class="who"><div class="av" style="background:${colorFor(m.n)};width:44px;height:44px;font-size:15px">${initials(m.n)}</div><div><b style="font-size:17px">${m.n}</b><small>${t('role_'+m.role)}${m.crew?' · Crew '+m.crew:''}</small></div></div>${xBtn}</div>
+   <div class="tabs" id="mTabs">${['perf','pay','docs','info'].map((k,i)=>`<button data-tab="${k}" class="${i?'':'on'}">${t('tab_'+k)}</button>`).join('')}</div>
+   <div class="drawer-b" id="mBody">${memberTab(m,'perf')}</div>`);
+  $('#mTabs').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;$$('#mTabs button').forEach(x=>x.classList.toggle('on',x===b));$('#mBody').innerHTML=memberTab(m,b.dataset.tab);};
+});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-slip]');if(!b||!curMember)return;const m=curMember;const P=SLIPS(m)[+b.dataset.slip];
+  const reg=m.rate*P[1],ot=m.rate*1.5*P[2],g=reg+ot,fed=g*.08,st=g*.055,fi=g*.0765,net=g-fed-st-fi;
+  openModal(`<div class="drawer-h"><div><b style="font-size:17px">${t('slipTitle')} · ${P[0]}</b><div class="muted small">${m.n} · Nicos Cleaning Services Corp</div></div>${xBtn}</div>
+   <div class="drawer-b"><div class="slip">
+    <div class="r"><span>${t('regHours')} (${P[1]} × $${m.rate})</span><b>${money(reg)}</b></div>
+    <div class="r"><span>${t('otHours')} (${P[2]} × $${(m.rate*1.5).toFixed(2)})</span><b>${money(ot)}</b></div>
+    <div class="r"><b>${t('grossPay')}</b><b>${money(g)}</b></div>
+    <div class="r muted"><span>${t('fedTax')}</span><span>−${money(fed)}</span></div>
+    <div class="r muted"><span>${t('stateTax')}</span><span>−${money(st)}</span></div>
+    <div class="r muted"><span>${t('fica')}</span><span>−${money(fi)}</span></div>
+    <div class="r t"><span>${t('netPay')}</span><span style="color:var(--brand)">${money(net)}</span></div>
+   </div></div>
+   <div class="drawer-f"><button class="btn btn-ghost" data-cancel>${t('cancel')}</button><button class="btn btn-primary" id="slipDl">${t('download')}</button></div>`);
+  $('#slipDl').onclick=()=>{closeModal();toast(t('toastSlip'));};
+});
+
 function renderAll(){
   applyStatic();$('#title').textContent=t('v_'+curView);
   fillQuoteSelects();
-  drawDash();drawLeads();drawQuote();drawQuoteRows();drawCalls();drawThreads();drawReader();drawCal();drawRecurring();drawQuality();drawPayments();drawEmail();drawAds();drawWebsite();
+  drawDash();drawLeads();drawQuote();drawQuoteRows();drawCalls();drawThreads();drawReader();drawCal();drawRecurring();drawQuality();drawTeam();drawPayments();drawEmail();drawAds();drawWebsite();
 }
 applyStatic();
 if(store.sget('nicos_demo')==='1')showApp();
