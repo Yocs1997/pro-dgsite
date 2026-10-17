@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "4mb",
     },
   },
+  // The CRM demo is a single static page in public/systemdemo.
+  async rewrites() {
+    return [{ source: "/systemdemo", destination: "/systemdemo/index.html" }];
+  },
 };
 
 export default nextConfig;

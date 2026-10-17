@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Growth CRM — Live Demo | PRO-DG</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fb; --panel:#ffffff; --ink:#0f172a; --ink-2:#475569; --ink-3:#94a3b8;
+  --line:#e5e9f2; --brand:#2563eb; --brand-2:#1d4ed8; --brand-soft:#eaf1ff;
+  --teal:#0d9488; --teal-soft:#e6f7f5; --amber:#d97706; --amber-soft:#fef5e6;
+  --red:#dc2626; --red-soft:#fdecec; --violet:#7c3aed; --violet-soft:#f2ecfe;
+  --side:#0b1530; --side-ink:#c7d2ea; --radius:14px; --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Demo ribbon ---------- */
+.ribbon{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:6px 12px;letter-spacing:.02em}
+
+/* ---------- Login ---------- */
+#login{min-height:100%;display:grid;grid-template-columns:1.1fr 1fr;padding-top:30px}
+.login-art{background:radial-gradient(1200px 600px at 10% 0%,#1e3a8a 0%,#0b1530 60%);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-art:after{content:"";position:absolute;right:-120px;bottom:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.45),transparent 70%)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.01em}
+.logo .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#14b8a6);display:grid;place-items:center;color:#fff;font-size:14px}
+.login-art h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;max-width:460px;margin:40px 0 16px}
+.login-art p{color:#c7d2ea;max-width:440px;font-size:15px}
+.feat{display:grid;gap:12px;margin-top:28px;position:relative;z-index:1}
+.feat div{display:flex;gap:10px;align-items:center;color:#e2e8f0}
+.feat svg{color:#5eead4}
+.login-panel{display:grid;place-items:center;padding:40px 24px;background:var(--panel)}
+.login-card{width:100%;max-width:380px}
+.demo-badge{display:inline-flex;align-items:center;gap:6px;background:var(--amber-soft);color:#92400e;border:1px solid #fcd9a5;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;margin-bottom:18px}
+.login-card h2{font-size:26px;letter-spacing:-.02em;margin-bottom:6px}
+.login-card .sub{color:var(--ink-2);margin-bottom:24px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.field input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;padding:0 14px;background:#fff;outline:none;transition:.15s}
+.field input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font-weight:600;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-2)}
+.btn-ghost{border:1px solid var(--line);background:#fff}
+.btn-ghost:hover{background:#f8fafc}
+.btn-block{width:100%;height:46px}
+.creds{margin-top:20px;border:1px dashed #cbd5e1;border-radius:12px;padding:14px 16px;background:#f8fafc;font-size:13px;color:var(--ink-2)}
+.creds b{color:var(--ink)}
+.creds code{background:#fff;border:1px solid var(--line);padding:2px 7px;border-radius:6px;font-family:inherit;font-weight:600;color:var(--ink)}
+.err{color:var(--red);font-size:13px;margin:-4px 0 12px;display:none}
+.login-foot{margin-top:28px;font-size:12px;color:var(--ink-3)}
+
+/* ---------- App shell ---------- */
+#app{display:none;padding-top:30px;min-height:100%}
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 30px)}
+.side{background:var(--side);color:var(--side-ink);padding:20px 14px;position:sticky;top:30px;height:calc(100vh - 30px);display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.side .logo{color:#fff;padding:4px 8px 18px}
+.side .biz{margin:0 6px 14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06);font-size:12px}
+.side .biz b{display:block;color:#fff;font-size:13px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--side-ink);text-decoration:none;font-weight:500;cursor:pointer;transition:.15s}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.active{background:linear-gradient(90deg,rgba(59,130,246,.35),rgba(59,130,246,.1));color:#fff}
+.nav .count{margin-left:auto;background:#2563eb;color:#fff;font-size:11px;padding:1px 7px;border-radius:999px}
+.side .bottom{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:12px;padding:14px 28px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:30px;z-index:20}
+.top h1{font-size:18px;letter-spacing:-.01em}
+.menu-btn{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);place-items:center}
+.search{margin-left:auto;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;color:var(--ink-3);min-width:220px;background:#fafbfd}
+.search input{border:0;outline:0;background:none;width:100%;color:var(--ink)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0d9488,#2563eb);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.content{padding:24px 28px 48px;display:grid;gap:20px}
+
+/* ---------- Cards / KPIs ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.card-h h3{font-size:15px}
+.card-h .muted{font-size:12px}
+.card-b{padding:18px}
+.muted{color:var(--ink-2)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{padding:18px}
+.kpi .lbl{display:flex;align-items:center;gap:8px;color:var(--ink-2);font-size:12px;font-weight:600}
+.kpi .ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+.kpi .val{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:10px 0 4px}
+.delta{font-size:12px;font-weight:600}
+.up{color:var(--teal)} .down{color:var(--red)}
+.grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:20px}
+.grid-2e{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* chart */
+.chart{width:100%;height:220px}
+.chart svg{width:100%;height:100%;stroke-width:1}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* source bars */
+.src{display:grid;gap:14px}
+.src-row .top-line{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.bar{height:8px;border-radius:99px;background:#eef2f7;overflow:hidden}
+.bar span{display:block;height:100%;border-radius:99px}
+
+/* lists / tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);text-align:left;font-weight:600;padding:10px 18px;background:#fafbfd;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 18px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr{transition:.12s}
+tbody tr.click:hover{background:#f8fafc;cursor:pointer}
+.who{display:flex;align-items:center;gap:10px}
+.who .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;flex:none}
+.who small{display:block;color:var(--ink-3);font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.p-blue{background:var(--brand-soft);color:var(--brand-2)}
+.p-teal{background:var(--teal-soft);color:#0f766e}
+.p-amber{background:var(--amber-soft);color:#b45309}
+.p-red{background:var(--red-soft);color:#b91c1c}
+.p-violet{background:var(--violet-soft);color:#6d28d9}
+.p-gray{background:#f1f5f9;color:#475569}
+.src-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* upcoming */
+.up-list{display:grid}
+.up-item{display:flex;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);align-items:center}
+.up-item:last-child{border-bottom:0}
+.date-chip{width:48px;text-align:center;border-radius:10px;background:var(--brand-soft);color:var(--brand-2);padding:6px 0;flex:none}
+.date-chip b{display:block;font-size:17px;line-height:1.1}
+.date-chip span{font-size:10px;font-weight:700;text-transform:uppercase}
+
+/* toolbar */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px}
+.seg button{padding:6px 12px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-2)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.spacer{flex:1}
+
+/* kanban */
+.kanban{display:grid;grid-template-columns:repeat(5,minmax(230px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}
+.col{background:#eef2f7;border-radius:12px;padding:10px;min-height:200px}
+.col-h{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 10px;font-weight:700;font-size:13px}
+.col-h span{color:var(--ink-3);font-weight:600}
+.lead-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.lead-card:hover{border-color:#bcd0f7;box-shadow:0 4px 14px rgba(37,99,235,.08)}
+.lead-card b{display:block;margin-bottom:2px}
+.lead-card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--ink-3)}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:56px repeat(6,minmax(120px,1fr));min-width:820px}
+.cal-wrap{overflow-x:auto}
+.cal .hd{padding:10px 8px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-2);border-bottom:1px solid var(--line);background:#fafbfd;position:sticky;top:0}
+.cal .hd b{display:block;font-size:18px;color:var(--ink)}
+.cal .hd.today b{color:var(--brand)}
+.cal .tm{font-size:11px;color:var(--ink-3);text-align:right;padding:4px 8px 0 0;height:56px;border-right:1px solid var(--line)}
+.cal .cell{height:56px;border-bottom:1px solid #f1f4f9;border-right:1px solid #f1f4f9;position:relative}
+.ev{position:absolute;left:4px;right:4px;border-radius:8px;padding:6px 8px;font-size:11px;line-height:1.3;overflow:hidden;z-index:2;cursor:pointer;border-left:3px solid}
+.ev b{display:block;font-size:12px}
+.ev.t1{background:#eaf1ff;border-color:#2563eb;color:#1e3a8a}
+.ev.t2{background:#e6f7f5;border-color:#0d9488;color:#134e4a}
+.ev.t3{background:#f2ecfe;border-color:#7c3aed;color:#4c1d95}
+.ev.t4{background:#fef5e6;border-color:#d97706;color:#78350f}
+
+/* inbox */
+.inbox{display:grid;grid-template-columns:340px 1fr;min-height:560px}
+.threads{border-right:1px solid var(--line);overflow-y:auto;max-height:640px}
+.thread{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;display:grid;gap:3px}
+.thread:hover{background:#f8fafc}
+.thread.on{background:var(--brand-soft)}
+.thread .l1{display:flex;justify-content:space-between;gap:8px}
+.thread .l1 b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thread .l1 span{font-size:12px;color:var(--ink-3);flex:none}
+.thread .subj{font-weight:600;font-size:13px}
+.thread .prev{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thread.unread .l1 b:before{content:"";display:inline-block;width:7px;height:7px;background:var(--brand);border-radius:50%;margin-right:7px;vertical-align:1px}
+.reader{display:flex;flex-direction:column;min-width:0}
+.reader-h{padding:18px 22px;border-bottom:1px solid var(--line)}
+.reader-h h3{font-size:17px;margin-bottom:6px}
+.msgs{padding:18px 22px;display:grid;gap:14px;flex:1;align-content:start}
+.msg{border:1px solid var(--line);border-radius:12px;padding:14px 16px;max-width:640px}
+.msg.out{background:#f6f9ff;margin-left:auto;border-color:#d6e3fb}
+.msg .mh{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-bottom:6px;gap:10px}
+.msg .mh b{color:var(--ink)}
+.compose{border-top:1px solid var(--line);padding:14px 22px;display:flex;gap:10px;align-items:flex-end}
+.compose textarea{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;resize:none;height:44px;outline:none}
+.compose textarea:focus{border-color:var(--brand)}
+.back-btn{display:none}
+
+/* campaigns */
+.camp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.camp{padding:18px;display:grid;gap:12px}
+.camp .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;background:#fafbfd;border-radius:10px;padding:10px}
+.camp .stats b{display:block;font-size:17px}
+.camp .stats span{font-size:11px;color:var(--ink-3)}
+
+/* ads */
+.verdict{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.insight{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);align-items:flex-start}
+.insight:last-child{border-bottom:0}
+.insight .ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none}
+
+/* website */
+.site-preview{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.browser-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#f1f5f9;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+.browser-bar i{width:10px;height:10px;border-radius:50%;background:#cbd5e1;display:inline-block}
+.browser-bar .url{margin-left:10px;background:#fff;border-radius:6px;padding:3px 10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-mock{padding:34px 26px;background:linear-gradient(135deg,#0f766e,#2563eb);color:#fff}
+.hero-mock h4{font-size:24px;letter-spacing:-.02em;line-height:1.15;max-width:360px}
+.hero-mock p{opacity:.85;margin:8px 0 16px;max-width:360px}
+.hero-mock .btn{background:#fff;color:#0f172a;height:36px}
+.score{width:110px;height:110px;border-radius:50%;display:grid;place-items:center;font-size:30px;font-weight:800;background:conic-gradient(var(--teal) 0 94%,#e2e8f0 94% 100%);position:relative}
+.score:before{content:"";position:absolute;inset:10px;background:#fff;border-radius:50%}
+.score span{position:relative}
+.check-list{display:grid;gap:10px}
+.check-list div{display:flex;gap:10px;align-items:center}
+.check-list svg{color:var(--teal)}
+
+/* drawer */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:70;display:none}
+.overlay.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100%;background:#fff;z-index:71;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.12)}
+.drawer.show{transform:none}
+.drawer-h{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.drawer-b{padding:20px 22px;overflow-y:auto;display:grid;gap:18px;align-content:start;flex:1}
+.drawer-f{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px}
+.drawer-f .btn{flex:1}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;font-size:13px}
+.kv span{color:var(--ink-3)}
+.timeline{display:grid;gap:12px;border-left:2px solid var(--line);padding-left:14px;margin-left:6px}
+.timeline div{position:relative;font-size:13px}
+.timeline div:before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--brand)}
+.timeline small{display:block;color:var(--ink-3)}
+.x-btn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;border:1px solid var(--line);flex:none}
+select.sel{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:#fff;width:100%}
+
+/* modal */
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%);opacity:0;pointer-events:none;width:440px;max-width:calc(100% - 32px);background:#fff;border-radius:16px;z-index:72;transition:.2s;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+.modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modal .drawer-b{padding:20px 22px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:12px 18px;border-radius:12px;font-weight:500;opacity:0;transition:.25s;z-index:90;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast svg{color:#5eead4}
+
+.view{display:none}
+.view.on{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+.content{grid-template-columns:minmax(0,1fr)}
+.view>*,.grid-2>*,.grid-2e>*,.kpis>*{min-width:0}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1180px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .camp-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:980px){
+  #login{grid-template-columns:1fr}
+  .login-art{padding:32px 24px}
+  .login-art h1{font-size:30px;margin:24px 0 10px}
+  .login-art .feat{display:none}
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:30px;bottom:0;width:260px;z-index:75;transform:translateX(-100%);transition:transform .25s ease;height:auto}
+  .side.show{transform:none}
+  .menu-btn{display:grid}
+  .grid-2,.grid-2e{grid-template-columns:1fr}
+  .search{display:none}
+  .top .avatar{margin-left:auto}
+  .top{padding:12px 16px}
+  .content{padding:16px 16px 40px}
+  .inbox{grid-template-columns:1fr}
+  .inbox .reader{display:none}
+  .inbox.reading .threads{display:none}
+  .inbox.reading .reader{display:flex}
+  .threads{border-right:0;max-height:none}
+  .back-btn{display:inline-flex;margin-bottom:10px}
+}
+@media (max-width:620px){
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:14px}
+  .kpi .val{font-size:22px}
+  .camp-grid{grid-template-columns:1fr}
+  .kanban{grid-template-columns:repeat(5,82%)}
+  .hide-sm{display:none}
+  .card-h{flex-wrap:wrap}
+  .top h1{font-size:16px}
+  .drawer{width:100%}
+  .kv{grid-template-columns:100px 1fr}
+  .ribbon{font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="ribbon">DEMO ENVIRONMENT — sample data only<span class="hide-sm">. Your system will be built and customized for your business</span>.</div>
+
+<!-- ===================== LOGIN ===================== -->
+<section id="login">
+  <div class="login-art">
+    <div class="logo"><div class="mark">PD</div>PRO-DG Growth CRM</div>
+    <div style="position:relative;z-index:1">
+      <h1>Every lead, booking and email in one place.</h1>
+      <p>Leads from your ads land here automatically. Book the visit, follow up, and see exactly which ads are bringing in paying customers.</p>
+      <div class="feat">
+        <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Leads synced from Meta, Google, TikTok and your website</div>
+        <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Calendar and appointment booking</div>
+        <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Unified email inbox and email marketing</div>
+        <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Ad spend and cost per lead, live</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#94a3b8;position:relative;z-index:1">© 2026 PRO-DG · pro-dg.com</div>
+  </div>
+  <div class="login-panel">
+    <form class="login-card" id="loginForm" autocomplete="off">
+      <div class="demo-badge"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>This is a demo — no real data</div>
+      <h2>Sign in to the demo</h2>
+      <p class="sub">Explore how your cleaning business would run day to day.</p>
+      <div class="field"><label for="u">Username</label><input id="u" placeholder="Enter username" autocapitalize="none"></div>
+      <div class="field"><label for="p">Password</label><input id="p" type="password" placeholder="Enter password"></div>
+      <div class="err" id="err">Incorrect username or password. Use the demo credentials below.</div>
+      <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+      <div class="creds">
+        <b>Demo credentials</b><br>
+        Username: <code>demo</code> &nbsp; Password: <code>demo2026</code>
+      </div>
+      <p class="login-foot">Demo built by PRO-DG for proposal purposes. The production system is custom-built and branded for your company.</p>
+    </form>
+  </div>
+</section>
+
+<!-- ===================== APP ===================== -->
+<section id="app">
+<div class="shell">
+  <aside class="side" id="side">
+    <div class="logo"><div class="mark">PD</div>Growth CRM</div>
+    <div class="biz"><b>BrightNest Cleaning</b>Sample business · Demo</div>
+    <nav class="nav" id="nav">
+      <a data-v="dashboard" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+      <a data-v="leads"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads<span class="count" id="newCount">6</span></a>
+      <a data-v="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</a>
+      <a data-v="inbox"><svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Inbox<span class="count">3</span></a>
+      <a data-v="campaigns"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Email Marketing</a>
+      <a data-v="ads"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Ad Performance</a>
+      <a data-v="website"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Website &amp; SEO</a>
+    </nav>
+    <div class="bottom nav">
+      <a id="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+      <h1 id="title">Dashboard</h1>
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Search leads, clients, emails…" id="searchBox"></label>
+      <div class="avatar" title="Owner">OW</div>
+    </header>
+
+    <main class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view on" id="v-dashboard">
+        <div class="kpis">
+          <div class="card kpi"><div class="lbl"><span class="ico" style="background:var(--brand-soft);color:var(--brand)"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>New leads (30 days)</div><div class="val">157</div><div class="delta up">▲ 23% vs last month</div></div>
+          <div class="card kpi"><div class="lbl"><span class="ico" style="background:var(--teal-soft);color:var(--teal)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>Appointments booked</div><div class="val">61</div><div class="delta up">▲ 41% booking rate</div></div>
+          <div class="card kpi"><div class="lbl"><span class="ico" style="background:var(--violet-soft);color:var(--violet)"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Cost per paid lead</div><div class="val">$12.86</div><div class="delta up">▼ $2.40 vs last month</div></div>
+          <div class="card kpi"><div class="lbl"><span class="ico" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>Ad spend (30 days)</div><div class="val">$1,749</div><div class="delta muted">Meta · Google · TikTok</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h"><h3>Leads vs. booked appointments</h3><div class="legend"><span><i style="background:#2563eb"></i>Leads</span><span><i style="background:#0d9488"></i>Booked</span></div></div>
+            <div class="card-b"><div class="chart" id="chart"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Where leads come from</h3><span class="muted">Last 30 days</span></div>
+            <div class="card-b src" id="sources"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h"><h3>Newest leads</h3><button class="btn btn-ghost" data-go="leads" style="height:32px;font-size:13px">View all</button></div>
+            <div class="tbl-wrap"><table><thead><tr><th>Lead</th><th>Source</th><th class="hide-sm">Service</th><th>Status</th></tr></thead><tbody id="recentLeads"></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Upcoming appointments</h3><button class="btn btn-ghost" data-go="calendar" style="height:32px;font-size:13px">Calendar</button></div>
+            <div class="up-list" id="upcoming"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEADS -->
+      <div class="view" id="v-leads">
+        <div class="toolbar">
+          <div class="seg" id="leadView"><button class="on" data-m="board">Pipeline</button><button data-m="list">List</button></div>
+          <div class="seg" id="leadFilter"><button class="on" data-f="all">All</button><button data-f="Meta">Meta</button><button data-f="Google">Google</button><button data-f="TikTok">TikTok</button><button data-f="Website">Website</button></div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" id="addLead"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+        </div>
+        <div id="board" class="kanban"></div>
+        <div id="list" class="card" style="display:none"><div class="tbl-wrap"><table><thead><tr><th>Lead</th><th>Source</th><th>Service</th><th>Est. value</th><th>Received</th><th>Status</th></tr></thead><tbody id="leadRows"></tbody></table></div></div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="view" id="v-calendar">
+        <div class="toolbar">
+          <button class="btn btn-ghost" id="calPrev" aria-label="Previous week"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button class="btn btn-ghost" id="calToday">This week</button>
+          <button class="btn btn-ghost" id="calNext" aria-label="Next week"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+          <b id="calLabel" style="font-size:15px;margin-left:6px"></b>
+          <div class="spacer"></div>
+          <div class="legend"><span><i style="background:#2563eb"></i>Estimate visit</span><span><i style="background:#0d9488"></i>Standard clean</span><span><i style="background:#7c3aed"></i>Deep clean</span><span><i style="background:#d97706"></i>Move-out</span></div>
+        </div>
+        <div class="card cal-wrap"><div class="cal" id="cal"></div></div>
+      </div>
+
+      <!-- INBOX -->
+      <div class="view" id="v-inbox">
+        <div class="card inbox" id="inboxBox">
+          <div class="threads" id="threads"></div>
+          <div class="reader" id="reader"></div>
+        </div>
+      </div>
+
+      <!-- CAMPAIGNS -->
+      <div class="view" id="v-campaigns">
+        <div class="kpis">
+          <div class="card kpi"><div class="lbl">Contacts</div><div class="val">1,284</div><div class="delta up">▲ 148 this month</div></div>
+          <div class="card kpi"><div class="lbl">Avg. open rate</div><div class="val">46.2%</div><div class="delta up">Industry avg. ~30%</div></div>
+          <div class="card kpi"><div class="lbl">Avg. click rate</div><div class="val">7.9%</div><div class="delta up">▲ 1.3 pts</div></div>
+          <div class="card kpi"><div class="lbl">Rebookings from email</div><div class="val">27</div><div class="delta up">Last 30 days</div></div>
+        </div>
+        <div class="toolbar"><h3 style="font-size:15px">Campaigns &amp; automations</h3><div class="spacer"></div><button class="btn btn-primary" id="newCamp"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New campaign</button></div>
+        <div class="camp-grid" id="camps"></div>
+      </div>
+
+      <!-- ADS -->
+      <div class="view" id="v-ads">
+        <div class="toolbar">
+          <div class="seg" id="adPlat"><button class="on" data-p="all">All platforms</button><button data-p="Meta">Meta</button><button data-p="Google">Google</button><button data-p="TikTok">TikTok</button></div>
+          <div class="spacer"></div><span class="pill p-teal"><span class="dot" style="background:#0d9488"></span>Synced 4 min ago</span>
+        </div>
+        <div class="kpis" id="adKpis"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h"><h3>Campaigns: what's working and what's not</h3></div>
+            <div class="tbl-wrap"><table><thead><tr><th>Campaign / ad</th><th>Spend</th><th>Leads</th><th>Cost/lead</th><th>Booked</th><th>Verdict</th></tr></thead><tbody id="adRows"></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Recommendations</h3><span class="muted">From your account manager</span></div>
+            <div>
+              <div class="insight"><div class="ico" style="background:var(--teal-soft);color:var(--teal)"><svg viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></div><div><b>Scale "Before &amp; After — Kitchen"</b><div class="muted">Lowest cost per booked job ($21). Raise its budget 20%.</div></div></div>
+              <div class="insight"><div class="ico" style="background:var(--red-soft);color:var(--red)"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></div><div><b>Pause "Generic Discount Static"</b><div class="muted">$34 per lead and no bookings in 14 days.</div></div></div>
+              <div class="insight"><div class="ico" style="background:var(--brand-soft);color:var(--brand)"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div><b>New creative ready</b><div class="muted">2 UGC-style videos edited and waiting for your approval.</div></div></div>
+              <div class="insight"><div class="ico" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><b>Reply speed matters</b><div class="muted">Leads called within 5 minutes book 3× more often.</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEBSITE -->
+      <div class="view" id="v-website">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h"><h3>Your website</h3><span class="pill p-teal"><span class="dot" style="background:#0d9488"></span>Live</span></div>
+            <div class="card-b">
+              <div class="site-preview">
+                <div class="browser-bar"><i></i><i></i><i></i><div class="url">https://brightnestcleaning.com</div></div>
+                <div class="hero-mock"><h4>Spotless homes, booked in 60 seconds.</h4><p>Licensed &amp; insured house cleaning. Same-week availability.</p><span class="btn">Get a free quote</span></div>
+              </div>
+              <p class="muted" style="margin-top:14px">Every quote request from the website lands in <b>Leads</b> automatically, tagged as "Website".</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>SEO health</h3><span class="muted">Updated monthly</span></div>
+            <div class="card-b" style="display:grid;gap:18px;justify-items:start">
+              <div style="display:flex;gap:18px;align-items:center"><div class="score"><span>94</span></div><div><b>Excellent</b><div class="muted">Mobile speed 96 · Accessibility 98</div></div></div>
+              <div class="check-list">
+                <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Google Business Profile connected</div>
+                <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Local service pages for 6 cities</div>
+                <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>New blog post published Oct 3</div>
+                <div><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Professional email: owner@brightnestcleaning.com</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Search keywords you're competing for</h3></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Keyword</th><th>Position</th><th>Change</th><th>Monthly searches</th></tr></thead><tbody id="kwRows"></tbody></table></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</section>
+
+<!-- drawer, modal, toast -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const store = {
+  get(k){ try{ return sessionStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ sessionStorage.setItem(k,v) }catch(e){} },
+  del(k){ try{ sessionStorage.removeItem(k) }catch(e){} }
+};
+
+/* ---------- Auth (demo only) ---------- */
+function showApp(){ $('#login').style.display='none'; $('#app').style.display='block'; init(); }
+$('#loginForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  if($('#u').value.trim().toLowerCase()==='demo' && $('#p').value==='demo2026'){ store.set('pdg_demo','1'); showApp(); }
+  else { $('#err').style.display='block'; }
+});
+$('#logout').addEventListener('click', ()=>{ store.del('pdg_demo'); location.reload(); });
+if(store.get('pdg_demo')==='1') showApp();
+
+/* ---------- Data ---------- */
+const SRC = {Meta:'#2563eb', Google:'#ea4335', TikTok:'#0f172a', Website:'#0d9488', Referral:'#7c3aed'};
+const COLORS=['#2563eb','#0d9488','#7c3aed','#d97706','#db2777','#0891b2','#4f46e5','#16a34a'];
+const STAGES=['New','Contacted','Estimate scheduled','Won','Lost'];
+const STAGE_PILL={'New':'p-blue','Contacted':'p-amber','Estimate scheduled':'p-violet','Won':'p-teal','Lost':'p-gray'};
+let leads=[
+ {n:'Jessica Moreno',ph:'(305) 555-0142',em:'jess.moreno@email.com',src:'Meta',svc:'Deep clean · 3 bed',val:320,t:'8 min ago',st:'New',city:'Coral Gables',ad:'Before & After — Kitchen'},
+ {n:'David Kim',ph:'(786) 555-0199',em:'dkim@email.com',src:'Google',svc:'Recurring · biweekly',val:180,t:'26 min ago',st:'New',city:'Doral',ad:'Search — House cleaning near me'},
+ {n:'Amanda Lewis',ph:'(954) 555-0110',em:'amanda.l@email.com',src:'Meta',svc:'Move-out clean',val:410,t:'1 h ago',st:'New',city:'Hollywood',ad:'Move-Out Checklist Video'},
+ {n:'Carlos Rivera',ph:'(305) 555-0177',em:'crivera@email.com',src:'TikTok',svc:'Standard clean · 2 bed',val:150,t:'2 h ago',st:'New',city:'Kendall',ad:'UGC — 60s apartment reset'},
+ {n:'Priya Shah',ph:'(786) 555-0123',em:'priya.shah@email.com',src:'Website',svc:'Office cleaning · weekly',val:540,t:'3 h ago',st:'New',city:'Brickell',ad:'—'},
+ {n:'Mark Thompson',ph:'(954) 555-0186',em:'mthompson@email.com',src:'Meta',svc:'Deep clean · 4 bed',val:380,t:'5 h ago',st:'New',city:'Weston',ad:'Before & After — Kitchen'},
+ {n:'Laura Bennett',ph:'(305) 555-0164',em:'laura.b@email.com',src:'Meta',svc:'Recurring · weekly',val:140,t:'Yesterday',st:'Contacted',city:'Miami Beach',ad:'Before & After — Kitchen'},
+ {n:'Kevin O\'Neil',ph:'(786) 555-0151',em:'koneil@email.com',src:'Google',svc:'Post-construction',val:650,t:'Yesterday',st:'Contacted',city:'Aventura',ad:'Search — Post construction cleaning'},
+ {n:'Sofia Alvarez',ph:'(305) 555-0138',em:'sofia.a@email.com',src:'TikTok',svc:'Standard clean · 1 bed',val:120,t:'2 days ago',st:'Contacted',city:'Little Havana',ad:'UGC — 60s apartment reset'},
+ {n:'Rachel Green',ph:'(954) 555-0129',em:'rgreen@email.com',src:'Meta',svc:'Deep clean · 3 bed',val:300,t:'2 days ago',st:'Estimate scheduled',city:'Plantation',ad:'Move-Out Checklist Video'},
+ {n:'Tom Becker',ph:'(305) 555-0117',em:'tbecker@email.com',src:'Referral',svc:'Recurring · biweekly',val:170,t:'3 days ago',st:'Estimate scheduled',city:'Pinecrest',ad:'—'},
+ {n:'Nina Patel',ph:'(786) 555-0105',em:'nina.p@email.com',src:'Google',svc:'Airbnb turnover',val:95,t:'3 days ago',st:'Estimate scheduled',city:'Wynwood',ad:'Search — Airbnb cleaning service'},
+ {n:'Grace Johnson',ph:'(954) 555-0192',em:'gjohnson@email.com',src:'Meta',svc:'Recurring · weekly',val:150,t:'4 days ago',st:'Won',city:'Davie',ad:'Before & After — Kitchen'},
+ {n:'Luis Fernández',ph:'(305) 555-0148',em:'luisf@email.com',src:'Website',svc:'Move-out clean',val:420,t:'5 days ago',st:'Won',city:'Coral Gables',ad:'—'},
+ {n:'Emily Carter',ph:'(786) 555-0161',em:'ecarter@email.com',src:'TikTok',svc:'Deep clean · 2 bed',val:260,t:'6 days ago',st:'Won',city:'Brickell',ad:'UGC — 60s apartment reset'},
+ {n:'Brian Scott',ph:'(954) 555-0170',em:'bscott@email.com',src:'Meta',svc:'Standard clean',val:140,t:'1 week ago',st:'Lost',city:'Sunrise',ad:'Generic Discount Static'}
+];
+const initials = n => n.split(' ').map(x=>x[0]).slice(0,2).join('');
+const colorFor = n => COLORS[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length];
+const money = v => '$'+v.toLocaleString('en-US');
+
+/* ---------- Toast ---------- */
+let tt; function toast(m){ $('#toastMsg').textContent=m; $('#toast').classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>$('#toast').classList.remove('show'),2600); }
+
+/* ---------- Navigation ---------- */
+const TITLES={dashboard:'Dashboard',leads:'Leads',calendar:'Calendar',inbox:'Inbox',campaigns:'Email Marketing',ads:'Ad Performance',website:'Website & SEO'};
+function go(v){
+  $$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+  $$('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));
+  $('#title').textContent=TITLES[v]; closeSide(); window.scrollTo(0,0);
+  if(v==='inbox') $('#inboxBox').classList.remove('reading');
+}
+$$('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
+document.addEventListener('click',e=>{ const g=e.target.closest('[data-go]'); if(g) go(g.dataset.go); });
+function closeSide(){ $('#side').classList.remove('show'); if(!$('#drawer').classList.contains('show') && !$('#modal').classList.contains('show')) $('#overlay').classList.remove('show'); }
+$('#menuBtn').addEventListener('click',()=>{ $('#side').classList.add('show'); $('#overlay').classList.add('show'); });
+$('#overlay').addEventListener('click',()=>{ closeDrawer(); closeModal(); closeSide(); });
+$('#searchBox').addEventListener('keydown',e=>{ if(e.key==='Enter'){ toast('Search runs across leads, clients and emails in the live system'); } });
+
+/* ---------- Dashboard ---------- */
+function drawChart(){
+  const L=[22,28,25,31,35,33,41,38,44,47,43,52], B=[8,11,10,13,15,14,18,17,19,21,20,24];
+  const W=600,H=220,p=28,max=60, x=i=>p+i*(W-p*2)/(L.length-1), y=v=>H-p-(v/max)*(H-p*2);
+  const path=a=>a.map((v,i)=>(i?'L':'M')+x(i)+' '+y(v)).join(' ');
+  const area=a=>path(a)+` L${x(a.length-1)} ${H-p} L${x(0)} ${H-p} Z`;
+  let grid=''; [0,20,40,60].forEach(v=>grid+=`<line x1="${p}" x2="${W-p}" y1="${y(v)}" y2="${y(v)}" stroke="#eef2f7"/><text x="${p-8}" y="${y(v)+4}" font-size="10" fill="#94a3b8" text-anchor="end" stroke="none">${v}</text>`);
+  const wk=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+  let lab=''; wk.forEach((w,i)=>{ if(i%2===0) lab+=`<text x="${x(i)}" y="${H-8}" font-size="10" fill="#94a3b8" text-anchor="middle" stroke="none">${w}</text>`; });
+  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="stroke-width:1">
+   <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".18"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient>
+   <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0d9488" stop-opacity=".18"/><stop offset="1" stop-color="#0d9488" stop-opacity="0"/></linearGradient></defs>
+   ${grid}${lab}<path d="${area(L)}" fill="url(#g1)" stroke="none"/><path d="${area(B)}" fill="url(#g2)" stroke="none"/>
+   <path d="${path(L)}" stroke="#2563eb" stroke-width="2.5" fill="none" vector-effect="non-scaling-stroke"/>
+   <path d="${path(B)}" stroke="#0d9488" stroke-width="2.5" fill="none" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function drawSources(){
+  const s=[['Meta (Facebook & Instagram)',85,'#2563eb'],['Google Ads',34,'#ea4335'],['TikTok',17,'#0f172a'],['Website (SEO)',15,'#0d9488'],['Referrals',6,'#7c3aed']];
+  $('#sources').innerHTML=s.map(([n,v,c])=>`<div class="src-row"><div class="top-line"><span>${n}</span><b>${v}</b></div><div class="bar"><span style="width:${v/85*100}%;background:${c}"></span></div></div>`).join('');
+}
+function leadRow(l,full){
+  const i=leads.indexOf(l);
+  return `<tr class="click" data-lead="${i}"><td><div class="who"><div class="av" style="background:${colorFor(l.n)}">${initials(l.n)}</div><div>${l.n}<small>${l.city}</small></div></div></td>
+  <td><span class="src-tag"><span class="dot" style="background:${SRC[l.src]}"></span>${l.src}</span></td>
+  <td class="${full?'':'hide-sm'}">${l.svc}</td>${full?`<td>${money(l.val)}</td><td class="muted">${l.t}</td>`:''}
+  <td><span class="pill ${STAGE_PILL[l.st]}">${l.st}</span></td></tr>`;
+}
+function drawRecent(){ $('#recentLeads').innerHTML=leads.slice(0,5).map(l=>leadRow(l,false)).join(''); }
+
+/* ---------- Calendar data ---------- */
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat'];
+let events=[
+ {d:0,h:9,len:1,t:1,title:'Estimate · Rachel Green',sub:'Plantation'},
+ {d:0,h:11,len:3,t:2,title:'Standard clean',sub:'Grace Johnson · Davie'},
+ {d:1,h:8,len:4,t:3,title:'Deep clean · 4 bed',sub:'Weston'},
+ {d:1,h:14,len:1,t:1,title:'Estimate · Tom Becker',sub:'Pinecrest'},
+ {d:2,h:9,len:3,t:4,title:'Move-out clean',sub:'Luis Fernández · Coral Gables'},
+ {d:2,h:15,len:1,t:1,title:'Estimate · Nina Patel',sub:'Wynwood'},
+ {d:3,h:10,len:2,t:2,title:'Standard clean',sub:'Laura Bennett · Miami Beach'},
+ {d:3,h:13,len:3,t:3,title:'Deep clean · 2 bed',sub:'Emily Carter · Brickell'},
+ {d:4,h:8,len:2,t:2,title:'Office clean',sub:'Brickell Suite 400'},
+ {d:4,h:12,len:1,t:1,title:'Estimate · Kevin O\'Neil',sub:'Aventura'},
+ {d:5,h:9,len:3,t:2,title:'Recurring clean',sub:'Coral Gables'}
+];
+let weekOffset=0;
+function mondayOf(off){ const d=new Date(); const day=(d.getDay()+6)%7; d.setHours(0,0,0,0); d.setDate(d.getDate()-day+off*7); return d; }
+function drawCal(){
+  const m=mondayOf(weekOffset), today=new Date(); today.setHours(0,0,0,0);
+  const end=new Date(m); end.setDate(m.getDate()+5);
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  $('#calLabel').textContent=fmt(m)+' – '+fmt(end)+', '+end.getFullYear();
+  let h='<div class="hd"></div>';
+  DAYS.forEach((d,i)=>{ const dt=new Date(m); dt.setDate(m.getDate()+i); h+=`<div class="hd ${dt.getTime()===today.getTime()?'today':''}">${d}<b>${dt.getDate()}</b></div>`; });
+  for(let hr=8;hr<=17;hr++){
+    h+=`<div class="tm">${hr>12?hr-12:hr}${hr>=12?'pm':'am'}</div>`;
+    for(let d=0;d<6;d++){
+      let evs='';
+      if(weekOffset===0) events.filter(e=>e.d===d&&e.h===hr).forEach(e=>{ evs+=`<div class="ev t${e.t}" style="top:3px;height:${e.len*56-6}px" data-ev="${events.indexOf(e)}"><b>${e.title}</b>${e.sub}<br>${fmtH(e.h)}–${fmtH(e.h+e.len)}</div>`; });
+      else if((d+hr+weekOffset)%7===0) evs=`<div class="ev t2" style="top:3px;height:${2*56-6}px"><b>Recurring clean</b>Weekly client</div>`;
+      h+=`<div class="cell" data-slot="${d}-${hr}">${evs}</div>`;
+    }
+  }
+  $('#cal').innerHTML=h;
+}
+const fmtH=h=>(h>12?h-12:h)+(h>=12?'pm':'am');
+$('#calPrev').onclick=()=>{weekOffset--;drawCal()}; $('#calNext').onclick=()=>{weekOffset++;drawCal()}; $('#calToday').onclick=()=>{weekOffset=0;drawCal()};
+$('#cal').addEventListener('click',e=>{
+  const ev=e.target.closest('.ev');
+  if(ev){ toast(ev.querySelector('b').textContent+' — reminder SMS & email sent to client'); return; }
+  const c=e.target.closest('.cell'); if(c){ const [d,h]=c.dataset.slot.split('-'); openBook(null,+d,+h); }
+});
+function drawUpcoming(){
+  const m=mondayOf(0);
+  $('#upcoming').innerHTML=events.slice(0,5).map(e=>{ const dt=new Date(m); dt.setDate(m.getDate()+e.d);
+    return `<div class="up-item"><div class="date-chip"><span>${dt.toLocaleDateString('en-US',{month:'short'})}</span><b>${dt.getDate()}</b></div><div style="min-width:0"><b>${e.title}</b><div class="muted" style="font-size:12px">${e.sub} · ${fmtH(e.h)}</div></div></div>`; }).join('');
+}
+
+/* ---------- Leads ---------- */
+let leadMode='board', leadFilter='all';
+function drawLeads(){
+  const L=leads.filter(l=>leadFilter==='all'||l.src===leadFilter);
+  $('#board').innerHTML=STAGES.map(s=>{ const items=L.filter(l=>l.st===s);
+    return `<div class="col"><div class="col-h">${s}<span>${items.length}</span></div>${items.map(l=>`<div class="lead-card" data-lead="${leads.indexOf(l)}"><b>${l.n}</b><div class="muted" style="font-size:12px">${l.svc}</div><div class="meta"><span class="src-tag"><span class="dot" style="background:${SRC[l.src]}"></span>${l.src}</span><span>${money(l.val)}</span></div></div>`).join('')}</div>`; }).join('');
+  $('#leadRows').innerHTML=L.map(l=>leadRow(l,true)).join('');
+  $('#board').style.display=leadMode==='board'?'grid':'none';
+  $('#list').style.display=leadMode==='list'?'block':'none';
+  $('#newCount').textContent=leads.filter(l=>l.st==='New').length;
+}
+$('#leadView').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; leadMode=b.dataset.m; $$('#leadView button').forEach(x=>x.classList.toggle('on',x===b)); drawLeads(); });
+$('#leadFilter').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; leadFilter=b.dataset.f; $$('#leadFilter button').forEach(x=>x.classList.toggle('on',x===b)); drawLeads(); });
+document.addEventListener('click',e=>{ const l=e.target.closest('[data-lead]'); if(l) openLead(+l.dataset.lead); });
+
+function openLead(i){
+  const l=leads[i];
+  $('#drawer').innerHTML=`
+   <div class="drawer-h"><div class="who"><div class="av" style="background:${colorFor(l.n)};width:44px;height:44px;font-size:15px">${initials(l.n)}</div><div><b style="font-size:17px">${l.n}</b><small>${l.city} · received ${l.t}</small></div></div><button class="x-btn" id="dClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+   <div class="drawer-b">
+     <div><label class="muted" style="font-size:12px;font-weight:600">Pipeline stage</label><select class="sel" id="stSel" style="margin-top:6px">${STAGES.map(s=>`<option ${s===l.st?'selected':''}>${s}</option>`).join('')}</select></div>
+     <div class="kv"><span>Phone</span><b>${l.ph}</b><span>Email</span><b style="overflow-wrap:anywhere">${l.em}</b><span>Service</span><b>${l.svc}</b><span>Est. value</span><b>${money(l.val)}</b><span>Source</span><b><span class="src-tag"><span class="dot" style="background:${SRC[l.src]}"></span>${l.src}</span></b><span>Ad / campaign</span><b style="white-space:normal">${l.ad}</b></div>
+     <div><b style="display:block;margin-bottom:10px">Activity</b><div class="timeline">
+       <div>Lead captured from ${l.src}<small>${l.t}</small></div>
+       <div>Auto-reply email sent with booking link<small>${l.t}</small></div>
+       ${l.st!=='New'?'<div>Owner called — interested, wants estimate<small>Follow-up logged</small></div>':''}
+       ${l.st==='Won'?'<div>First clean completed · added to recurring list<small>Review request sent</small></div>':''}
+     </div></div>
+   </div>
+   <div class="drawer-f"><button class="btn btn-ghost" id="dEmail"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Email</button><button class="btn btn-primary" id="dBook"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Book appointment</button></div>`;
+  $('#drawer').classList.add('show'); $('#overlay').classList.add('show');
+  $('#dClose').onclick=closeDrawer;
+  $('#stSel').onchange=e=>{ l.st=e.target.value; drawLeads(); drawRecent(); toast('Stage updated to "'+l.st+'"'); };
+  $('#dEmail').onclick=()=>{ closeDrawer(); go('inbox'); toast('Composing email to '+l.n); };
+  $('#dBook').onclick=()=>{ closeDrawer(); openBook(i); };
+}
+function closeDrawer(){ $('#drawer').classList.remove('show'); if(!$('#modal').classList.contains('show')) $('#overlay').classList.remove('show'); }
+
+function openBook(i,d,h){
+  const l=i!=null?leads[i]:null;
+  $('#modal').innerHTML=`<div class="drawer-h"><b style="font-size:17px">Book appointment</b><button class="x-btn" id="mClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+   <div class="drawer-b">
+    <div class="field"><label>Client</label><select class="sel" id="bLead">${leads.map((x,k)=>`<option value="${k}" ${k===i?'selected':''}>${x.n} — ${x.city}</option>`).join('')}</select></div>
+    <div class="field"><label>Type</label><select class="sel" id="bType"><option value="1">Estimate visit</option><option value="2">Standard clean</option><option value="3">Deep clean</option><option value="4">Move-out clean</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+     <div class="field"><label>Day</label><select class="sel" id="bDay">${DAYS.map((x,k)=>`<option value="${k}" ${k===(d??2)?'selected':''}>${x}</option>`).join('')}</select></div>
+     <div class="field"><label>Time</label><select class="sel" id="bHr">${[8,9,10,11,12,13,14,15,16].map(x=>`<option value="${x}" ${x===(h??10)?'selected':''}>${fmtH(x)}</option>`).join('')}</select></div>
+    </div>
+    <p class="muted" style="font-size:12px">Client receives a confirmation email and a reminder 24h before.</p>
+   </div>
+   <div class="drawer-f"><button class="btn btn-ghost" id="mCancel">Cancel</button><button class="btn btn-primary" id="mSave">Confirm booking</button></div>`;
+  $('#modal').classList.add('show'); $('#overlay').classList.add('show');
+  $('#mClose').onclick=$('#mCancel').onclick=closeModal;
+  $('#mSave').onclick=()=>{
+    const L=leads[+$('#bLead').value], t=+$('#bType').value;
+    events.push({d:+$('#bDay').value,h:+$('#bHr').value,len:t===1?1:2,t,title:(['','Estimate','Standard clean','Deep clean','Move-out clean'][t])+' · '+L.n,sub:L.city});
+    if(L.st==='New'||L.st==='Contacted') L.st='Estimate scheduled';
+    closeModal(); weekOffset=0; drawCal(); drawLeads(); drawRecent(); drawUpcoming(); go('calendar'); toast('Booked — confirmation sent to '+L.n);
+  };
+}
+function closeModal(){ $('#modal').classList.remove('show'); if(!$('#drawer').classList.contains('show')) $('#overlay').classList.remove('show'); }
+$('#addLead').onclick=()=>toast('In the live system, leads arrive automatically — or add them manually here');
+
+/* ---------- Inbox ---------- */
+const threads=[
+ {from:'Jessica Moreno',em:'jess.moreno@email.com',subj:'Deep clean this Saturday?',t:'9:42 AM',unread:true,msgs:[
+  {o:false,b:'Hi! I saw your ad on Instagram. Do you have availability this Saturday for a deep clean? 3 bedrooms, 2 baths. Also do you bring your own supplies?'},
+  {o:true,b:'Hi Jessica, thanks for reaching out! Yes — we have 9am open this Saturday and we bring all supplies (eco-friendly). A 3 bed / 2 bath deep clean is $320. Want me to lock that in?'},
+  {o:false,b:'Perfect, 9am works. Please book it!'}]},
+ {from:'Priya Shah',em:'priya.shah@email.com',subj:'Quote request — weekly office cleaning',t:'8:15 AM',unread:true,msgs:[
+  {o:false,b:'Hello, we have a 2,400 sq ft office in Brickell and are looking for weekly cleaning after hours. Could you send a quote?'}]},
+ {from:'Kevin O\'Neil',em:'koneil@email.com',subj:'Re: Post-construction estimate',t:'Yesterday',unread:true,msgs:[
+  {o:true,b:'Hi Kevin, we can come by Friday at noon to see the space and give you an exact price.'},
+  {o:false,b:'Friday at noon works. Gate code is 4410.'}]},
+ {from:'Grace Johnson',em:'gjohnson@email.com',subj:'Thank you!',t:'Mon',unread:false,msgs:[
+  {o:false,b:'The team did an amazing job yesterday. Can we make it weekly?'},
+  {o:true,b:'So glad to hear it, Grace! You\'re all set for every Monday at 11am. See you next week.'}]},
+ {from:'Google Business Profile',em:'noreply@google.com',subj:'You have a new 5-star review',t:'Sun',unread:false,msgs:[
+  {o:false,b:'Emily Carter left a 5-star review: "Booked online in a minute, the place has never looked this clean."'}]}
+];
+let curThread=0;
+function drawThreads(){
+  $('#threads').innerHTML=threads.map((t,i)=>`<div class="thread ${i===curThread?'on':''} ${t.unread?'unread':''}" data-th="${i}"><div class="l1"><b>${t.from}</b><span>${t.t}</span></div><div class="subj">${t.subj}</div><div class="prev">${t.msgs[t.msgs.length-1].b}</div></div>`).join('');
+}
+function drawReader(){
+  const t=threads[curThread];
+  $('#reader').innerHTML=`<div class="reader-h"><button class="btn btn-ghost back-btn" id="backBtn" style="height:32px"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Inbox</button><h3>${t.subj}</h3><div class="muted" style="font-size:13px">${t.from} &lt;${t.em}&gt; → owner@brightnestcleaning.com</div></div>
+   <div class="msgs">${t.msgs.map(m=>`<div class="msg ${m.o?'out':''}"><div class="mh"><b>${m.o?'You':t.from}</b><span>${m.o?'Sent':t.t}</span></div>${m.b}</div>`).join('')}</div>
+   <div class="compose"><textarea id="reply" placeholder="Write a reply…"></textarea><button class="btn btn-primary" id="sendBtn"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Send</button></div>`;
+  $('#backBtn').onclick=()=>$('#inboxBox').classList.remove('reading');
+  $('#sendBtn').onclick=()=>{ const v=$('#reply').value.trim(); if(!v){toast('Type a reply first');return;} t.msgs.push({o:true,b:v.replace(/</g,'&lt;')}); drawReader(); drawThreads(); toast('Sent from owner@brightnestcleaning.com'); };
+}
+$('#threads').addEventListener('click',e=>{ const th=e.target.closest('[data-th]'); if(!th)return; curThread=+th.dataset.th; threads[curThread].unread=false; drawThreads(); drawReader(); $('#inboxBox').classList.add('reading'); });
+
+/* ---------- Campaigns ---------- */
+function drawCamps(){
+  const c=[
+   ['Welcome series','Automation','p-teal','Running','Sends to every new lead: intro, reviews, booking link.','62%','14%','19'],
+   ['"We miss you" win-back','Automation','p-teal','Running','Clients with no booking in 60 days get a 10% offer.','41%','9%','6'],
+   ['Holiday deep-clean special','Broadcast','p-blue','Scheduled · Nov 20','Pre-holiday deep clean promotion to all contacts.','—','—','—'],
+   ['Review request','Automation','p-teal','Running','Sent 2h after each completed job.','58%','22%','31 reviews'],
+   ['Spring cleaning promo','Broadcast','p-gray','Sent · Mar 12','Seasonal promotion to past clients.','38%','6%','11'],
+   ['Recurring upgrade offer','Draft','p-amber','Draft','Invite one-time clients to biweekly service.','—','—','—']];
+  $('#camps').innerHTML=c.map(x=>`<div class="card camp"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>${x[0]}</b><div class="muted" style="font-size:12px">${x[1]}</div></div><span class="pill ${x[2]}">${x[3]}</span></div><div class="muted" style="font-size:13px">${x[4]}</div><div class="stats"><div><b>${x[5]}</b><span>Open</span></div><div><b>${x[6]}</b><span>Click</span></div><div><b>${x[7]}</b><span>Bookings</span></div></div></div>`).join('');
+}
+$('#newCamp').onclick=()=>toast('Campaign builder: drag-and-drop templates with your branding');
+
+/* ---------- Ads ---------- */
+const ads=[
+ {p:'Meta',n:'Before & After — Kitchen',s:612,l:58,b:29,v:'good'},
+ {p:'Meta',n:'Move-Out Checklist Video',s:298,l:21,b:8,v:'good'},
+ {p:'Meta',n:'Generic Discount Static',s:204,l:6,b:0,v:'bad'},
+ {p:'Google',n:'Search — House cleaning near me',s:290,l:19,b:9,v:'good'},
+ {p:'Google',n:'Search — Post construction cleaning',s:140,l:9,b:3,v:'ok'},
+ {p:'Google',n:'Search — Airbnb cleaning service',s:85,l:6,b:2,v:'ok'},
+ {p:'TikTok',n:'UGC — 60s apartment reset',s:120,l:17,b:6,v:'good'}
+];
+let adP='all';
+function drawAds(){
+  const A=ads.filter(a=>adP==='all'||a.p===adP);
+  const S=A.reduce((s,a)=>s+a.s,0), L=A.reduce((s,a)=>s+a.l,0), B=A.reduce((s,a)=>s+a.b,0);
+  $('#adKpis').innerHTML=[['Spend',money(S)],['Leads',L],['Cost per lead','$'+(S/L).toFixed(2)],['Cost per booked job',B?'$'+(S/B).toFixed(2):'—']].map(([a,b])=>`<div class="card kpi"><div class="lbl">${a}</div><div class="val">${b}</div><div class="delta muted">Last 30 days</div></div>`).join('');
+  const V={good:['p-teal','Working — scale'],ok:['p-amber','Watch'],bad:['p-red','Not working — pause']};
+  $('#adRows').innerHTML=A.map(a=>`<tr><td><b>${a.n}</b><div><span class="src-tag"><span class="dot" style="background:${SRC[a.p]}"></span>${a.p}</span></div></td><td>${money(a.s)}</td><td>${a.l}</td><td>$${(a.s/a.l).toFixed(2)}</td><td>${a.b}</td><td><span class="pill ${V[a.v][0]}">${V[a.v][1]}</span></td></tr>`).join('');
+}
+$('#adPlat').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; adP=b.dataset.p; $$('#adPlat button').forEach(x=>x.classList.toggle('on',x===b)); drawAds(); });
+
+/* ---------- Website ---------- */
+function drawKw(){
+  const k=[['house cleaning miami',4,'+3','12,100'],['deep cleaning service near me',6,'+5','8,100'],['move out cleaning miami',3,'+2','1,900'],['office cleaning brickell',2,'+1','480'],['airbnb cleaning service miami',7,'+8','720']];
+  $('#kwRows').innerHTML=k.map(x=>`<tr><td><b>${x[0]}</b></td><td>#${x[1]}</td><td class="up">▲ ${x[2]}</td><td>${x[3]}</td></tr>`).join('');
+}
+
+let inited=false;
+function init(){ if(inited)return; inited=true; drawChart(); drawSources(); drawRecent(); drawCal(); drawUpcoming(); drawLeads(); drawThreads(); drawReader(); drawCamps(); drawAds(); drawKw(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeDrawer(); closeModal(); closeSide(); } });
+})();
+</script>
+</body>
+</html>
