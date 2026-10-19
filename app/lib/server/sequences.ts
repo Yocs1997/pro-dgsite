@@ -305,7 +305,7 @@ const stateName = (s: string) => (s ? stateLabel(normalizeState(s) || s) : "");
 /** Most recent lead data per email, to personalize list contacts who also filled the form. */
 export async function leadVarsByEmail(): Promise<Map<string, ReturnType<typeof varsFromLead>>> {
   const out = new Map<string, ReturnType<typeof varsFromLead>>();
-  for (const l of await listLeads(1000)) {
+  for (const l of await listLeads()) {
     const e = l.driver?.email ? norm(l.driver.email) : "";
     if (e && !out.has(e)) out.set(e, varsFromLead(l)); // listLeads is newest first
   }

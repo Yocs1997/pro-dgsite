@@ -25,7 +25,7 @@ export default async function SegurosAdminPage() {
   if (!dbReady()) error = "La base de datos aún no está conectada.";
   else {
     try {
-      leads = await listLeads(5000);
+      leads = await listLeads();
     } catch {
       error = "No se pudieron cargar las solicitudes. Recarga en un momento.";
     }

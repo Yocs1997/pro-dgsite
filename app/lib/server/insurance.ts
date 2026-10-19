@@ -140,7 +140,18 @@ export async function undoLeadImport(batch: string): Promise<{ removed: string[]
   return { removed, kept };
 }
 
-export const listLeads = (limit = 300) => listRecords<InsuranceLead>(INDEX, KEY, limit);
+/** Newest first. Without a limit it reads every lead. */
+export const listLeads = (limit = 100_000) => listRecords<InsuranceLead>(INDEX, KEY, limit);
+
+const NEW_COUNT = "pdg:ins:newcount";
+/** How many leads are still "nueva" (the menu badge). Kept for a minute so every page view doesn't read all leads. */
+export async function countNewLeads(): Promise<number> {
+  const [cached] = (await db([["GET", NEW_COUNT]])) as [string | null];
+  if (cached !== null && cached !== undefined) return Number(cached) || 0;
+  const n = (await listLeads()).filter((l) => l.status === "nueva").length;
+  await db([["SET", NEW_COUNT, String(n), "EX", 60]]);
+  return n;
+}
 
 export async function setLeadStatus(id: string, status: InsStatus) {
   const [raw] = (await db([["GET", KEY(id)]])) as [string | null];

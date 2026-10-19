@@ -20,7 +20,7 @@ export async function sendFollowUpReminders(): Promise<{ insurance: number; pos:
   const today = todayIn();
 
   // ── Seguros ──
-  const ins = (await listLeads(1000))
+  const ins = (await listLeads())
     .filter((l) => l.followUp && l.followUp.date <= today && l.status !== "vendida" && l.status !== "perdida")
     .sort((a, b) => a.followUp!.date.localeCompare(b.followUp!.date));
   if (ins.length) {

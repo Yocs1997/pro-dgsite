@@ -6,8 +6,12 @@ import {
   addLeadNote,
   clearLeadFollowUp,
   deleteLead,
+  emailKey,
+  ensureLeadKeys,
   getLead,
-  listLeads,
+  getLeads,
+  leadIdsFor,
+  phoneKey,
   saveLead,
   setLeadStatus,
   updateLead,
@@ -117,10 +121,11 @@ export async function addInsuranceLead(input: NewInsuranceLead, force = false) {
     if (phone && digits.length < 10) return { ok: false as const, error: "El teléfono debe tener al menos 10 dígitos." };
 
     if (!force) {
-      const last10 = digits.slice(-10);
-      const dup = (await listLeads(1000)).find(
-        (l) => (email && l.driver?.email?.toLowerCase() === email) || (last10 && phoneDigits(l.driver?.phone ?? "").slice(-10) === last10)
-      );
+      // Checked against every lead through the email / phone lookup.
+      await ensureLeadKeys();
+      const found = await leadIdsFor(email ? [emailKey(email)] : [], phone ? [phoneKey(phone)] : []);
+      const ids = [...found.emails, ...found.phones].filter((id): id is string => Boolean(id));
+      const [dup] = ids.length ? await getLeads([...new Set(ids)]) : [];
       if (dup) {
         const who = [dup.driver?.firstName, dup.driver?.lastName].filter(Boolean).join(" ") || "sin nombre";
         return { ok: false as const, duplicate: dup.code, error: `Ya existe ${dup.code} (${who}) con ese teléfono o correo.` };

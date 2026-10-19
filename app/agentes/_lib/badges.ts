@@ -1,7 +1,7 @@
 import "server-only";
 import { dbReady } from "@/app/lib/server/redis";
 import { listInMail } from "@/app/lib/server/mail";
-import { listLeads } from "@/app/lib/server/insurance";
+import { countNewLeads } from "@/app/lib/server/insurance";
 import { listPosLeads } from "@/app/lib/server/pos-leads";
 import { listQuotes, quotesReady } from "./quotes";
 
@@ -18,7 +18,7 @@ export async function adminBadges(): Promise<BadgeCounts> {
   };
   const [correo, seguros, cotizaciones, facturacion] = await Promise.all([
     dbReady() ? safe(async () => (await listInMail()).filter((m) => !m.read).length) : 0,
-    dbReady() ? safe(async () => (await listLeads()).filter((l) => l.status === "nueva").length) : 0,
+    dbReady() ? safe(countNewLeads) : 0,
     quotesReady() ? safe(async () => (await listQuotes()).filter((q) => q.status === "nueva").length) : 0,
     dbReady() ? safe(async () => (await listPosLeads()).filter((l) => l.status === "nueva").length) : 0,
   ]);
